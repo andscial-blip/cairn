@@ -12,9 +12,12 @@ const admin = new URL(url); admin.pathname = "/postgres";
 export async function resetDatabase() {
   const a = new pg.Client({ connectionString: admin.toString() });
   await a.connect();
-  await a.query(`drop database if exists "${dbName}" with (force)`);
-  await a.query(`create database "${dbName}"`);
-  await a.end();
+  // Test files may reset in quick succession: serialise drop/create with an advisory lock.
+  await a.query("select pg_advisory_lock(424242)");
+  try {
+    await a.query(`drop database if exists "${dbName}" with (force)`);
+    await a.query(`create database "${dbName}"`);
+  } finally { await a.query("select pg_advisory_unlock(424242)"); await a.end(); }
   const c = new pg.Client({ connectionString: url });
   await c.connect();
   const run = async (file) => { await c.query(readFileSync(file, "utf8")); };
