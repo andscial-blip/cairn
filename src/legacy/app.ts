@@ -8,12 +8,13 @@
 //  - excluded: Google Calendar sync (replaced by the ICS feed) and the Excel v3 template (contains personal data).
 import { tot, DEFAULT_CFG as ENGINE_DEFAULT_CFG } from "@/domain/engine";
 import type { Engine } from "@/domain/engine";
-export type LegacyApp = Record<"vHome" | "vInv" | "vPrev" | "vContr" | "vMis" | "vF24" | "vTasse" | "vFisco" | "compliancePanel" | "redditiPanel" | "vEntrate" | "vSpese" | "vInvest" | "vRisp" | "vAnal" | "vSet" | "bindView" | "openForm" | "toast" | "closeSheet" | "escClose" | "openDetail" | "_fisco", (...a: any[]) => any>;
+export type LegacyApp = Record<"vHome" | "vInv" | "vPrev" | "vContr" | "vMis" | "vF24" | "vTasse" | "vFisco" | "compliancePanel" | "redditiPanel" | "vEntrate" | "vSpese" | "vInvest" | "vRisp" | "vAnal" | "vSet" | "bindView" | "openForm" | "toast" | "closeSheet" | "escClose" | "openDetail" | "calItems" | "_fisco", (...a: any[]) => any>;
 export interface LegacyEnv {
   S: any; engine: () => Engine; render: () => void; setView: (v: string) => void;
   downloads: { save: (o: { filename: string; data: unknown }) => Promise<unknown> } | null;
   assetsCap: { upload: (f: File) => Promise<{ id: string; url: string }> } | null;
   unavailable: (what: string) => void;
+  v3Template: () => Promise<string | null>;
 }
 export function createLegacy(env: LegacyEnv): LegacyApp {
 const S = env.S;
@@ -25,7 +26,9 @@ const setView = (v) => env.setView(v);
 const DEFAULT_CFG = ENGINE_DEFAULT_CFG;
 let downloads = env.downloads, assetsCap = env.assetsCap;
 const syncCalendar = async () => env.unavailable("calendar");
-const exportV3 = async () => env.unavailable("v3");
+// Excel v3: the template holds personal figures, so it lives in the private Storage area and is fetched on use.
+let V3_B64 = null;
+const exportV3 = async (...a) => { try { V3_B64 = await env.v3Template(); } catch (e) { V3_B64 = null; } if (!V3_B64) { env.unavailable("v3"); return; } return exportV3_orig(...a); };
 const exportCairn = async () => env.unavailable("exportCairn");
 // The original looked up the PAC account by its old readable id; in Cairn ids are UUIDs: match the account marked t212.
 // Same for clients referenced by their old readable code.
@@ -515,7 +518,7 @@ function openReddito(id){const r=id?S.redditi.find(x=>x.id===id)||{}:{data:today
     if(await write(db=>db.doc("redditi/"+k).set(d),"Reddito salvato"))closeSheet()};
   const del=$("#rDel");if(del)del.onclick=async()=>{if(await write(db=>db.doc("redditi/"+id).delete(),"Reddito eliminato"))closeSheet()}}
 function logLabel(e){const [c,id]=(e.path||"").split("/");const p=e.prima||{};const cur=(S[{invoices:"invoices",clients:"clients",f24:"f24",contratti:"contratti",missioni:"missioni",promemoria:"promemoria",redditi:"redditi"}[c]]||[]).find(x=>x.id===id)||{};
-  const n={invoices:"Fattura "+(p.num||cur.num||id),clients:"Cliente "+(p.nome||cur.nome||id),f24:"F24 "+(p.descrizione||cur.descrizione||id),contratti:"Contratto "+id,missioni:"Missione "+id,promemoria:"Promemoria: "+(p.titolo||cur.titolo||id),redditi:"Reddito "+(p.fonte||cur.fonte||id),config:"Impostazioni"}[c];return n||e.path}
+  const n={invoices:"Fattura "+(p.num||cur.num||id),clients:"Cliente "+(p.nome||cur.nome||id),f24:"F24 "+(p.descrizione||cur.descrizione||id),contratti:"Contratto "+c2n(cur.cliente||p.cliente||"")+" "+(cur.dal||p.dal||""),missioni:"Missione "+c2n(cur.cliente||p.cliente||"")+" "+(cur.dal||p.dal||cur.anno||p.anno||""),promemoria:"Promemoria: "+(p.titolo||cur.titolo||id),redditi:"Reddito "+(p.fonte||cur.fonte||id),config:"Impostazioni"}[c];return n||e.path}
 function historyPanel(){const L=[...(S.storico||[])].sort((a,b)=>(b.ts||"").localeCompare(a.ts||"")).slice(0,40);
   return `<section class="panel c12"><div class="panel-h"><h2>${ico("clock",18)} Cronologia modifiche</h2><div class="spacer"></div><span class="eyebrow">ultime ${L.length}</span></div>
    <details class="help panel-b"><summary>${ico("info",14)} Come funziona</summary><p>Ogni modifica salva com'era il dato prima. "Ripristina" lo riporta a quello stato; anche il ripristino finisce in cronologia, quindi si può annullare.</p></details>
@@ -1421,8 +1424,8 @@ async function save(filename,data){
 }
 async function pdfProforma(v){
   try{
-    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
-    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+    await loadScript("/vendor/jspdf.umd.min.js");
+    await loadScript("/vendor/jspdf.plugin.autotable.min.js");
   }catch(e){toast("Impossibile caricare il generatore PDF");return}
   const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});
   const c=clientById(v.cliente)||{nome:v.cliente};const k=cfg();const t=tot(v);const fo=k.fornitore,pg=k.pagamento;
@@ -1460,7 +1463,7 @@ async function pdfProforma(v){
   await save(`Proforma_${v.n}-${String(v.anno).slice(2)}_${cl}.pdf`,doc.output("blob"));
 }
 async function pdfDossier(y){
-  try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js")}catch(e){toast("Impossibile caricare il generatore PDF");return}
+  try{await loadScript("/vendor/jspdf.umd.min.js");await loadScript("/vendor/jspdf.plugin.autotable.min.js")}catch(e){toast("Impossibile caricare il generatore PDF");return}
   const FX=fisco(),f=FX[y];if(!f){toast("Nessun dato per il "+y);return}
   const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});const k=cfg(),fo=k.fornitore||{},p=P(y);const M=14,W=210;
   const E=x=>eur(x||0).replace("€","").trim()+" €";const head={fillColor:[68,84,106],textColor:255,fontStyle:"bold",fontSize:8.5};
@@ -1499,7 +1502,7 @@ async function fullBackup(){const data={app:"Cairn",creato:new Date().toISOStrin
   if(await save(`CassaFisco_backup_${todayISO()}.json`,JSON.stringify(data,null,2))){try{localStorage.setItem("fa-backup",todayISO())}catch(e){}render()}}
 function bindExtras(){const b=$("#dossier");if(b)b.onclick=()=>pdfDossier(+b.dataset.y);document.querySelectorAll("[data-backup]").forEach(x=>x.onclick=fullBackup)}
 async function exportXlsx(FX){
-  try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js")}catch(e){toast("Impossibile caricare il generatore Excel");return}
+  try{await loadScript("/vendor/xlsx.full.min.js")}catch(e){toast("Impossibile caricare il generatore Excel");return}
   const rows=[...S.invoices].sort((a,b)=>(a.data||"").localeCompare(b.data||"")).map(v=>{const t=tot(v),o=oneriInv(v,FX),c=clientById(v.cliente);
     const tr=(v.righe||[]).find(r=>r.tipo==="trasferta");const f=fy(v),p=P(f);const ratio=t.imponibile?o.oneri/t.imponibile:0;
     const fxy=FX[f];const inps=fxy&&fxy.ric?t.imponibile*fxy.inps/fxy.ric:o.oneri*0.85;
@@ -1563,6 +1566,66 @@ function calItems(FX){
   {const c=invCalc((S.investimenti||[]).find(isMainInv));if(c&&c.rev>=today)items.push({key:"inv-rev-"+c.rev,date:c.rev,summary:INV_REV_SUM,desc:INV_REV_DESC,rem:[900,10080]})}
   return items.map(i=>({...i,hash:[i.date,i.summary,i.desc].join("|")}));
 }
+const colN=c=>c.split("").reduce((a,ch)=>a*26+ch.charCodeAt(0)-64,0);
+const xlDate=s=>{const [y,m,d]=s.split("-").map(Number);return (Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/864e5};
+function xlSheet(doc){
+  const NS=doc.documentElement.namespaceURI, sd=doc.getElementsByTagName("sheetData")[0], map={}, rows={};
+  Array.from(sd.getElementsByTagName("row")).forEach(r=>{rows[r.getAttribute("r")]=r});
+  Array.from(sd.getElementsByTagName("c")).forEach(c=>{map[c.getAttribute("r")]=c});
+  const cell=ref=>{if(map[ref])return map[ref];const rn=ref.replace(/[A-Z]+/,""),cn=colN(ref.replace(/\d+/,""));
+    let row=rows[rn];if(!row){row=doc.createElementNS(NS,"row");row.setAttribute("r",rn);const after=Array.from(sd.childNodes).find(x=>x.nodeType===1&&+x.getAttribute("r")>+rn);sd.insertBefore(row,after||null);rows[rn]=row}
+    const c=doc.createElementNS(NS,"c");c.setAttribute("r",ref);const nxt=Array.from(row.childNodes).find(x=>x.nodeType===1&&colN(x.getAttribute("r").replace(/\d+/,""))>cn);row.insertBefore(c,nxt||null);map[ref]=c;return c};
+  const wipe=c=>{while(c.firstChild)c.removeChild(c.firstChild);c.removeAttribute("t")};
+  return {
+    clear(ref){wipe(cell(ref))},
+    num(ref,v){if(v==null||v===""||isNaN(v)){wipe(cell(ref));return}const c=cell(ref);wipe(c);c.setAttribute("t","n");const e=doc.createElementNS(NS,"v");e.textContent=String(v);c.appendChild(e)},
+    str(ref,v){const c=cell(ref);wipe(c);if(v==null||v==="")return;c.setAttribute("t","inlineStr");const is=doc.createElementNS(NS,"is"),t=doc.createElementNS(NS,"t");t.textContent=String(v);t.setAttribute("xml:space","preserve");is.appendChild(t);c.appendChild(is)},
+    fx(ref,f){const c=cell(ref);wipe(c);const e=doc.createElementNS(NS,"f");e.textContent=f;c.appendChild(e)},
+    date(ref,s){if(!s){wipe(cell(ref));return}this.num(ref,xlDate(s))}
+  };
+}
+async function exportV3_orig(FX){
+  try{await loadScript("/vendor/jszip.min.js")}catch(e){toast("Impossibile caricare il generatore Excel");return}
+  toast("Preparo il tuo Excel v3…");
+  const bin=atob(V3_B64),bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  const zip=await window.JSZip.loadAsync(bytes);const P=new DOMParser(),Ser=new XMLSerializer();const docs={};
+  const open=async n=>{const path=`xl/worksheets/sheet${n}.xml`;const d=P.parseFromString(await zip.file(path).async("string"),"application/xml");docs[path]=d;return xlSheet(d)};
+  // Fatture Register (rows 15-134): only input columns, formulas untouched
+  const R=await open(2);
+  const inv=[...S.invoices].sort((a,b)=>(a.data||"").localeCompare(b.data||"")||(a.n||0)-(b.n||0));
+  if(inv.length>120)toast("Attenzione: il v3 ha 120 righe, esporto le prime 120");
+  for(let k=0;k<120;k++){const r=15+k,v=inv[k];
+    if(!v){["B","C","D","E","H","I","J","L","M","Z"].forEach(c=>R.clear(c+r));continue}
+    const t=tot(v),tr=(v.righe||[]).filter(x=>x.tipo==="trasferta"),gg=tr.reduce((a,x)=>a+(+x.qta||0),0),c=clientById(v.cliente);
+    R.date("B"+r,v.data);R.str("C"+r,v.num);R.str("D"+r,c?c.nome:v.cliente);R.date("E"+r,v.incasso);
+    R.num("H"+r,t.comp);R.num("I"+r,gg||null);R.num("J"+r,gg?r2(t.ind/gg):null);R.num("L"+r,t.rimb||null);R.num("M"+r,t.bollo);R.str("Z"+r,v.note||"")}
+  // FISCO inputs (cols D-G = 2025-2028)
+  const X=await open(3),F=cfg().fisco||{},cols=["D","E","F","G"],yrs=[2025,2026,2027,2028];
+  const ov=(y,k)=>{const o=F[String(y)];return o&&o[k]!=null&&o[k]!==""?+o[k]:null};
+  yrs.forEach((y,i)=>{const c=cols[i],p=cols[i-1];
+    X.num(c+"10",r2((ov(y,"stima")||0)+((FX[y]||{}).contr||0)));X.num(c+"19",ov(y,"inps"));X.num(c+"29",ov(y,"imposta"));
+    const a=ov(y,"accontiInps");if(a!=null)X.num(c+"21",a);else if(p)X.fx(c+"21",`IF(${p}20<=0,0,${p}20*PARAMETRI!$E$20)`);else X.num(c+"21",0);
+    const iv=ov(y,"inpsVersati");if(iv!=null)X.num(c+"23",iv);else if(p)X.fx(c+"23",`${p}22+${c}21`);else X.num(c+"23",0);
+    const ai=ov(y,"accontiImp");if(ai!=null)X.num(c+"31",ai);else if(p)X.fx(c+"31",`IF(${p}30<=PARAMETRI!$E$22,0,${p}30*PARAMETRI!$E$21)`);else X.num(c+"31",0)});
+  // PARAMETRI: rates per year (rows 7-12) and clients (rows 28-35)
+  const Pm=await open(6);
+  [2025,2026,2027,2028,2029,2030].forEach((y,i)=>{const p=cfg().params[String(y)];if(!p)return;const r=7+i;Pm.num("C"+r,p.coef);Pm.num("D"+r,p.inps);Pm.num("E"+r,p.imp);Pm.num("F"+r,p.margine)});
+  const so=cfg().soglie;Pm.num("E17",so.s85);Pm.num("E18",so.s100);Pm.num("E19",so.allerta);
+  for(let k=0;k<8;k++){const r=28+k,c=S.clients[k];Pm.str("B"+r,c?c.nome:"");Pm.num("E"+r,c?c.gg:null);Pm.num("F"+r,c&&c.tariffa?c.tariffa:null)}
+  // SCADENZE F24 (rows 6-40): real payments + live estimates linked to FISCO
+  const Sc=await open(4);for(let r=6;r<=40;r++)["B","C","D","E","F","G"].forEach(c=>Sc.clear(c+r));
+  const real=[...S.f24].sort((a,b)=>a.data<b.data?-1:1);let r=6;
+  real.forEach(x=>{if(r>40)return;Sc.date("B"+r,x.data);Sc.str("C"+r,x.descrizione);Sc.str("D"+r,x.tributi||"");Sc.num("E"+r,x.importo);Sc.str("F"+r,x.versato?"Sì":"No");r++});
+  [[2026,"E"],[2027,"F"],[2028,"G"]].forEach(([y,c])=>{[[`${y+1}-06-30`,`Saldo ${y} + I acconto ${y+1} (stima)`,"1792, 1790, PXXR",35],[`${y+1}-11-30`,`II acconto ${y+1} (stima)`,"1790, PXXR",36]].forEach(([d,de,tb,row])=>{
+    if(r>40||d<todayISO()||real.some(x=>x.data&&x.data.slice(0,7)===d.slice(0,7)))return;
+    Sc.date("B"+r,d);Sc.str("C"+r,de);Sc.str("D"+r,tb);Sc.fx("E"+r,`FISCO!${c}${row}`);Sc.str("F"+r,"No");Sc.str("G"+r,"Stima da FISCO");r++})});
+  // DASHBOARD: open on the current year
+  const Db=await open(1);Db.num("B7",Math.min(2028,Math.max(2025,new Date().getFullYear())));
+  Object.entries(docs).forEach(([path,d])=>zip.file(path,Ser.serializeToString(d)));
+  const blob=await zip.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",compression:"DEFLATE"});
+  const ok=await save("Fatture_Andrea_Scialabba_v3.xlsx",blob);
+  if(ok){try{localStorage.setItem("fa-v3",new Date().toISOString())}catch(e){}render()}
+}
 function openClient(id){
   const k=id?clientById(id):{nome:"",ragione:"",idFiscale:"",indirizzo:"",pec:"",compenso:"",tariffa:"",gg:30,desc:"Compenso professionale - {MESE}",descTrasf:"Indennità di trasferta estero (Madagascar) - dal {DAL} al {AL}"};
   sheet(id?`Cliente · ${k.nome}`:"Nuovo cliente",`<section class="panel"><div class="panel-b"><div class="fields">
@@ -1596,5 +1659,5 @@ function openF24(id){
     if(!doc.data||!doc.importo){toast("Inserisci data e importo");return}
     if(await write(db=>db.doc("f24/"+(id||doc.data+"-"+uid())).set(doc),"Versamento salvato"))closeSheet()};
 }
-return { vHome, vInv, vPrev, vContr, vMis, vF24, vTasse, vFisco, compliancePanel, redditiPanel, vEntrate, vSpese, vInvest, vRisp, vAnal, vSet, bindView, openForm, toast, closeSheet, escClose, openDetail, _fisco: () => curE().fisco() };
+return { vHome, vInv, vPrev, vContr, vMis, vF24, vTasse, vFisco, compliancePanel, redditiPanel, vEntrate, vSpese, vInvest, vRisp, vAnal, vSet, bindView, openForm, toast, closeSheet, escClose, openDetail, calItems, _fisco: () => curE().fisco() };
 }

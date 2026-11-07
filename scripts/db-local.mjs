@@ -25,6 +25,11 @@ export async function resetDatabase() {
   for (const f of migrations) await run(join("supabase/migrations", f));
   await run("tests/db/grants.sql");
   for (const f of migrations.filter((m) => m.includes("hardening"))) await run(join("supabase/migrations", f));
+  // Deliberate public endpoints, granted after hardening in production order: re-apply them last.
+  for (const f of migrations) {
+    const sql = readFileSync(join("supabase/migrations", f), "utf8");
+    for (const m of sql.matchAll(/-- @public-grant\n([^\n]+)/g)) await c.query(m[1]);
+  }
   await c.end();
 }
 

@@ -39,8 +39,11 @@ export function createBridgeDb(env: BridgeEnv) {
 
   async function write(coll: LegacyColl, id: string, doc: Doc) {
     const table = COLL_TABLE[coll] as Entity;
-    const { rid, legacy } = await resolveId(coll, id);
+    const resolved = await resolveId(coll, id);
+    const { legacy } = resolved; let { rid } = resolved;
     const rows = env.rows();
+    // Restoring a deleted record (history): deletions are final on the server, so it comes back as a new record.
+    if ((rows[table] ?? []).some((r) => r.id === rid && r.deleted_at)) rid = crypto.randomUUID();
     const existing = live(rows[table]).find((r) => r.id === rid);
     const next: Doc = docToRow(coll, { ...doc, id: rid } as never);
     for (const k of PRESERVE[table] ?? []) delete next[k];

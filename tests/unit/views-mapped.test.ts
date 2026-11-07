@@ -31,11 +31,11 @@ describe.skipIf(!has)("views on Cairn-stored data = original", async () => {
         void R;
         const want = (() => { // original HTML recomputed without PDFs, on original ids
           const snap = { ...legacy, cfg: mergeCfg(s.cfgRaw) }; const e = new Engine(structuredClone(snap) as never, today);
-          const L = createLegacy({ S: { ...structuredClone(snap), year: +today.slice(0, 4), filter: { stato: "tutti", cliente: "", q: "" }, calsync: [], storico: [] }, engine: () => e, render: () => undefined, setView: () => undefined, downloads: null, assetsCap: null, unavailable: () => undefined });
+          const L = createLegacy({ S: { ...structuredClone(snap), year: +today.slice(0, 4), filter: { stato: "tutti", cliente: "", q: "" }, calsync: [], storico: [] }, engine: () => e, render: () => undefined, setView: () => undefined, downloads: null, assetsCap: null, unavailable: () => undefined, v3Template: async () => null });
           return L[v](L._fisco());
         })();
         const snap = rowsToSnapshot(rows as never, mergeCfg); const e = new Engine(snap, today);
-        const L = createLegacy({ S: { ...snap, year: +today.slice(0, 4), filter: { stato: "tutti", cliente: "", q: "" }, calsync: [], storico: [] }, engine: () => e, render: () => undefined, setView: () => undefined, downloads: null, assetsCap: null, unavailable: () => undefined });
+        const L = createLegacy({ S: { ...snap, year: +today.slice(0, 4), filter: { stato: "tutti", cliente: "", q: "" }, calsync: [], storico: [] }, engine: () => e, render: () => undefined, setView: () => undefined, downloads: null, assetsCap: null, unavailable: () => undefined, v3Template: async () => null });
         const got = unmap(L[v](L._fisco()));
         if (got !== want) expect.fail(firstDiff(got, want));
       });

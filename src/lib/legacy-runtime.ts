@@ -8,6 +8,9 @@ import { createLegacy, type LegacyApp } from "@/legacy/app";
 import { createBridgeDb } from "@/legacy/bridge";
 import { mergeCfg, type Engine } from "@/domain/engine";
 import type { Entity, LocalRow } from "@/offline/types";
+import { buildIcs } from "@/lib/ics";
+import { feedStatus, publishIfChanged } from "@/lib/calendar-feed";
+import { auditToStorico, HISTORY_TABLES, type AuditEntry } from "@/legacy/history";
 
 const COLLS = ["invoices", "clients", "f24", "contratti", "missioni", "promemoria", "redditi", "spese", "risparmi", "investimenti"] as const;
 const MAX_PDF = 15 * 1024 * 1024;
@@ -26,6 +29,9 @@ let deps: RuntimeDeps | null = null;
 let app: LegacyApp | null = null;
 let syncedEngine: Engine | null = null;
 const uploads = new Map<string, { path: string; name: string; mime: string; size: number }>();
+let feedActive: boolean | null = null, feedChecking = false, publishTimer: ReturnType<typeof setTimeout> | undefined;
+let historyAt = 0, historyKey = "";
+export const V3_PATH = (ledger: string) => `${ledger}/templates/excel-v3.xlsx`;
 
 const COMPOSE: Record<string, (FX: unknown) => string> = {
   home: (FX) => app!.vHome(FX), entr: (FX) => app!.vEntrate(FX), spese: (FX) => app!.vSpese(FX), risp: (FX) => app!.vRisp(FX),
@@ -47,15 +53,49 @@ export function renderLegacy() {
   if (!el || !deps?.engine || !app) return;
   try {
     const FX = app._fisco();
+    // With the private calendar feed active, the calendar is always up to date: no "sync" to-do in the Dashboard.
+    S.calsync = feedActive ? app.calItems(FX).map((i: { key: string; hash: string; date: string }) => ({ id: i.key, hash: i.hash, date: i.date })) : [];
+    if (S.view === "set") void loadHistory();
     let h = "";
     if (!S.invoices.length && !S.clients.length) h += `<div class="banner">Il registro è vuoto. Importa i dati dall'app precedente da <b>Impostazioni → Importa</b>, oppure aggiungi i clienti in <b>Impostazioni</b>.</div>`;
     h += (COMPOSE[S.view] ?? COMPOSE.home!)(FX);
     el.innerHTML = h;
     app.bindView(FX);
+    schedulePublish();
   } catch (e) {
     console.error(e);
     el.innerHTML = `<section class="panel empty">Errore nel disegnare questa sezione: ${String((e as Error).message).replace(/[<>&]/g, "")}</section>`;
   }
+}
+
+/** ICS text of the current deadlines (same items the original pushed to Google Calendar). */
+export function currentIcs(): string | null {
+  if (!app || !deps?.engine) return null;
+  return buildIcs(app.calItems(app._fisco()));
+}
+export function setFeedActive(v: boolean) { feedActive = v; renderLegacy(); }
+function schedulePublish() {
+  clearTimeout(publishTimer);
+  publishTimer = setTimeout(() => {
+    const d = deps; if (!feedActive || !d?.ledgerId || !d.writable || !navigator.onLine) return;
+    const ics = currentIcs(); if (ics) void publishIfChanged(d.sb, d.ledgerId, ics).catch(() => undefined);
+  }, 4000);
+}
+async function checkFeed() {
+  const d = deps; if (feedChecking || feedActive !== null || !d?.ledgerId || !navigator.onLine) return;
+  feedChecking = true;
+  try { feedActive = (await feedStatus(d.sb, d.ledgerId)).active; renderLegacy(); } catch { /* not admin or offline: leave unknown */ } finally { feedChecking = false; }
+}
+async function loadHistory() {
+  const d = deps; if (!d?.ledgerId || !navigator.onLine || Date.now() - historyAt < 20_000) return;
+  historyAt = Date.now();
+  const { data, error } = await d.sb.from("audit_logs").select("id, at, action, entity, record_id, details").eq("ledger_id", d.ledgerId)
+    .in("entity", HISTORY_TABLES).in("action", ["create", "update", "delete"]).order("id", { ascending: false }).limit(60);
+  if (error || !data) return;
+  const key = data.map((x) => x.id).join(",");
+  if (key === historyKey) return;
+  historyKey = key; S.storico = auditToStorico(data as AuditEntry[], d.rows);
+  if (S.view === "set") renderLegacy();
 }
 
 function toast(m: string) { try { app?.toast(m); } catch { /* no toast root yet */ } }
@@ -98,9 +138,23 @@ function ensureApp() {
         return { id, url: `cairn-att:${path}` };
       },
     },
-    unavailable: (what) => toast(what === "calendar" ? "Il calendario arriva come feed ICS (da aggiungere al tuo Google Calendar) in un prossimo aggiornamento."
-      : what === "v3" ? "L'Excel v3 usa il tuo modello personale: lo sposto in un'area privata in un passo successivo. Intanto usa 'Solo dati'."
-      : "Non serve più: i dati sono già in Cairn."),
+    unavailable: (what) => {
+      if (what === "calendar" && feedActive && deps?.ledgerId && navigator.onLine) {
+        const ics = currentIcs(); if (ics) void publishIfChanged(deps.sb, deps.ledgerId, ics, true).then((ok) => toast(ok ? "Calendario aggiornato: Google Calendar lo rilegge entro qualche ora." : "Aggiornamento del calendario non riuscito."));
+        return;
+      }
+      if (what === "calendar") { deps?.navigate("set"); setTimeout(() => document.getElementById("calendario")?.scrollIntoView({ behavior: "smooth" }), 400); return; }
+      toast(what === "v3" ? (navigator.onLine ? "Carica prima il modello Excel v3 in Impostazioni → Modello Excel v3." : "L'Excel v3 si prepara solo online (il modello è nell'archivio privato).")
+        : "Non serve più: i dati sono già in Cairn.");
+    },
+    v3Template: async () => {
+      const d = deps; if (!d?.ledgerId || !navigator.onLine) return null;
+      const { data, error } = await d.sb.storage.from("attachments").download(V3_PATH(d.ledgerId));
+      if (error || !data) return null;
+      const buf = new Uint8Array(await data.arrayBuffer()); let bin = "";
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      return btoa(bin);
+    },
   });
   return app;
 }
@@ -110,6 +164,7 @@ export function updateRuntime(d: RuntimeDeps) {
   deps = d; ensureApp();
   S.ready = !!d.engine; S.writable = d.writable; S.year = d.year; S.view = d.view;
   if (d.engine && d.engine !== syncedEngine) syncFromEngine();
+  if (feedActive === null && d.ledgerId && d.writable) void checkFeed();
 }
 export const legacyApp = () => ensureApp();
 export { S as legacyState };

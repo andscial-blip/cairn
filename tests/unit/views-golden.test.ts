@@ -29,7 +29,7 @@ describe.skipIf(!has)("golden views: ported tabs = original app HTML", () => {
           redditi: s.redditi, spese: s.spese, risparmi: s.risparmi, investimenti: s.investimenti, cfg: mergeCfg(s.cfgRaw) };
         const e = new Engine(structuredClone(snap), today);
         const views = createLegacy({ S: { ...structuredClone(snap), year: +today.slice(0, 4), filter: { stato: "tutti", cliente: "", q: "" }, calsync: [], storico: [] },
-          engine: () => e, render: () => undefined, setView: () => undefined, downloads: null, assetsCap: null, unavailable: () => undefined });
+          engine: () => e, render: () => undefined, setView: () => undefined, downloads: null, assetsCap: null, unavailable: () => undefined, v3Template: async () => null });
         const html = views[v](views._fisco());
         const want = R.views[v]!;
         if (html !== want) expect.fail(firstDiff(html, want));

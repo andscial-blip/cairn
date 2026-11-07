@@ -97,6 +97,14 @@ describe("write bridge", () => {
     await bridge.doc(`invoices/${INV}`).delete();
     expect((await ops()).map((x) => `${x.e}:${x.t}`)).toEqual(["invoice_lines:delete", "invoice_lines:delete", "invoices:delete"]);
   });
+  it("restoring a deleted record re-creates it under a new id (deletions are final server-side)", async () => {
+    const before = (await bridge.doc(`f24/${F1}`).get()).data();
+    await bridge.doc(`f24/${F1}`).delete(); await db.outbox.clear();
+    await bridge.doc(`f24/${F1}`).set(before as never);
+    const [o] = await ops();
+    expect(o!.e).toBe("f24_payments"); expect(o!.id).not.toBe(F1); expect(o!.base).toBeNull();
+    expect(o!.p).toMatchObject({ amount: 1304, due_date: "2026-11-16" });
+  });
   it("history and calendar bookkeeping writes are ignored", async () => {
     await bridge.doc("storico/123").set({ a: 1 }); await bridge.doc("calsync/k").delete();
     expect(await ops()).toEqual([]);

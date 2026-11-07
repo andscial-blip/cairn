@@ -10,3 +10,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /private/
+
+# copied from node_modules at build (scripts/vendor.mjs)
+public/vendor/

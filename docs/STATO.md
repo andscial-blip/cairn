@@ -28,6 +28,7 @@ Legenda: ✅ verificato con test automatico · 🟡 implementato, verifica pende
 |---|---|---|
 | 0100–0500 | cairn-1-setup.sql | ✅ applicata |
 | 0600 domain_fit | cairn-3-aggiornamento.sql | ✅ applicata 07/11/2026 |
+| 0700 calendar_history | cairn-4-aggiornamento.sql | ⏳ da applicare |
 
 Regola: ogni nuova migrazione → nuovo file numerato da incollare nel SQL Editor + `notify pgrst, 'reload schema'`.
 
@@ -38,6 +39,10 @@ Regola: ogni nuova migrazione → nuovo file numerato da incollare nel SQL Edito
 | Modifiche (fatture, contratti, missioni, F24, promemoria, risparmi, investimenti, impostazioni) | ✅ codice originale + bridge sulla coda offline | 10 test bridge, round-trip lossless su dati reali (13 test), e2e browser offline→online |
 | PDF fatture | ✅ upload su Storage privato, apertura con URL firmato a 2 min | e2e |
 | Navigazione offline in tutte le sezioni | ✅ service worker v2 con precache | e2e |
-| Sync Google Calendar | ⏳ sostituita da feed ICS (da fare) | — |
-| Export "Excel v3" | ⏳ il modello contiene dati personali: va spostato in area privata | — |
-| Storico modifiche / ripristino | ⏳ da collegare ad audit_logs | — |
+| Calendario | ✅ feed ICS privato (token 256 bit, salvato solo come hash, ruotabile), ripubblicato a ogni modifica | test DB, test route, e2e |
+| Export Excel v3 / Excel dati / PDF proforma / PDF dossier | ✅ modello v3 nello Storage privato; librerie servite da Cairn (CSP 'self', offline) | e2e: 4 download |
+| Cronologia e ripristino | ✅ audit_logs con valore precedente; un record eliminato torna come nuovo record | test DB, e2e |
+
+## Rischi accettati (da rivedere)
+- `xlsx@0.18.5` e `dompurify` (via `jspdf@2.5.1`) segnalati da npm audit: le vulnerabilità riguardano la lettura di file/HTML non fidati; Cairn li usa solo per scrivere file dai propri dati. Piano: SheetJS 0.20.x (dal loro CDN, dominio da abilitare) e jspdf 3.x con test di non regressione degli export.
+- Google Calendar ignora gli avvisi (VALARM) dei calendari sottoscritti: notifiche da impostare sul calendario.

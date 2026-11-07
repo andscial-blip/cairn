@@ -2,7 +2,7 @@
   "name": "cairn",
   "version": "0.1.0",
   "private": true,
-  "description": "Cairn — PWA personale per P.IVA forfettaria, finanze e investimenti",
+  "description": "Cairn \u2014 PWA personale per P.IVA forfettaria, finanze e investimenti",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,16 +11,24 @@
     "test": "vitest run --project unit",
     "test:db": "vitest run --project db",
     "test:all": "vitest run",
-    "db:reset:local": "node scripts/db-local.mjs reset"
+    "db:reset:local": "node scripts/db-local.mjs reset",
+    "prebuild": "node scripts/vendor.mjs",
+    "predev": "node scripts/vendor.mjs"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.0",
     "dexie": "4.4.7",
+    "jspdf": "2.5.1",
+    "jspdf-autotable": "3.8.2",
+    "jszip": "3.10.1",
     "next": "16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "xlsx": "0.18.5",
     "zod": "4.6.7"
   },
   "devDependencies": {
