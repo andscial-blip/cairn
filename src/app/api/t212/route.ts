@@ -4,9 +4,12 @@
  * they never reach the browser. Only members who can write to the ledger may call it.
  */
 import { normalisePositions } from "@/lib/t212";
+import { normaliseTransactions, normaliseOrders, normaliseDividends } from "@/lib/t212-history";
 
 export const dynamic = "force-dynamic";
-const T212 = "https://live.trading212.com/api/v0";
+export const maxDuration = 30;
+const HOST = "https://live.trading212.com", T212 = HOST + "/api/v0";
+const MAX_PAGES = 20; // 50 items each: 1,000 per list, far above a monthly PAC
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 
 export async function POST(req: Request) {
@@ -47,7 +50,30 @@ export async function POST(req: Request) {
       total = num(s.totalValue);
       currency = typeof s.currency === "string" ? s.currency : null;
     }
-    return json({ positions, cash, total, currency, at: new Date().toISOString() });
+    // 3) History (permission "History"), only when asked: deposits/withdrawals, filled orders, dividends and interest.
+    let history: unknown = undefined, historyError: string | undefined;
+    const wantHistory = await req.json().then((b: { history?: boolean }) => !!b?.history).catch(() => false);
+    if (wantHistory) {
+      const pages = async (first: string) => {
+        const out: unknown[] = []; let url: string | null = `${T212}${first}${first.includes("?") ? "&" : "?"}limit=50`;
+        for (let i = 0; url && i < MAX_PAGES; i++) {
+          const r = await fetch(url, { headers: { authorization: auth }, cache: "no-store", signal: AbortSignal.timeout(12_000) });
+          if (!r.ok) { console.warn("t212 history", first, r.status, (await r.clone().text().catch(() => "")).slice(0, 200)); throw Object.assign(new Error("history"), { status: r.status }); }
+          const b = (await r.json()) as { nextPagePath?: string | null }; out.push(b);
+          url = b.nextPagePath ? (b.nextPagePath.startsWith("http") ? (b.nextPagePath.startsWith(HOST + "/") ? b.nextPagePath : null) : HOST + (b.nextPagePath.startsWith("/api/") ? "" : "/api/v0") + b.nextPagePath) : null;
+          if (url && i === MAX_PAGES - 1) throw Object.assign(new Error("history"), { status: 413 });
+        }
+        return out;
+      };
+      try {
+        const [tx, or, dv] = await Promise.all([pages("/equity/history/transactions"), pages("/equity/history/orders"), pages("/equity/history/dividends")]);
+        history = { transactions: normaliseTransactions(tx), orders: normaliseOrders(or), dividends: normaliseDividends(dv) };
+      } catch (e) {
+        const st = (e as { status?: number }).status;
+        historyError = st === 403 ? "scope" : st === 429 ? "rate" : st === 413 ? "too_long" : "error";
+      }
+    }
+    return json({ positions, cash, total, currency, at: new Date().toISOString(), history, historyError });
   } catch (e) {
     return json({ code: "t212_unreachable", message: (e as Error).message.slice(0, 120) }, 504);
   }

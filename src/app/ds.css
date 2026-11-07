@@ -515,3 +515,6 @@ table.one-year input{width:100%;max-width:120px}
 /* Investimenti › Andamento reale: empty state with the chart's footprint, so the two panels stay aligned. */
 .perf-empty{min-height:190px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:18px 20px;border:1px dashed var(--line);border-radius:10px;background:var(--band);font-size:14px;color:var(--muted)}
 .perf-empty b{color:var(--navy);font-size:16px}
+/* An open fold (Costi e fisco) is taller than its neighbour: let the neighbour keep its own height instead of stretching
+   (a stretched chart panel would float its chart in the middle of empty space). */
+.grid:has(> details.fold[open]) > .panel:not(details){align-self:start}

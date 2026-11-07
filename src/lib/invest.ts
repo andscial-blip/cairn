@@ -3,7 +3,7 @@
  * daily snapshots, money-weighted return, next-contribution split, idle-cash check.
  * Pure functions (no DOM, no clock): the caller passes "today".
  */
-export interface Snapshot { d: string; v: number; c: number; cash?: number | null }
+export interface Snapshot { d: string; v: number; c: number; cash?: number | null; p?: Record<string, number> }
 
 const DAY = 86_400_000;
 const t = (d: string) => Date.parse(d + "T00:00:00Z");
@@ -12,14 +12,19 @@ const r2 = (x: number) => Math.round(x * 100) / 100;
 
 /** Adds today's snapshot (replacing one already taken today), keeps dates sorted and at most `max` entries. */
 export function addSnapshot(list: Snapshot[] | undefined, s: Snapshot, max = 1500): Snapshot[] {
-  const clean = { d: s.d, v: r2(s.v), c: r2(s.c), cash: s.cash == null ? null : r2(s.cash) };
+  const clean: Snapshot = { d: s.d, v: r2(s.v), c: r2(s.c), cash: s.cash == null ? null : r2(s.cash) };
+  if (s.p) clean.p = Object.fromEntries(Object.entries(s.p).map(([k, v]) => [k, r2(v)]));
   const out = (list ?? []).filter((x) => x && x.d !== s.d).concat(clean).sort((a, b) => a.d.localeCompare(b.d));
   return out.length > max ? out.slice(out.length - max) : out;
 }
 
 /** Snapshot from the holdings after a sync: value and cost basis of the ETFs, plus uninvested cash. */
-export function snapshotOf(holdings: { quote: number; prezzoEur: number; costo: number }[], cash: number | null | undefined, d: string): Snapshot {
-  return { d, v: holdings.reduce((s, h) => s + (+h.quote || 0) * (+h.prezzoEur || 0), 0), c: holdings.reduce((s, h) => s + (+h.costo || 0), 0), cash: cash ?? null };
+/** Per-ETF values are kept only around the turn of the year (20/12–10/01): they are the RW values at 31/12. */
+export function snapshotOf(holdings: { isin?: string; quote: number; prezzoEur: number; costo: number }[], cash: number | null | undefined, d: string): Snapshot {
+  const s: Snapshot = { d, v: holdings.reduce((a, h) => a + (+h.quote || 0) * (+h.prezzoEur || 0), 0), c: holdings.reduce((a, h) => a + (+h.costo || 0), 0), cash: cash ?? null };
+  const md = d.slice(5);
+  if (md >= "12-20" || md <= "01-10") s.p = Object.fromEntries(holdings.filter((h) => h.isin).map((h) => [h.isin!, (+h.quote || 0) * (+h.prezzoEur || 0)]));
+  return s;
 }
 
 /**

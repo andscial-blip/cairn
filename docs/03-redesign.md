@@ -79,3 +79,17 @@ Ripristino: scarica l'artifact, `gpg -d cairn-AAAA-MM-GG.sql.gz.gpg | gunzip > d
 - **jsPDF 4.2.1 + jspdf-autotable 5.0.9** (da 2.5.1 / 3.8.2): risolte le vulnerabilità note (dompurify). Proforma e riepilogo dichiarazione verificati identici nel contenuto.
 - **SheetJS (xlsx) 0.18.5**: resta. Le versioni corrette (0.20.x) non sono pubblicate su npm e il CDN ufficiale non è raggiungibile dal build. Le vulnerabilità note (prototype pollution, ReDoS) riguardano la *lettura* di file Excel: Cairn usa la libreria solo per *scrivere* l'export «Solo dati», mai per aprire file esterni, quindi non sono sfruttabili. L'Excel v3 usa JSZip.
 - **Backup**: con il segreto opzionale `CAIRN_SERVICE_KEY` (chiave segreta di Supabase) il workflow copia anche gli allegati, cifrati allo stesso modo.
+
+## Trading 212: sync, performance, history (Nov 2026)
+
+- `/api/t212` (server, read-only key in Vercel env): positions + account summary; with `{history:true}` also the history
+  (transactions, filled orders, dividends/interest), paginated via `nextPagePath`, max 20 pages per list. A key without
+  the "History" permission still syncs positions (`historyError: "scope"`).
+- Auto-sync once per app start (online, writable, no snapshot today yet). Quiet when only units/prices/costs change;
+  a new or sold ETF is left to the manual preview.
+- `investment_accounts.history`: daily snapshots `{d, v, c, cash}`; per-ETF values `p` only 20/12–10/01 (RW values at 31/12).
+- From the history (`src/lib/t212-history.ts`): monthly net deposits, totals, fees (never below the CSV import),
+  realised P/L per sale, interest/dividends (`income`), per-year tax figures (`tax_years`: RM/RT, IVAFE, RW per ETF),
+  `history_on`. Applied only if it covers the deposits already known (`historyCovers`), so a short history never erases data.
+- New panels are wrapped in `<!--feat-->…<!--/feat-->`: the parity test ignores them; their figures are covered by
+  `tests/unit/invest.test.ts` and `tests/unit/t212-history.test.ts`.

@@ -64,6 +64,32 @@ describe("POST /api/t212", () => {
     const r = await POST(req("Bearer good")); const b = await r.json();
     expect(r.status).toBe(200); expect(b.positions[0]).toMatchObject({ isin: "IE00B4L5Y983", quantity: 25 }); expect(b).toMatchObject({ cash: 42, total: 5500, currency: "EUR" });
   });
+  it("reads the history when asked, following nextPagePath; a missing permission does not block the positions", async () => {
+    env();
+    const seen: string[] = [];
+    const t212 = (deny: boolean) => (u: string) => {
+      seen.push(u.replace("https://live.trading212.com", ""));
+      if (u.endsWith("/equity/positions")) return Response.json([pos("IE00B4L5Y983", 25, 3250, 2969)]);
+      if (u.endsWith("/equity/account/summary")) return Response.json({ currency: "EUR", totalValue: 5500, cash: { availableToTrade: 40 } });
+      if (deny && u.includes("/history/")) return new Response("", { status: 403 });
+      if (u.includes("/history/transactions") && !u.includes("cursor")) return Response.json({ items: [{ type: "DEPOSIT", amount: 400, dateTime: "2026-10-01T08:00:00Z" }], nextPagePath: "/api/v0/equity/history/transactions?limit=50&cursor=abc" });
+      if (u.includes("/history/transactions")) return Response.json({ items: [{ type: "DEPOSIT", amount: 400, dateTime: "2026-11-01T08:00:00Z" }], nextPagePath: null });
+      if (u.includes("/history/orders")) return Response.json({ items: [], nextPagePath: null });
+      if (u.includes("/history/dividends")) return Response.json({ items: [], nextPagePath: null });
+      return new Response("?", { status: 404 });
+    };
+    const reqH = () => new Request("http://x/api/t212", { method: "POST", headers: { authorization: "Bearer good", "content-type": "application/json" }, body: JSON.stringify({ history: true }) });
+    vi.stubGlobal("fetch", fake("super_admin", t212(false)));
+    const b = await (await POST(reqH())).json();
+    expect(b.history.transactions.map((t: { d: string }) => t.d.slice(0, 7))).toEqual(["2026-10", "2026-11"]);
+    expect(seen).toContain("/api/v0/equity/history/transactions?limit=50&cursor=abc");
+    vi.stubGlobal("fetch", fake("super_admin", t212(true)));
+    const d = await (await POST(reqH())).json();
+    expect(d.positions).toHaveLength(1); expect(d.history).toBeUndefined(); expect(d.historyError).toBe("scope");
+    // without the flag, no history calls
+    seen.length = 0; vi.stubGlobal("fetch", fake("super_admin", t212(false)));
+    await POST(req("Bearer good")); expect(seen.some((u) => u.includes("/history/"))).toBe(false);
+  });
   it("maps Trading 212 errors to clear codes", async () => {
     env();
     vi.stubGlobal("fetch", fake("super_admin", () => new Response("", { status: 403 })));

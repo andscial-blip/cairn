@@ -39,7 +39,11 @@ export interface InvestmentAccount {
   mensile?: Record<string, number>;
   pac?: { importo?: number; giorno?: number; inizio?: string; anni?: number; revisioneMesi?: number; soglia?: number; ultimaRevisione?: string };
   /** Daily snapshots from the Trading 212 sync: d = date, v = value of the ETFs, c = cost basis, cash = uninvested cash. */
-  storico?: { d: string; v: number; c: number; cash?: number | null }[];
+  storico?: { d: string; v: number; c: number; cash?: number | null; p?: Record<string, number> }[];
+  /** From the Trading 212 history: interest and dividends, per-year tax figures, day of the last complete import. */
+  proventi?: { data: string; isin: string; importo: number; tipo: string }[];
+  fiscoAnni?: import("@/lib/t212-history").YearTax[];
+  movimentiAl?: string | null;
 }
 export interface YearParams { coef: number; inps: number; imp: number; margine: number; }
 export interface Config {
