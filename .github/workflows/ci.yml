@@ -27,5 +27,5 @@ jobs:
       - run: npm run test:db
       - run: npm run build
       - name: No secrets committed
-        run: |
-          ! git grep -nE "service_role|eyJhbGciOi|sk_live|SUPABASE_SERVICE_ROLE_KEY=.+[^y]$" -- ':!*.example' ':!docs/*' ':!*.md' ':!.github/*'
+        # Supabase keys are JWTs ("eyJhbGciOi…"); none may appear in tracked files.
+        run: "! git grep -nE 'eyJhbGciOi[A-Za-z0-9_-]{20,}|sb_secret_[A-Za-z0-9]{10,}' -- . ':!.github/*'"
