@@ -1,5 +1,5 @@
 "use client";
-import { Logo } from "@/components/logo";
+import { Mark } from "@/components/logo";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -42,7 +42,7 @@ export default function Benvenuto() {
   return (
     <main className="auth">
       <section className="auth-card">
-        <div className="auth-brand"><Logo /><h1>Benvenuto in Cairn</h1></div>
+        <div className="auth-brand"><Mark /><h1>Benvenuto in Cairn</h1></div>
         <div>
           {!ready && <p className="muted">Verifico il link…</p>}
           {ready && !email && <p className="muted">Il link non è valido o è scaduto. Chiedi un nuovo invito oppure usa "Password dimenticata" dalla pagina di accesso.</p>}

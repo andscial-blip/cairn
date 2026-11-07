@@ -4,7 +4,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { LocalDB } from "@/offline/db";
 import { checkOfflineAccess, type OfflineGrant } from "@/offline/session";
 import { isNetworkError } from "@/offline/net";
-import { Logo } from "@/components/logo";
+import { Mark } from "@/components/logo";
 import { BRAND } from "@/lib/brand";
 
 export default function LoginPage() {
@@ -55,7 +55,7 @@ export default function LoginPage() {
   return (
     <main className="auth">
       <section className="auth-card" aria-labelledby="t">
-        <div className="auth-brand"><Logo /><h1 id="t">Cairn</h1><p>{BRAND.tagline}</p></div>
+        <div className="auth-brand"><Mark /><h1 id="t" className="wordmark">CAIRN</h1><p>{BRAND.tagline}</p></div>
         <form onSubmit={submit}>
           <div className="fields">
             <div className="f s2"><label htmlFor="email">Email</label><input id="email" type="email" autoComplete="username" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>

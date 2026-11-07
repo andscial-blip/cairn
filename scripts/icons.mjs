@@ -6,20 +6,20 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const B = await import("../src/lib/brand.ts");
-const tile = (inner, r = 22, bg = B.BRAND.night) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="${r}" fill="${bg}"/>${inner}</svg>`;
+const tile = (inner, r = 22, bg = "#FFFFFF") => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="${r}" fill="${bg}"/>${inner}</svg>`;
 const small = B.markSmallSvg ?? B.markSvg;
 const OUT = "public/icons"; mkdirSync(OUT, { recursive: true });
 const svgFiles = {
-  "icon.svg": tile(small(), 22),                                   // favicon / browser tab
-  "mark-light.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${B.markSvg({ light: true })}</svg>`,
+  "icon.svg": tile(`<g transform="translate(50 50) scale(.84) translate(-50 -50)">${small()}</g>`, 22),                                   // favicon / browser tab
+  "mark.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${B.markSvg()}</svg>`,
 };
 for (const [f, s] of Object.entries(svgFiles)) writeFileSync(`${OUT}/${f}`, s);
 const png = [
   ["apple-touch-icon.png", 180, B.iconSvg(0)],
-  ["icon-192.png", 192, tile(B.markSvg(), 22)],
-  ["icon-512.png", 512, tile(B.markSvg(), 22)],
+  ["icon-192.png", 192, tile(`<g transform="translate(50 50) scale(.8) translate(-50 -50)">${B.markSvg()}</g>`, 22)],
+  ["icon-512.png", 512, tile(`<g transform="translate(50 50) scale(.8) translate(-50 -50)">${B.markSvg()}</g>`, 22)],
   ["maskable-512.png", 512, B.maskableIconSvg ? B.maskableIconSvg() : B.iconSvg(0)],
-  ["favicon-32.png", 32, tile(small(), 22)],
+  ["favicon-32.png", 32, tile(`<g transform="translate(50 50) scale(.9) translate(-50 -50)">${small()}</g>`, 22)],
 ];
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--headless=new"] });
 const p = await b.newPage({ deviceScaleFactor: 1 });

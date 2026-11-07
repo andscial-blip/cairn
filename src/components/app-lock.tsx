@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "@/lib/app-context";
 import { RELOCK_MS, unlockWithBiometrics, type LockConfig } from "@/lib/app-lock";
-import { Logo } from "./logo";
+import { Mark } from "./logo";
 import { BRAND } from "@/lib/brand";
 
 let unlockedThisSession = false;
@@ -48,7 +48,7 @@ export function LockScreen({ cfg, onUnlocked }: { cfg: LockConfig; onUnlocked: (
   return (
     <main className="lockscreen" aria-labelledby="lk">
       <section className="auth-card">
-        <div className="auth-brand"><Logo /><h1 id="lk">Cairn è bloccata</h1><p>{BRAND.tagline}</p></div>
+        <div className="auth-brand"><Mark /><h1 id="lk">Cairn è bloccata</h1><p>{BRAND.tagline}</p></div>
         <button className="btn primary" type="button" onClick={go} disabled={busy}>{busy ? "Verifica…" : "Sblocca con Face ID, Touch ID o impronta"}</button>
         <button className="btn ghost" type="button" onClick={signOut}>Usa email e password</button>
         {msg && <p className="muted" role="status" style={{ marginTop: 12 }}>{msg}</p>}

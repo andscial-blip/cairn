@@ -41,7 +41,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="app">
       <a className="skip" href="#main">Vai al contenuto</a>
       <aside className="side" aria-label="Sezioni">
-        <Link href="/" className="side-brand" aria-label="Cairn, panoramica"><Logo /><b>Cairn</b></Link>
+        <Link href="/" className="side-brand" aria-label="Cairn, panoramica"><Logo /><b className="wordmark">CAIRN</b></Link>
         <nav className="side-nav">
           {SECTIONS.map((s) => (
             <Link key={s.id} href={s.subs[0]!.href} className="side-link" aria-current={activeId === s.id ? "page" : undefined} title={s.label}>

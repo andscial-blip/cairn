@@ -1,10 +1,13 @@
-import { BRAND, markSvg } from "@/lib/brand";
-/** Brand tile used in the side menu and on the auth pages. */
+import { markSvg } from "@/lib/brand";
+/** Mark for night-blue surfaces (side menu). */
 export function Logo({ className = "logo" }: { className?: string }) {
-  return <svg className={className} viewBox="0 0 100 100" role="img" aria-label="Cairn"
-    dangerouslySetInnerHTML={{ __html: `<rect width="100" height="100" rx="22" fill="${BRAND.night}"/>${markSvg()}` }} />;
+  return <svg className={className} viewBox="0 0 100 100" role="img" aria-label="Cairn" dangerouslySetInnerHTML={{ __html: markSvg({ dark: true }) }} />;
 }
-/** Mark alone for light backgrounds (splash). */
-export function Mark({ className }: { className?: string }) {
-  return <svg className={className} viewBox="0 0 100 100" aria-hidden="true" dangerouslySetInnerHTML={{ __html: markSvg({ light: true }) }} />;
+/** Mark for light surfaces (splash, sign-in). */
+export function Mark({ className = "mark" }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 100 100" aria-hidden="true" dangerouslySetInnerHTML={{ __html: markSvg() }} />;
+}
+/** Wordmark: CAIRN in spaced capitals (IBM Plex Sans 600). */
+export function Wordmark({ className = "wordmark" }: { className?: string }) {
+  return <span className={className}>CAIRN</span>;
 }
