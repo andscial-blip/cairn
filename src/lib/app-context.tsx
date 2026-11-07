@@ -12,6 +12,7 @@ import { SyncEngine, type SyncStatus } from "@/offline/engine";
 import { SupabaseTransport } from "@/offline/supabase-transport";
 import { checkOfflineAccess, issueGrant, DEFAULT_OFFLINE_HOURS, type OfflineGrant } from "@/offline/session";
 import { ENTITIES, type LocalRow } from "@/offline/types";
+import { isNetworkError, withTimeout } from "@/offline/net";
 import { saveRecord, deleteRecord, type MutationContext } from "@/offline/mutations";
 import { rowsToSnapshot } from "@/data/mapping";
 import { Engine, mergeCfg } from "@/domain/engine";
@@ -68,14 +69,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       let user: { id: string; email?: string } | null = null;
       let networkProblem = !online;
       if (online) {
-        const { data, error } = await sb.auth.getUser();
-        if (error && /fetch|network/i.test(error.message)) networkProblem = true;
-        user = data.user ? { id: data.user.id, email: data.user.email ?? "" } : null;
+        try {
+          const { data, error } = await withTimeout(sb.auth.getUser(), 8000);
+          if (error && isNetworkError(error)) networkProblem = true;
+          user = data.user ? { id: data.user.id, email: data.user.email ?? "" } : null;
+        } catch (e) { if (isNetworkError(e)) networkProblem = true; else throw e; }
       }
       if (user) {
         // Online: (re)load membership; a suspended account sees no rows → signed out.
-        const { data: m, error: me } = await sb.from("ledger_members").select("ledger_id, role").eq("user_id", user.id).limit(1);
-        if (me && !/fetch|network/i.test(me.message)) { if (!cancelled) setAuth({ kind: "signed-out", reason: "Errore nel caricare il fascicolo." }); return; }
+        type MemberRow = { ledger_id: string; role: string };
+        const res = await withTimeout(Promise.resolve(sb.from("ledger_members").select("ledger_id, role").eq("user_id", user.id).limit(1)), 8000)
+          .then((r) => ({ m: (r.data ?? null) as MemberRow[] | null, me: r.error as { message: string } | null }))
+          .catch((e: unknown) => ({ m: null as MemberRow[] | null, me: { message: e instanceof Error ? e.message : "network" } }));
+        const { m, me } = res;
+        if (me && !isNetworkError(me)) { if (!cancelled) setAuth({ kind: "signed-out", reason: "Errore nel caricare il fascicolo." }); return; }
         const mm = m?.[0] ? { ledgerId: m[0].ledger_id as string, role: m[0].role as string } : membership;
         if (!mm) { await sb.auth.signOut(); if (!cancelled) setAuth({ kind: "signed-out", reason: "Account sospeso o senza fascicolo assegnato." }); return; }
         const g = issueGrant(user.id, user.email ?? "", deviceId(), Date.now(), OFFLINE_HOURS);

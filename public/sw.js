@@ -3,7 +3,7 @@
 //   on each online visit (the page sends "precache"), so offline navigation never hits an unsaved page.
 // - Navigations: network first, saved page as fallback. Build files (hashed names): cache first.
 // - Data is never cached here: offline data lives in IndexedDB; Supabase calls always go to the network.
-const CACHE = "cairn-shell-v3";
+const CACHE = "cairn-shell-v4";
 const ROUTES = ["/", "/entrate", "/spese", "/risparmi", "/investimenti", "/analisi", "/fatture", "/da-emettere", "/scadenze", "/tasse",
   "/contratti", "/impostazioni", "/importa", "/sincronizzazione", "/login", "/benvenuto"];
 const EXTRA = ["/manifest.webmanifest", "/icons/icon.svg", "/icons/icon-192.png",
@@ -37,10 +37,10 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET" || url.origin !== self.location.origin) return;
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then((res) => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(url.pathname, copy)); } return res; })
-      .catch(() => caches.match(url.pathname).then((r) => r || caches.match("/"))));
+      .catch(() => caches.match(url.pathname, { ignoreSearch: true, ignoreVary: true }).then((r) => r || caches.match("/", { ignoreVary: true }))));
     return;
   }
   if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/") || url.pathname.startsWith("/vendor/")) {
-    e.respondWith(caches.match(req, { ignoreSearch: true }).then((r) => r || fetch(req).then((res) => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); } return res; })));
+    e.respondWith(caches.match(req, { ignoreSearch: true, ignoreVary: true }).then((r) => r || fetch(req).then((res) => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); } return res; })));
   }
 });
