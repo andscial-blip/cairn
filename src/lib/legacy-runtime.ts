@@ -11,6 +11,9 @@ import { mergeCfg, type Engine } from "@/domain/engine";
 import type { Entity, LocalRow } from "@/offline/types";
 import { buildIcs } from "@/lib/ics";
 import { feedStatus, publishIfChanged } from "@/lib/calendar-feed";
+import { listInbox, closeInbox, noteInbox, b64ToBytes, xmlFromBytes } from "@/lib/einvoice-inbox";
+import { parseCourtesyPdf, parseFatturaXml, type EInvoiceData } from "@/lib/einvoice-pdf";
+import { loadPdfLib, pdfToLines } from "@/lib/pdf-text";
 import { auditToStorico, HISTORY_TABLES, type AuditEntry } from "@/legacy/history";
 
 const COLLS = ["invoices", "clients", "f24", "contratti", "missioni", "promemoria", "redditi", "spese", "risparmi", "investimenti"] as const;
@@ -56,6 +59,34 @@ function syncFromEngine() {
 
 /** The original render(): draw the current section into #app and bind its controls. */
 let autoT212Tried = false;
+let inboxTried = false;
+/** Inbox files not matched automatically, kept in memory with their bytes for the manual "Abbina" sheet. */
+let inboxPending: { id: string; filename: string; mime: string; reason: string; candidate?: string; data: EInvoiceData | null; bytes: Uint8Array; received: string }[] = [];
+async function readEInvoice(bytes: Uint8Array, mime: string): Promise<EInvoiceData | null> {
+  try {
+    if (mime === "application/pdf") return parseCourtesyPdf(await pdfToLines(await loadPdfLib(), bytes));
+    const xml = mime === "application/xml" ? new TextDecoder("utf-8").decode(bytes) : xmlFromBytes(bytes);
+    return xml ? parseFatturaXml(xml) : null;
+  } catch { return null; }
+}
+/** Reads the Gmail inbox (once per app start): each e-invoice file goes to its invoice; the others wait in "Da fare". */
+async function processInbox() {
+  const d = deps; if (!d?.ledgerId || !d.writable || !navigator.onLine || !app) return;
+  let rows; try { rows = await listInbox(d.sb, d.ledgerId); } catch { return; }
+  const attached: string[] = []; inboxPending = [];
+  for (const r of rows) {
+    if (!r.content_b64) continue;
+    const bytes = b64ToBytes(r.content_b64), received = r.received_at ?? r.created_at;
+    const data = await readEInvoice(bytes, r.mime);
+    if (!data) { await closeInbox(d.sb, r.id, "ignored", null, "non è una fattura elettronica").catch(() => undefined); continue; }
+    const res = await app.inboxAttach({ bytes, filename: r.filename, mime: r.mime, data, received, invoiceId: null });
+    if (res.ok) { await closeInbox(d.sb, r.id, "attached", res.id, res.skipped ? "la fattura aveva già un file" : "").catch(() => undefined); if (!res.skipped) attached.push(res.num); }
+    else { if (r.note !== res.reason) await noteInbox(d.sb, r.id, res.reason).catch(() => undefined); inboxPending.push({ id: r.id, filename: r.filename, mime: r.mime, reason: res.reason, candidate: res.candidate, data, bytes, received }); }
+  }
+  S.inboxPending = inboxPending.map(({ bytes: _b, ...p }) => p);
+  if (attached.length) toast(attached.length === 1 ? `Fattura elettronica ${attached[0]} allegata da Gmail` : `${attached.length} fatture elettroniche allegate da Gmail`);
+  renderLegacy();
+}
 export function renderLegacy() {
   const el = typeof document !== "undefined" ? document.getElementById("app") : null;
   if (!el || !deps?.engine || !app) return;
@@ -203,6 +234,20 @@ function ensureApp() {
       const r = await fetch("/api/t212", { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify(o ?? {}), cache: "no-store" });
       return { status: r.status, body: await r.json().catch(() => ({})) };
     },
+    inbox: {
+      attach: async (rowId: string, invoiceId: string) => {
+        const p = inboxPending.find((x) => x.id === rowId); const d = deps; if (!p || !d || !app) return false;
+        const res = await app.inboxAttach({ bytes: p.bytes, filename: p.filename, mime: p.mime, data: p.data, received: p.received, invoiceId });
+        if (!res.ok) return false;
+        await closeInbox(d.sb, rowId, "attached", res.id, res.skipped ? "la fattura aveva già un file" : "abbinata a mano").catch(() => undefined);
+        inboxPending = inboxPending.filter((x) => x.id !== rowId); S.inboxPending = inboxPending.map(({ bytes: _b, ...x }) => x); renderLegacy(); return true;
+      },
+      ignore: async (rowId: string) => {
+        const d = deps; if (!d) return false;
+        try { await closeInbox(d.sb, rowId, "ignored", null, "ignorata"); } catch { return false; }
+        inboxPending = inboxPending.filter((x) => x.id !== rowId); S.inboxPending = inboxPending.map(({ bytes: _b, ...x }) => x); renderLegacy(); return true;
+      },
+    },
     attachmentBlob: async (url: string) => {
       const d = deps; if (!d || !url.startsWith("cairn-att:")) return null;
       const { data, error } = await d.sb.storage.from("attachments").download(url.slice("cairn-att:".length));
@@ -230,6 +275,10 @@ export function updateRuntime(d: RuntimeDeps) {
   if (!autoT212Tried && d.engine && d.writable && d.ledgerId && typeof navigator !== "undefined" && navigator.onLine) {
     autoT212Tried = true;
     setTimeout(() => { void Promise.resolve(app?.autoT212()).then((r) => { if (r === "review") toast("Trading 212: c'è un ETF nuovo o venduto. Controlla in Investimenti → Sincronizza."); }).catch(() => undefined); }, 2500);
+  }
+  // E-invoice files from Gmail: once per app start, after the data are loaded.
+  if (!inboxTried && d.engine && d.writable && d.ledgerId && typeof navigator !== "undefined" && navigator.onLine) {
+    inboxTried = true; setTimeout(() => { void processInbox().catch(() => undefined); }, 4000);
   }
 }
 export const legacyApp = () => ensureApp();

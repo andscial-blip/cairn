@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { LegacyView } from "@/components/legacy-view";
 import { CalendarPanel } from "@/components/calendar-panel";
+import { GmailInboxPanel } from "@/components/gmail-inbox-panel";
 import { TemplatePanel } from "@/components/template-panel";
 import { SecurityPanel } from "@/components/security-panel";
 export default function Page() {
@@ -9,6 +10,7 @@ export default function Page() {
     <LegacyView view="set" />
     <SecurityPanel />
     <CalendarPanel />
+    <GmailInboxPanel />
     <TemplatePanel />
     <section className="panel" style={{ marginTop: 18 }}>
       <div className="panel-h"><h2>Dati e sincronizzazione</h2></div>

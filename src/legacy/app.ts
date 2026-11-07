@@ -14,7 +14,8 @@ import { addSnapshot, snapshotOf, dietz, xirr, pacFlows, splitContribution, idle
 import { accountFromHistory, historyCovers, pacCheck, taxByYear, yearEndValues } from "@/lib/t212-history";
 import { parseUniCredit, parseRevolutPdf, parseRevolutCsv, detect, statementPeriod, categorize, merchantKey, aggregate, planMonths, CATEGORIES, EXCLUDED } from "@/lib/bank-import";
 import { loadPdfLib, pdfToRows } from "@/lib/pdf-text";
-export type LegacyApp = Record<"vHome" | "vInv" | "vPrev" | "vContr" | "vMis" | "vF24" | "vTasse" | "vFisco" | "compliancePanel" | "redditiPanel" | "vEntrate" | "vSpese" | "vInvest" | "vRisp" | "vAnal" | "vSet" | "bindView" | "openForm" | "toast" | "autoT212" | "closeSheet" | "escClose" | "openDetail" | "calItems" | "_fisco", (...a: any[]) => any>;
+import { matchInvoice } from "@/lib/einvoice-pdf";
+export type LegacyApp = Record<"vHome" | "vInv" | "vPrev" | "vContr" | "vMis" | "vF24" | "vTasse" | "vFisco" | "compliancePanel" | "redditiPanel" | "vEntrate" | "vSpese" | "vInvest" | "vRisp" | "vAnal" | "vSet" | "bindView" | "openForm" | "toast" | "autoT212" | "inboxAttach" | "closeSheet" | "escClose" | "openDetail" | "calItems" | "_fisco", (...a: any[]) => any>;
 export interface LegacyEnv {
   S: any; engine: () => Engine; render: () => void; setView: (v: string) => void;
   downloads: { save: (o: { filename: string; data: unknown }) => Promise<unknown> } | null;
@@ -23,6 +24,8 @@ export interface LegacyEnv {
   v3Template: () => Promise<string | null>;
   /** Trading 212 read-only sync (server route); absent in tests. */
   t212?: (o?: { history?: boolean }) => Promise<{ status: number; body: any }>;
+  /** E-invoice files from the Gmail inbox that could not be matched automatically (see legacy-runtime processInbox). */
+  inbox?: { attach: (rowId: string, invoiceId: string) => Promise<boolean>; ignore: (rowId: string) => Promise<boolean> };
   /** A private attachment (cairn-att:<path>) as a Blob, for "Scarica". */
   attachmentBlob?: (url: string) => Promise<Blob | null>;
 }
@@ -235,7 +238,7 @@ function vHome(FX){
       T({lvl:"do",ic:"%",title:`Incassi a fine dicembre: chiedi il bonifico entro il 31/12`,sub:`${risk.map(x=>cn(x.cliente)+" "+x.label).join(" · ")}: se slittano a gennaio passano al ${cy+1} con imposta al ${pct(P(cy+1).imp,0)} (circa ${eur0(extra)} in più).`,date:risk[0].incasso,big:eur0(amt),act:`<button class="btn small" data-go-v="prev" type="button">Vedi</button>`})}}
   {const lim=addDays(todayISO(),-60);const miss=S.invoices.filter(v=>emessa(v)&&!v.pdf&&((v.emessaSdi||v.data||"")>=lim));
    if(miss.length)T({lvl:"do",ic:"📎",title:miss.length>1?`Carica ${miss.length} fatture elettroniche`:`Carica la fattura elettronica ${esc(miss[0].num)}`,sub:miss.map(v=>esc(v.num)+" "+esc(cn(v.cliente))).join(" · ")+". Il PDF o l'XML ricevuto dopo l'emissione allo SdI.",act:`<button class="btn small" data-open="${miss[0].id}" type="button">Carica</button>`})}
-  invTodos(T);rispTodos(T);speseTodos(T);
+  invTodos(T);rispTodos(T);speseTodos(T);inboxTodos(T);
   const rank={warn:0,do:1,ok:2};
   todo.sort((a,b)=>(rank[a.lvl]-rank[b.lvl])||((a.date||"9999")<(b.date||"9999")?-1:1));
   // year-aware KPI values
@@ -755,6 +758,29 @@ async function siSave(){if(SI.busy)return;const {plan}=siPlan();
     if(learned.length){const keep=(cfg().speseRegole||[]).filter(r=>!SI.learn[r.k]);await saveCfg(db,{speseRegole:[...keep,...learned]})}},
     `${go.filter(p=>p.state!=="same").length||go.length} ${go.length===1?"mese salvato":"mesi salvati"}`);
   if(ok)closeSheet()}
+/* ---- E-invoice files from Gmail (inbox read by the runtime): match, attach, mark as sent to SdI ---- */
+function inboxRefs(){return (S.invoices||[]).map(v=>{const t=tot(v),c=clientById(v.cliente)||{};return {id:v.id,n:+v.n,anno:+v.anno,data:v.data,cliente:v.cliente,documento:t.documento,imponibile:t.imponibile,clienteIds:[c.idFiscale].filter(Boolean),hasFile:!!v.pdf}})}
+/** Attaches a file from the inbox to its invoice (found from the file's data, or the one chosen by hand).
+ *  A PDF replaces an XML/P7M already attached (the PDF is what you open); otherwise an existing file is kept. */
+async function inboxAttach({bytes,filename,mime,data,received,invoiceId}){
+  let id=invoiceId;if(!id){const m=matchInvoice(data,inboxRefs());if(!m.ok)return {ok:false,reason:m.reason};id=m.id}
+  const v=(S.invoices||[]).find(x=>x.id===id);if(!v)return {ok:false,reason:"fattura non trovata"};
+  const isPdf=mime==="application/pdf";
+  if(v.pdf&&!(isPdf&&/\.(xml|p7m)$/i.test(v.pdf.nome||"")))return {ok:true,id:v.id,num:v.num,skipped:true};
+  if(!assetsCap)return {ok:false,reason:"caricamento file non disponibile"};
+  let r;try{r=await assetsCap.upload(new File([bytes],filename,{type:mime}))}catch(e){return {ok:false,reason:"caricamento non riuscito"}}
+  const patch={pdf:{id:r.id,url:r.url,nome:filename}};if(!emessa(v))patch.emessaSdi=String(received||todayISO()).slice(0,10);
+  return await write(db=>db.doc("invoices/"+v.id).update(patch),null)?{ok:true,id:v.id,num:v.num}:{ok:false,reason:"salvataggio non riuscito"}}
+function inboxTodos(T){const P=S.inboxPending||[];if(!P.length||!env.inbox)return;
+  T({lvl:"warn",ic:"📎",title:P.length>1?`${P.length} fatture elettroniche da Gmail da abbinare`:`Fattura elettronica da Gmail da abbinare`,sub:P.slice(0,3).map(p=>`${esc(p.filename)}: ${esc(p.reason)}`).join(" · "),act:`<button class="btn small" data-inbox-open="1" type="button">Abbina</button>`})}
+function openInboxSheet(){const P=S.inboxPending||[];if(!P.length){closeSheet();return}
+  const inv=[...(S.invoices||[])].sort((a,b)=>(b.data||"").localeCompare(a.data||""));const cn=id=>(clientById(id)||{nome:id}).nome;
+  const opts=p=>`<option value="">Scegli la fattura…</option>`+inv.map(v=>`<option value="${esc(v.id)}" ${p.candidate===v.id?"selected":""}>${esc(v.num)} · ${esc(cn(v.cliente))} · ${eur(tot(v).documento)}${v.pdf?" · ha già un file":""}</option>`).join("");
+  sheet("Fatture elettroniche da Gmail",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Questi file sono arrivati da Gmail ma non corrispondono a una fattura di Cairn. Scegli la fattura a cui allegarli, oppure ignorali.</p></div>
+   <div class="tw"><table><thead><tr><th>File</th><th>Motivo</th><th>Fattura</th><th></th></tr></thead><tbody>${P.map(p=>`<tr><td>${esc(p.filename)}<div class="muted" style="font-size:12px">${p.data?`n. ${esc(p.data.numero)} del ${dmy(p.data.data)}${p.data.totale!=null?" · "+eur(p.data.totale):""}`:""}</div></td><td class="muted" style="font-size:13px">${esc(p.reason)}</td><td><select class="in" data-inbox-sel="${esc(p.id)}" aria-label="Fattura per ${esc(p.filename)}">${opts(p)}</select></td><td style="white-space:nowrap"><button class="btn small primary" data-inbox-ok="${esc(p.id)}" type="button">Allega</button> <button class="btn small ghost" data-inbox-no="${esc(p.id)}" type="button">Ignora</button></td></tr>`).join("")}</tbody></table></div></section>`);
+  document.querySelectorAll("[data-inbox-ok]").forEach(b=>b.onclick=async()=>{const id=b.dataset.inboxOk,sel=document.querySelector(`[data-inbox-sel="${id}"]`);if(!sel||!sel.value){toast("Scegli la fattura");return}
+    b.disabled=true;if(await env.inbox.attach(id,sel.value)){toast("File allegato");openInboxSheet()}else{b.disabled=false;toast("Non riuscito: riprova")}});
+  document.querySelectorAll("[data-inbox-no]").forEach(b=>b.onclick=async()=>{b.disabled=true;if(await env.inbox.ignore(b.dataset.inboxNo))openInboxSheet()})}
 function openInvRev(){const a=(S.investimenti||[]).find(isMainInv);const c=invCalc(a);if(!c)return;
   sheet("Rivedi suddivisione PAC",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Imposta le percentuali obiettivo (totale 100%), come nella pie di Trading 212. Salvando, la revisione risulta fatta oggi e la prossima scade tra i mesi indicati.</p><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Peso attuale</th><th class="r">Obiettivo %</th></tr></thead><tbody>${c.T.map(t=>`<tr><td><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.classe||"")}</span></td><td class="r num">${pct(t.peso)}</td><td class="r"><input class="in num" style="max-width:90px" data-tg="${esc(t.isin)}" inputmode="decimal" value="${t.target}"></td></tr>`).join("")}</tbody><tfoot><tr><td><b>Totale</b></td><td></td><td class="r num"><b id="tgSum"></b></td></tr></tfoot></table></div>
    <div class="fields" style="margin-top:14px"><div class="f s2"><label for="ip-imp">PAC € / mese</label><input id="ip-imp" class="in num" inputmode="decimal" value="${c.pac}"></div><div class="f s2"><label for="ip-g">Giorno del mese</label><input id="ip-g" class="in num" inputmode="numeric" value="${c.p.giorno||1}"></div><div class="f s2"><label for="ip-m">Revisione ogni (mesi)</label><input id="ip-m" class="in num" inputmode="numeric" value="${c.p.revisioneMesi||6}"></div><div class="f s2"><label for="ip-s">Allerta scostamento (punti)</label><input id="ip-s" class="in num" inputmode="decimal" value="${c.soglia}"></div></div></div></section>`,`<button class="btn primary" id="ipSave" type="button">Salva revisione</button>`);
@@ -1327,6 +1353,7 @@ function bindView(FX){
   app.querySelectorAll("[data-pm-done]").forEach(b=>b.onclick=()=>{const r=S.promemoria.find(x=>x.id===b.dataset.pmDone);if(r)write(db=>db.doc("promemoria/"+r.id).update({fatto:!r.fatto}),r.fatto?"Riaperto":"Segnato come fatto")});
   app.querySelectorAll("[data-pm]").forEach(b=>b.onclick=()=>openReminder(b.dataset.pm==="new"?null:b.dataset.pm));
   app.querySelectorAll("[data-go-v]").forEach(b=>b.onclick=()=>setView(b.dataset.goV));
+  app.querySelectorAll("[data-inbox-open]").forEach(b=>b.onclick=openInboxSheet);
   app.querySelectorAll("[data-ctr]").forEach(b=>b.onclick=()=>openContract(b.dataset.ctr==="new"?null:b.dataset.ctr));
   app.querySelectorAll("[data-mis]").forEach(b=>b.onclick=()=>openMission(b.dataset.mis==="new"?null:b.dataset.mis));
   app.querySelectorAll("[data-quota]").forEach(b=>b.onclick=()=>openQuota(null));
@@ -1840,5 +1867,5 @@ function openF24(id){
     if(!doc.data||!doc.importo){toast("Inserisci data e importo");return}
     if(await write(db=>db.doc("f24/"+(id||doc.data+"-"+uid())).set(doc),"Versamento salvato"))closeSheet()};
 }
-return { vHome, vInv, vPrev, vContr, vMis, vF24, vTasse, vFisco, compliancePanel, redditiPanel, vEntrate, vSpese, vInvest, vRisp, vAnal, vSet, bindView, openForm, toast, autoT212, closeSheet, escClose, openDetail, calItems, _fisco: () => curE().fisco() };
+return { vHome, vInv, vPrev, vContr, vMis, vF24, vTasse, vFisco, compliancePanel, redditiPanel, vEntrate, vSpese, vInvest, vRisp, vAnal, vSet, bindView, openForm, toast, autoT212, inboxAttach, closeSheet, escClose, openDetail, calItems, _fisco: () => curE().fisco() };
 }

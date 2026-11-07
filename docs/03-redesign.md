@@ -105,3 +105,14 @@ Ripristino: scarica l'artifact, `gpg -d cairn-AAAA-MM-GG.sql.gz.gpg | gunzip > d
   only when all their banks are imported together.
 - Checked privately against the real statements: the in-app path reproduces the saved April–September months exactly.
 - To-do from the 3rd of each month when last month's statements are missing.
+
+## E-invoice files from Gmail (Nov 2026)
+
+- The accountant emails the courtesy PDF (or XML/P7M). A Google Apps Script in the owner's Gmail (generated in
+  Impostazioni › Collegamenti, with a private token shown once) posts each attachment every hour to the public RPC
+  `einvoice_inbox_put` (token checked by SHA-256, PDF/XML/P7M only, 5 MB, dedupe by hash, 60/hour).
+- On app start the runtime reads `einvoice_inbox` (new items), parses the file (`src/lib/einvoice-pdf.ts`: Agenzia layout
+  PDF or FatturaPA XML), matches number + year, customer tax id and total, attaches it through the normal upload path and
+  marks the invoice as sent to SdI (received date) if it was not. File content is then removed from the inbox.
+  Unmatched files wait in "Da fare" → Abbina (choose the invoice or ignore). Checked on 26 real invoices: all matched.
+- Downloads: `saveFile` opens the share sheet on iPhone / installed app (a download link does nothing there).

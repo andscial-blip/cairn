@@ -70,7 +70,7 @@ const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,
 /** Settings: five tabs instead of one long page. A #hash naming a panel (e.g. #calendario) opens its tab. */
 const SET_GROUPS: [string, RegExp][] = [
   ["Clienti e parametri", /^Clienti|Parametri/], ["Profilo", /intestazione|proforma/i], ["Sicurezza", /Sicurezza/],
-  ["Calendario", /Calendario/], ["Dati e backup", /Backup|Modello Excel|Dati e sincronizzazione|Cronologia/],
+  ["Collegamenti", /Calendario|Gmail/], ["Dati e backup", /Backup|Modello Excel|Dati e sincronizzazione|Cronologia/],
 ];
 let setTab = 0;
 export function settingsIndex(root: HTMLElement) {
