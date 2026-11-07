@@ -19,7 +19,7 @@ export default function LoginPage() {
 
   async function reset() {
     if (!email) { setMsg("Scrivi prima la tua email."); return; }
-    await supabaseBrowser().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset` });
+    await supabaseBrowser().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/benvenuto` });
     setMsg("Se l'indirizzo è registrato, riceverai un link per reimpostare la password.");
   }
 
