@@ -67,6 +67,8 @@ export function renderLegacy() {
     h += (COMPOSE[S.view] ?? COMPOSE.home!)(FX);
     el.innerHTML = h;
     app.bindView(FX);
+    // Accessibility: horizontally scrollable tables must be reachable and scrollable with the keyboard.
+    el.querySelectorAll<HTMLElement>(".tw").forEach((t) => { if (t.scrollWidth > t.clientWidth) { t.tabIndex = 0; t.setAttribute("role", "region"); t.setAttribute("aria-label", t.closest(".panel")?.querySelector("h2")?.textContent?.trim() || "Tabella"); } });
     // In-page tabs (Analisi, Tasse e F24): remember the choice in S and redraw.
     if (!el.dataset.tabs) {
       el.dataset.tabs = "1";

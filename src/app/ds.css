@@ -157,7 +157,7 @@ em,i{font-style:normal}
 /* Status chips */
 .cdp,.pill{font-family:var(--f-ui);font-weight:600;font-size:12.5px;border-radius:999px;padding:2px 10px;letter-spacing:.01em}
 .cdp.mid{background:var(--band);color:var(--slate-2)}
-.pill.est,.pill.open{background:var(--lilac-bg);color:var(--lilac)}
+.pill.est,.pill.open{background:var(--lilac-bg);color:var(--lilac-ink)}
 
 /* To-do list */
 .tlist li{border-left:0;padding:12px 18px;gap:10px 14px;position:relative}
@@ -272,3 +272,23 @@ body:has(.app [data-ready="1"]) #splash,body:has(.auth) #splash,body:has(.locksc
 /* Chart text: readable sizes */
 .chart svg text{font-size:11px}
 .kpi .vz rect{rx:1.2px}
+
+/* Da emettere on the phone: each row becomes a card — date | client + period (+ trip) | total + action */
+@media (max-width:760px){
+  table.tl thead{display:none}
+  table.tl,table.tl tbody{display:block}
+  table.tl tr.mhead{display:block}
+  table.tl tr.mhead td{display:block;padding:8px 14px;background:var(--surface-2);font-family:var(--f-ui);font-weight:600;color:var(--muted);text-transform:capitalize}
+  table.tl tr:not(.mhead){display:grid;grid-template-columns:64px minmax(0,1fr) auto;column-gap:12px;row-gap:2px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line-2)}
+  table.tl tr:not(.mhead) td{padding:0;border:0;background:none!important}
+  table.tl tr:not(.mhead) td:nth-child(1){grid-column:1;grid-row:1/4;font-size:13px;color:var(--muted)}
+  table.tl tr:not(.mhead) td:nth-child(2){grid-column:2;grid-row:1}
+  table.tl tr:not(.mhead) td:nth-child(3){grid-column:2;grid-row:2;font-size:13px;color:var(--muted)}
+  table.tl tr:not(.mhead) td:nth-child(4){grid-column:2;grid-row:3;text-align:left;font-size:12.5px;color:var(--muted)}
+  table.tl tr:not(.mhead) td:nth-child(5){grid-column:3;grid-row:1;text-align:right}
+  table.tl tr:not(.mhead) td:nth-child(6){grid-column:3;grid-row:2/4;text-align:right}
+}
+@media (max-width:620px){table.stack td:nth-child(3){display:-webkit-box;-webkit-line-clamp:4;line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}}
+/* Completed rows: quieter colour instead of transparency (transparency broke the AA contrast) */
+tr.u-ok td{opacity:1!important;color:var(--muted)}
+tr.u-ok td b,tr.u-ok td .neg{color:var(--muted)}

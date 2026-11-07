@@ -23,7 +23,7 @@ const EXTRA: Record<string, { label: string; hint: string; parent: string }> = {
 };
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { auth, year, setYear, engine, signOut } = useApp();
+  const { auth, year, setYear, engine, signOut, status } = useApp();
   const path = usePathname();
   const router = useRouter();
   const lock = useAppLock();
@@ -75,7 +75,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           )}
         </header>
         {auth.offline && <div className="offline-note" role="status">Offline: le modifiche restano su questo dispositivo e partono appena torna la rete. Accesso offline valido fino al {new Date(auth.grant!.expiresAt).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}.</div>}
-        <main className="main" id="main" data-ready={engine ? "1" : undefined}>{children}</main>
+        <main className="main" id="main" data-ready={engine && (status?.lastSyncAt || status?.lastError || auth.offline || (status && !status.online)) ? "1" : undefined}>{children}</main>
       </div>
       <div id="sheetRoot" />
       <div id="toastRoot" />
