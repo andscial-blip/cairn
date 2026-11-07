@@ -3,6 +3,7 @@
  * App frame v2. Desktop: side menu + page header with sub-tabs. Tablet: compact icon rail.
  * Phone: sticky top bar (title, year, sync) + bottom bar. One component, adapted by CSS (no duplicated markup logic).
  */
+import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -22,11 +23,15 @@ const EXTRA: Record<string, { label: string; hint: string; parent: string }> = {
   "/sincronizzazione": { label: "Sincronizzazione", hint: "Stato, conflitti e operazioni in attesa", parent: "set" },
 };
 
+/** The year selector appears only where it changes what the page shows. */
+const YEAR_PATHS = new Set(["/", "/fatture", "/tasse", "/analisi"]);
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const { auth, year, setYear, engine, signOut, status } = useApp();
   const path = usePathname();
   const router = useRouter();
   const lock = useAppLock();
+  const cmd = useCommandPalette();
   useEffect(() => { if (auth.kind === "signed-out") router.replace(`/login${auth.reason ? `?m=${encodeURIComponent(auth.reason)}` : ""}`); }, [auth, router]);
   if (auth.kind !== "ready" || !lock.ready) return null; // the splash screen stays visible until the session is resolved
   if (lock.locked && lock.cfg) return <LockScreen cfg={lock.cfg} onUnlocked={lock.unlocked} />;
@@ -40,6 +45,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app">
       <a className="skip" href="#main">Vai al contenuto</a>
+      <CommandPalette open={cmd.open} onClose={() => cmd.setOpen(false)} />
       <aside className="side" aria-label="Sezioni">
         <Link href="/" className="side-brand" aria-label="Cairn, panoramica"><Logo /><b className="wordmark">CAIRN</b></Link>
         <nav className="side-nav">
@@ -51,7 +57,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="side-foot">
           <SyncBadge />
-          <button className="side-link" type="button" onClick={signOut} title={`Esci (${auth.email})`}><Icon name="down" size={18} /><span>Esci</span></button>
+          <button className="side-link" type="button" onClick={signOut} title={`Esci (${auth.email})`}><Icon name="logout" size={18} /><span>Esci</span></button>
         </div>
       </aside>
       <div className="col">
@@ -60,11 +66,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <div className="ptitle"><h1>{title}</h1>{hint && <p>{hint}</p>}</div>
             <div className="pctl">
               <span className="only-phone"><SyncBadge compact /></span>
-              <label className="yearsel"><span className="vh">Anno</span>
+              <button type="button" className="btn ghost searchbtn" onClick={() => cmd.setOpen(true)} aria-label="Cerca (⌘K)" title="Cerca (⌘K)"><Icon name="search" size={16} /><span className="not-phone">Cerca</span><kbd className="not-phone">⌘K</kbd></button>
+              {YEAR_PATHS.has(path) && <label className="yearsel"><span className="vh">Anno</span>
                 <select value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Anno">
                   {years.map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
-              </label>
+              </label>}
               {canWrite && <button className="btn primary not-phone" type="button" onClick={() => legacyApp().openForm()}><Icon name="plus" size={16} />Nuova fattura</button>}
             </div>
           </div>

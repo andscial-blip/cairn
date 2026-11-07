@@ -13,6 +13,8 @@ export const ICONS: Record<string, string> = {
  alert:'<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
  euro:'<path d="M17 6.5A7 7 0 1 0 17 17.5"/><path d="M4 10h9M4 14h9"/>',
  inbox:'<path d="M12 3v11M8 10l4 4 4-4"/><path d="M4 14v6h16v-6"/>',
+ logout:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/>',
+ search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
  down:'<path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 20h14"/>',
  check:'<path d="M4 12l5 5L20 6"/>',
  pct:'<path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',

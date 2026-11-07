@@ -8,10 +8,10 @@ export function AttachmentLinks() {
     const onClick = async (e: MouseEvent) => {
       const a = (e.target as Element).closest?.('a[href^="cairn-att:"]') as HTMLAnchorElement | null; if (!a) return;
       e.preventDefault();
-      if (!navigator.onLine) { alertLater("I PDF si aprono solo online."); return; }
+      if (!navigator.onLine) { alertLater("I file allegati si aprono solo online."); return; }
       const w = window.open("", "_blank");
       const { data, error } = await sb.storage.from("attachments").createSignedUrl(a.getAttribute("href")!.slice("cairn-att:".length), 120);
-      if (error || !data) { w?.close(); alertLater("PDF non disponibile."); return; }
+      if (error || !data) { w?.close(); alertLater("File non disponibile."); return; }
       if (w) w.location.href = data.signedUrl; else window.location.assign(data.signedUrl);
     };
     document.addEventListener("click", onClick, true);

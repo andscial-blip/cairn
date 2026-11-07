@@ -36,7 +36,7 @@ export function BottomNav() {
               <ul className="menu-list">
                 {others.map((s) => (<li key={s.id}><Link href={s.subs[0]!.href}><Icon name={s.ic} size={20} /><span><b>{s.label}</b><small>{s.hint}</small></span></Link></li>))}
                 <li><Link href="/sincronizzazione"><Icon name="sync" size={20} /><span><b>Sincronizzazione</b><small>Stato, conflitti e operazioni in attesa</small></span></Link></li>
-                <li><button type="button" onClick={signOut}><Icon name="down" size={20} /><span><b>Esci</b><small>{auth.kind === "ready" ? auth.email : ""}</small></span></button></li>
+                <li><button type="button" onClick={signOut}><Icon name="logout" size={20} /><span><b>Esci</b><small>{auth.kind === "ready" ? auth.email : ""}</small></span></button></li>
               </ul>
             </div>
           </div>

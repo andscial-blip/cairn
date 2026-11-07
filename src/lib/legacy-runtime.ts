@@ -3,6 +3,7 @@
  * One instance of the original app's code per browser tab, wired to Cairn:
  * S (the original state object) is refreshed from the live engine; writes go through the bridge.
  */
+import { polish, bindPolish } from "@/lib/view-polish";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createLegacy, type LegacyApp } from "@/legacy/app";
 import { createBridgeDb } from "@/legacy/bridge";
@@ -69,6 +70,8 @@ export function renderLegacy() {
     app.bindView(FX);
     // Accessibility: horizontally scrollable tables must be reachable and scrollable with the keyboard.
     el.querySelectorAll<HTMLElement>(".tw").forEach((t) => { if (t.scrollWidth > t.clientWidth) { t.tabIndex = 0; t.setAttribute("role", "region"); t.setAttribute("aria-label", t.closest(".panel")?.querySelector("h2")?.textContent?.trim() || "Tabella"); } });
+    // Presentation polish (chart labels, wide tables, settings index): see view-polish.ts.
+    polish(el, String(S.view)); bindPolish(() => document.getElementById("app"));
     // In-page tabs (Analisi, Tasse e F24): remember the choice in S and redraw.
     if (!el.dataset.tabs) {
       el.dataset.tabs = "1";
@@ -149,8 +152,11 @@ function ensureApp() {
       upload: async (f: File) => {
         if (!navigator.onLine) throw Object.assign(new Error("offline"), { code: "offline" });
         if (f.size > MAX_PDF) throw Object.assign(new Error("too large"), { code: "too_large" });
-        const mime = f.type || "application/pdf";
-        const id = crypto.randomUUID(); const name = f.name.replace(/[^\w.\- ]+/g, "_").slice(0, 120) || "documento.pdf";
+        // E-invoice files: the PDF copy, the FatturaPA XML or the signed .xml.p7m.
+        const ext = (f.name.split(".").pop() || "").toLowerCase();
+        const mime = ext === "pdf" ? "application/pdf" : ext === "xml" ? "application/xml" : ext === "p7m" ? "application/pkcs7-mime" : f.type || "";
+        if (!["application/pdf", "application/xml", "application/pkcs7-mime"].includes(mime)) throw Object.assign(new Error("type"), { code: "type" });
+        const id = crypto.randomUUID(); const name = f.name.replace(/[^\w.\- ]+/g, "_").slice(0, 120) || "fattura.pdf";
         const path = `${deps!.ledgerId}/${id}/${name}`;
         const { error } = await deps!.sb.storage.from("attachments").upload(path, f, { contentType: mime, upsert: false });
         if (error) throw Object.assign(new Error(error.message), { code: "upload_failed" });
