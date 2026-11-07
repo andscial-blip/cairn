@@ -28,6 +28,8 @@ export async function POST(req: Request) {
   const get = (p: string) => fetch(`${T212}${p}`, { headers: { authorization: auth }, cache: "no-store", signal: AbortSignal.timeout(12_000) });
   try {
     const pr = await get("/equity/positions");
+    // Diagnostics without secrets: status and Trading 212's own error text go to the server log.
+    if (!pr.ok) console.warn("t212 positions", pr.status, (await pr.clone().text().catch(() => "")).slice(0, 300));
     if (pr.status === 401) return json({ code: "t212_bad_key" }, 502);
     if (pr.status === 403) return json({ code: "t212_scope", scope: "portfolio" }, 502);
     if (pr.status === 429) return json({ code: "t212_rate" }, 429);
