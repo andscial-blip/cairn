@@ -1,6 +1,6 @@
 # Fase A — Analisi dell'artefatto esistente
 
-Riferimento: artefatto Claude "Cassa e Fisco A. Scialabba", versione 34 (7 novembre 2026).
+Riferimento: artefatto Claude "Cassa e Fisco A. Scialabba", versione 34 (7 novembre 2026). Dal 7 novembre 2026 l'app si chiama **Cairn** (scelta da un panel di naming: il cairn si costruisce pietra su pietra e indica la strada, come PAC, accantonamenti e patrimonio).
 
 ## Architettura esistente
 - Un unico file HTML (~400 KB, ~2.400 righe), JavaScript senza framework, ~140 funzioni; viste generate come stringhe HTML.

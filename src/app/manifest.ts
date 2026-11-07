@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Cassa e Fisco",
-    short_name: "Cassa e Fisco",
-    description: "P.IVA forfettaria, entrate, spese, risparmi e investimenti",
+    name: "Cairn",
+    short_name: "Cairn",
+    description: "A. Scialabba · P.IVA, tasse e patrimonio",
     start_url: "/",
     scope: "/",
     display: "standalone",

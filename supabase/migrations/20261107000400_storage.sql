@@ -1,4 +1,4 @@
--- Cassa e Fisco — private Storage bucket for attachments.
+-- Cairn — private Storage bucket for attachments.
 -- Object paths are "<ledger_id>/<attachment_id>/<filename>": the first folder decides access.
 -- The bucket is not public; the app reads files through short-lived signed URLs.
 

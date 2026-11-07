@@ -26,7 +26,7 @@ export default function LoginPage() {
   return (
     <main className="wrap" style={{ maxWidth: 420, paddingTop: 64 }}>
       <section className="panel">
-        <div className="panel-h"><h2>Accedi a Cassa e Fisco</h2></div>
+        <div className="panel-h"><h2>Accedi a Cairn</h2></div>
         <form className="panel-b" onSubmit={submit}>
           <div className="fields">
             <div className="f s2"><label htmlFor="email">Email</label><input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>

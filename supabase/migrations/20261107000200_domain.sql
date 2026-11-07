@@ -1,4 +1,4 @@
--- Cassa e Fisco — domain tables. Every syncable table shares the same bookkeeping columns:
+-- Cairn — domain tables. Every syncable table shares the same bookkeeping columns:
 --   id (client-generated UUID), ledger_id, version (optimistic concurrency), created/updated
 --   timestamps and authors, deleted_at (soft delete so deletions propagate to offline devices).
 

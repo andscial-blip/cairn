@@ -1,4 +1,4 @@
-/* Design tokens and base styles carried over 1:1 from the approved Cassa e Fisco artifact (v34). */
+/* Design tokens and base styles carried over 1:1 from the approved artifact (formerly "Cassa e Fisco", v34). */
 
 /* Layout: sticky slate header + section nav; one column of panels on phone, 12-col grid on desktop. Palette taken from Andrea's Excel. */
 :root{

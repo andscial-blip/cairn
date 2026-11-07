@@ -11,7 +11,7 @@ export class LocalDB extends Dexie {
   files!: Table<PendingFile, string>;
   meta!: Table<MetaEntry, string>;
 
-  constructor(name = "cassa-e-fisco") {
+  constructor(name = "cairn") {
     super(name);
     const stores: Record<string, string> = {
       outbox: "op_id, seq, status, record_id, [status+next_attempt_at]",

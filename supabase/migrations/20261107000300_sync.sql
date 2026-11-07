@@ -1,4 +1,4 @@
--- Cassa e Fisco — sync RPC. The offline outbox pushes each queued operation through
+-- Cairn — sync RPC. The offline outbox pushes each queued operation through
 -- apply_operation(). Guarantees:
 --   * idempotent: the client-generated op_id is the primary key of sync_operations, so a retried
 --     or duplicated request returns the stored outcome instead of applying twice;

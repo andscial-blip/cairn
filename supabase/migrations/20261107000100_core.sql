@@ -1,4 +1,4 @@
--- Cassa e Fisco — core schema: identity, ledgers (fascicoli), roles, audit, sync, attachments.
+-- Cairn — core schema: identity, ledgers (fascicoli), roles, audit, sync, attachments.
 -- Every table exposed to the API has RLS enabled. Helper functions are SECURITY DEFINER with a
 -- pinned search_path so policies can't be subverted through search_path tricks.
 

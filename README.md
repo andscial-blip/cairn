@@ -1,4 +1,4 @@
-# Cassa e Fisco
+# Cairn
 
 PWA personale per P.IVA forfettaria: fatture, F24, entrate, spese, risparmi e investimenti.
 Next.js + TypeScript · Supabase (Postgres, Auth, RLS, Storage) · IndexedDB/Dexie offline-first · Vercel.
