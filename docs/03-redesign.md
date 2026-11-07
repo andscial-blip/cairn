@@ -62,3 +62,14 @@ Feedback: "forse meglio meno dati ma con grafici belli". La Panoramica passa da 
 
 Tolti dalla Panoramica (restano in Fisco, Analisi e Finanze): oneri, previsione e soglia come riquadri separati, mini-grafici dei riquadri, pannello Stato, barre clienti, accantonamento mensile. Nessuna cifra nuova: lo garantisce il test di parità.
 Il grafico ha una versione compatta per il telefono (etichette leggibili, nessuno scorrimento orizzontale).
+
+## Backup settimanale cifrato
+
+`.github/workflows/backup.yml` esegue ogni lunedì un `pg_dump` dello schema `public`, lo cifra (AES-256) e lo conserva 90 giorni come artifact del workflow. Parte solo se nel repository esistono due segreti (Settings → Secrets and variables → Actions):
+
+| Segreto | Valore |
+|---|---|
+| `CAIRN_DB_URL` | stringa di connessione Postgres di Supabase (Session pooler, IPv4) |
+| `CAIRN_BACKUP_PASSPHRASE` | una frase lunga, da conservare nel gestore password |
+
+Ripristino: scarica l'artifact, `gpg -d cairn-AAAA-MM-GG.sql.gz.gpg | gunzip > dump.sql`, poi `psql` su un progetto Supabase vuoto. Gli allegati nello Storage non sono inclusi.
