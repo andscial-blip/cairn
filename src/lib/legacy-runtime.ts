@@ -173,6 +173,13 @@ function ensureApp() {
       toast(what === "v3" ? (navigator.onLine ? "Carica prima il modello Excel v3 in Impostazioni → Modello Excel v3." : "L'Excel v3 si prepara solo online (il modello è nell'archivio privato).")
         : "Non serve più: i dati sono già in Cairn.");
     },
+    t212: async () => {
+      const d = deps; if (!d) return { status: 0, body: { code: "unauthorized" } };
+      const { data } = await d.sb.auth.getSession(); const token = data.session?.access_token;
+      if (!token) return { status: 401, body: { code: "unauthorized" } };
+      const r = await fetch("/api/t212", { method: "POST", headers: { authorization: `Bearer ${token}` }, cache: "no-store" });
+      return { status: r.status, body: await r.json().catch(() => ({})) };
+    },
     v3Template: async () => {
       const d = deps; if (!d?.ledgerId || !navigator.onLine) return null;
       const { data, error } = await d.sb.storage.from("attachments").download(V3_PATH(d.ledgerId));

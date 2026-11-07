@@ -9,6 +9,7 @@
 //  - excluded: Google Calendar sync (replaced by the ICS feed) and the Excel v3 template (contains personal data).
 import { tot, DEFAULT_CFG as ENGINE_DEFAULT_CFG } from "@/domain/engine";
 import type { Engine } from "@/domain/engine";
+import { applyPositions } from "@/lib/t212";
 export type LegacyApp = Record<"vHome" | "vInv" | "vPrev" | "vContr" | "vMis" | "vF24" | "vTasse" | "vFisco" | "compliancePanel" | "redditiPanel" | "vEntrate" | "vSpese" | "vInvest" | "vRisp" | "vAnal" | "vSet" | "bindView" | "openForm" | "toast" | "closeSheet" | "escClose" | "openDetail" | "calItems" | "_fisco", (...a: any[]) => any>;
 export interface LegacyEnv {
   S: any; engine: () => Engine; render: () => void; setView: (v: string) => void;
@@ -16,6 +17,8 @@ export interface LegacyEnv {
   assetsCap: { upload: (f: File) => Promise<{ id: string; url: string }> } | null;
   unavailable: (what: string) => void;
   v3Template: () => Promise<string | null>;
+  /** Trading 212 read-only sync (server route); absent in tests. */
+  t212?: () => Promise<{ status: number; body: any }>;
 }
 export function createLegacy(env: LegacyEnv): LegacyApp {
 const S = env.S;
@@ -618,7 +621,7 @@ function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
   const glide=c.anniRes<=7?`Mancano meno di 7 anni: valuta di spostare gradualmente quota azionaria verso obbligazioni (es. +5 punti l'anno) per ridurre il rischio vicino alla scadenza.`:`Orizzonte lungo (oltre ${Math.floor(c.anniRes)} anni): l'azionario al ${c.T.filter(t=>!/obblig/i.test(t.classe||"")).reduce((s,t)=>s+(+t.target||0),0)}% è coerente. Dal ${endY-7} conviene aumentare gradualmente le obbligazioni.`;
   const ivafe=c.tot*0.002;const govG=(a.realizzate||[]).filter(x=>/obblig/i.test((c.T.find(t=>t.isin===x.isin)||{}).classe||"")).reduce((s,x)=>s+(+x.importo||0),0);const taxR=(real-govG)*0.26+govG*0.125;
   const revDays=daysBetween(today,c.rev);
-  return head+`<div class="acct">${logoImg("t212","Trading 212")}<div><b>Trading 212</b><span>Conto Invest · PAC in ETF · dati al ${dmy(a.aggiornato)}</span></div><div class="spacer"></div><button class="btn small ghost" id="invPrices" type="button">${ico("pen",14)} Aggiorna prezzi</button><button class="btn small dark" id="invRev" type="button">${ico("pct",14)} Rivedi suddivisione</button></div>
+  return head+`<div class="acct">${logoImg("t212","Trading 212")}<div><b>Trading 212</b><span>Conto Invest · PAC in ETF · dati al ${dmy(a.aggiornato)}</span></div><div class="spacer"></div>${env.t212?`<button class="btn small primary" id="invSync" type="button">${ico("sync",14)} Sincronizza</button>`:""}<button class="btn small ghost" id="invPrices" type="button">${ico("pen",14)} Prezzi a mano</button><button class="btn small dark" id="invRev" type="button">${ico("pct",14)} Rivedi suddivisione</button></div>
   <div class="kpis">
     <div class="kpi"><div class="l">Valore portafoglio</div><div class="v">${eur0(c.tot)}</div>${K.val}<div class="s">prezzi al ${dmy(a.aggiornato)}</div></div>
     <div class="kpi"><div class="l">Versato netto</div><div class="v">${eur0(c.netDep)}</div>${K.dep}<div class="s">da ${MESI[+a.pac.inizio.slice(5,7)-1].toLowerCase()} ${a.pac.inizio.slice(0,4)} · ${mm.length} mesi</div></div>
@@ -656,6 +659,23 @@ function openInvRev(){const a=(S.investimenti||[]).find(isMainInv);const c=invCa
     const tg=Object.fromEntries([...document.querySelectorAll("[data-tg]")].map(i=>[i.dataset.tg,readNum(i.value)]));
     const titoli=a.titoli.map(t=>({...t,target:tg[t.isin]??t.target}));const pac={...a.pac,importo:readNum($("#ip-imp").value)||c.pac,giorno:Math.min(28,Math.max(1,parseInt($("#ip-g").value)||1)),revisioneMesi:Math.max(1,parseInt($("#ip-m").value)||6),soglia:readNum($("#ip-s").value)||5,ultimaRevisione:todayISO()};
     if(await write(db=>db.doc("investimenti/trading212").update({titoli,pac}),"Revisione salvata"))closeSheet()}}
+/** Trading 212 → Cairn: read positions (read-only key on the server), show what changes, apply on confirmation. */
+const T212_MSG={t212_not_configured:"La chiave di Trading 212 non è ancora impostata sul server (Vercel → T212_API_KEY e T212_API_SECRET).",t212_bad_key:"Trading 212 ha rifiutato la chiave: rigenerala nell'app e aggiornala su Vercel.",t212_scope:"La chiave di Trading 212 non ha il permesso «Portfolio»: rigenerala con i permessi di sola lettura indicati.",t212_rate:"Trading 212 chiede di aspettare qualche secondo: riprova.",t212_unreachable:"Trading 212 non risponde in questo momento: riprova più tardi.",unauthorized:"Sessione scaduta: esci e rientra.",forbidden:"Il tuo account è in sola lettura."};
+async function openT212Sync(){const a=(S.investimenti||[]).find(isMainInv);if(!a||!env.t212)return;
+  if(!navigator.onLine){toast("Serve internet per leggere Trading 212");return}
+  const b=$("#invSync");if(b){b.disabled=true;b.textContent="Lettura…"}
+  let res;try{res=await env.t212()}catch(e){res={status:0,body:{code:"t212_unreachable"}}}finally{if(b){b.disabled=false;b.innerHTML=`${ico("sync",14)} Sincronizza`}}
+  if(res.status!==200){toast(T212_MSG[res.body&&res.body.code]||"Sincronizzazione non riuscita");return}
+  let d;try{d=applyPositions(a.titoli||[],res.body.positions||[])}catch(e){toast(e.message);return}
+  const q=x=>x==null?"—":Number(x).toLocaleString("it-IT",{maximumFractionDigits:3});
+  const row=c=>`<tr><td><b>${esc(c.ticker)}</b><div class="muted" style="font-size:12px">${esc(c.isin)}</div></td><td class="r num" data-l="Quote"><span>${c.before?q(c.before.quote):"—"} → <b>${c.after?q(c.after.quote):"0"}</b></span></td><td class="r num" data-l="Valore"><span>${c.before?eur(c.before.quote*c.before.prezzoEur):"—"} → <b>${c.after?eur(c.after.quote*c.after.prezzoEur):"—"}</b></span></td><td class="r num" data-l="Costo"><span>${c.after?eur(c.after.costo):"venduto"}</span></td></tr>`;
+  const tot=d.next.reduce((s,t)=>s+t.quote*t.prezzoEur,0);
+  sheet("Sincronizza Trading 212",`<section class="panel t212s"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Dati letti adesso da Trading 212 (sola lettura). Controlla e conferma: aggiorno quote, valore e costo di ogni ETF. Obiettivi e classi restano i tuoi.</p>
+   <div class="sstrip"><div><span>Valore ETF</span><b class="num">${eur(tot)}</b><small>${d.next.length} posizioni</small></div>${res.body.cash!=null?`<div><span>Liquidità sul conto</span><b class="num">${eur(res.body.cash)}</b><small>non investita</small></div>`:""}${res.body.total!=null?`<div><span>Totale conto</span><b class="num">${eur(res.body.total)}</b><small>secondo Trading 212</small></div>`:""}</div></div>
+   ${d.changed.length?`<div class="tw"><table><thead><tr><th>ETF</th><th class="r">Quote</th><th class="r">Valore</th><th class="r">Costo</th></tr></thead><tbody>${d.changed.map(row).join("")}</tbody></table></div>`:`<div class="panel-b"><b>Già allineato:</b> nessuna differenza rispetto a Cairn.</div>`}</section>`,
+   d.changed.length?`<button class="btn primary" id="t212Ok" type="button">Applica</button>`:"");
+  const ok=$("#t212Ok");if(ok)ok.onclick=async()=>{if(await write(db=>db.doc("investimenti/"+a.id).update({titoli:d.next,aggiornato:todayISO()}),"Trading 212 sincronizzato"))closeSheet()};
+  if(!d.changed.length&&a.aggiornato!==todayISO())await write(db=>db.doc("investimenti/"+a.id).update({aggiornato:todayISO()}),"Trading 212: già allineato")}
 function openInvPrices(){const a=(S.investimenti||[]).find(isMainInv);if(!a)return;
   sheet("Aggiorna prezzi Trading 212",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Inserisci il prezzo in euro di ogni ETF (lo trovi nell'app Trading 212). Le quote restano quelle dell'ultimo export: dopo nuovi acquisti carica in chat il CSV aggiornato.</p><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Quote</th><th class="r">Prezzo €</th></tr></thead><tbody>${a.titoli.map(t=>`<tr><td><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.nome)}</span></td><td class="r num">${(+t.quote).toLocaleString("it-IT",{maximumFractionDigits:3})}</td><td class="r"><input class="in num" style="max-width:110px" data-px="${esc(t.isin)}" inputmode="decimal" value="${String(t.prezzoEur).replace(".",",")}"></td></tr>`).join("")}</tbody></table></div>
    <div class="fields" style="margin-top:14px"><div class="f s2"><label for="px-d">Prezzi al</label><input id="px-d" type="date" value="${todayISO()}"></div></div></div></section>`,`<button class="btn primary" id="pxSave" type="button">Salva</button>`);
@@ -1180,7 +1200,7 @@ function vSet(){
 function bindView(FX){
   const app=$("#app");
   app.querySelectorAll("[data-proj]").forEach(b=>b.onclick=()=>{const [cid,m]=b.dataset.proj.split("|");const x=projections().find(p=>p.contratto===cid&&p.months[0]===m);if(x)openFormFromProj(x)});
-  app.querySelectorAll("[data-risp]").forEach(b=>b.onclick=()=>openRisp(b.dataset.risp));{const r=$("#invRev");if(r)r.onclick=openInvRev;const p=$("#invPrices");if(p)p.onclick=openInvPrices}
+  app.querySelectorAll("[data-risp]").forEach(b=>b.onclick=()=>openRisp(b.dataset.risp));{const r=$("#invRev");if(r)r.onclick=openInvRev;const p=$("#invPrices");if(p)p.onclick=openInvPrices;const sy=$("#invSync");if(sy)sy.onclick=openT212Sync}
   app.querySelectorAll("[data-calsync]").forEach(b=>b.onclick=async()=>{b.disabled=true;await syncCalendar();b.disabled=false});
   app.querySelectorAll("[data-mail]").forEach(b=>b.onclick=()=>{const v=S.invoices.find(x=>x.id===b.dataset.mail);if(v)openMail(v)});
   app.querySelectorAll("[data-pm-done]").forEach(b=>b.onclick=()=>{const r=S.promemoria.find(x=>x.id===b.dataset.pmDone);if(r)write(db=>db.doc("promemoria/"+r.id).update({fatto:!r.fatto}),r.fatto?"Riaperto":"Segnato come fatto")});

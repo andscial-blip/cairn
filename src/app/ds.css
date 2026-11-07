@@ -501,3 +501,14 @@ table.one-year input{width:100%;max-width:120px}
 @media (max-width:760px){.kpis.k3{grid-template-columns:1fr 1fr}.kpis.k3>:last-child{grid-column:1/-1}}
 /* Calcolo annuale: section rows as light bands instead of dark bars */
 .fisco tr.sec td{background:var(--surface-2)!important;color:var(--fg)!important;font-weight:600;border-top:1px solid var(--line)!important;letter-spacing:.01em}
+/* Trading 212 preview: compact before → after cells */
+.t212s td.r{white-space:nowrap}
+.t212s .sstrip{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+@media (max-width:760px){
+  .t212s .sstrip{grid-template-columns:1fr!important}
+  .t212s .sstrip>div{border-right:0!important;border-bottom:1px solid var(--line-2)}
+  .t212s thead{display:none}
+  .t212s tbody tr{display:grid;grid-template-columns:1fr;gap:4px;padding:12px 16px;border-top:1px solid var(--line-2)}
+  .t212s tbody td{display:flex;justify-content:space-between;gap:12px;padding:0!important;border:0!important;background:transparent!important;text-align:left}
+  .t212s tbody td[data-l]::before{content:attr(data-l);color:var(--muted);font-size:13px}
+}
