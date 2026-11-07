@@ -3,7 +3,7 @@
  * One instance of the original app's code per browser tab, wired to Cairn:
  * S (the original state object) is refreshed from the live engine; writes go through the bridge.
  */
-import { polish, bindPolish } from "@/lib/view-polish";
+import { polish, bindPolish, bindSheetPolish } from "@/lib/view-polish";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createLegacy, type LegacyApp } from "@/legacy/app";
 import { createBridgeDb } from "@/legacy/bridge";
@@ -71,7 +71,7 @@ export function renderLegacy() {
     // Accessibility: horizontally scrollable tables must be reachable and scrollable with the keyboard.
     el.querySelectorAll<HTMLElement>(".tw").forEach((t) => { if (t.scrollWidth > t.clientWidth) { t.tabIndex = 0; t.setAttribute("role", "region"); t.setAttribute("aria-label", t.closest(".panel")?.querySelector("h2")?.textContent?.trim() || "Tabella"); } });
     // Presentation polish (chart labels, wide tables, settings index): see view-polish.ts.
-    polish(el, String(S.view)); bindPolish(() => document.getElementById("app"));
+    polish(el, String(S.view), Number(S.year) || undefined); bindPolish(() => document.getElementById("app")); bindSheetPolish();
     // In-page tabs (Analisi, Tasse e F24): remember the choice in S and redraw.
     if (!el.dataset.tabs) {
       el.dataset.tabs = "1";
@@ -169,7 +169,7 @@ function ensureApp() {
         const ics = currentIcs(); if (ics) void publishIfChanged(deps.sb, deps.ledgerId, ics, true).then((ok) => toast(ok ? "Calendario aggiornato: Google Calendar lo rilegge entro qualche ora." : "Aggiornamento del calendario non riuscito."));
         return;
       }
-      if (what === "calendar") { deps?.navigate("set"); setTimeout(() => document.getElementById("calendario")?.scrollIntoView({ behavior: "smooth" }), 400); return; }
+      if (what === "calendar") { deps?.navigate("set"); setTimeout(() => { location.hash = "calendario"; document.getElementById("calendario")?.scrollIntoView({ behavior: "smooth" }); }, 400); return; }
       toast(what === "v3" ? (navigator.onLine ? "Carica prima il modello Excel v3 in Impostazioni → Modello Excel v3." : "L'Excel v3 si prepara solo online (il modello è nell'archivio privato).")
         : "Non serve più: i dati sono già in Cairn.");
     },

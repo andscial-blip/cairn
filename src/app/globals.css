@@ -399,3 +399,4 @@ ul.chk{margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:9px;fo
 @media (max-width:760px){.top .hide-sm{display:none}}
 @media (max-width:520px){.sb-hide-sm{display:none}.top .brand span{display:none}.top .wrap{gap:10px}}
 a.btn{text-decoration:none;color:inherit}.top a.cdp{text-decoration:none}
+@media (max-width:760px){table.stack tr.grp{background:var(--surface-2);padding:8px 12px}table.stack tr.grp td{font-size:12px}}

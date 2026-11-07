@@ -18,7 +18,12 @@ export function LegacyView({ view }: { view: ViewKey }) {
   useEffect(() => { renderLegacy(); }, [engine, year, view]);
   return (
     <>
-      {!engine && <div className="panel empty">Carico i dati…</div>}
+      {!engine && (
+        <div className="skel" role="status" aria-label="Carico i dati">
+          <div className="skel-b" style={{ height: 120 }} /><div className="skel-row"><div className="skel-b" /><div className="skel-b" /><div className="skel-b" /></div>
+          <div className="skel-b" style={{ height: 260 }} />
+        </div>
+      )}
       <div id="app" />
     </>
   );

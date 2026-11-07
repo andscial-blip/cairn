@@ -1,0 +1,35 @@
+# Weekly encrypted backup of the Cairn database (schema + data), stored as a private workflow artifact for 90 days.
+# Runs only when both repository secrets exist (Settings → Secrets and variables → Actions):
+#   CAIRN_DB_URL         the Postgres connection string of the Supabase project (Session pooler URI)
+#   CAIRN_BACKUP_PASSPHRASE  a long passphrase; the dump is encrypted with it (AES-256) before it leaves the runner
+# The repository is public: the dump is never stored unencrypted. Attachments in Storage are not included.
+name: backup
+on:
+  schedule: [{ cron: "17 3 * * 1" }]   # Mondays 03:17 UTC
+  workflow_dispatch: {}
+permissions: { contents: read }
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check secrets
+        id: chk
+        env: { DB: "${{ secrets.CAIRN_DB_URL }}", PW: "${{ secrets.CAIRN_BACKUP_PASSPHRASE }}" }
+        run: |
+          if [ -z "$DB" ] || [ -z "$PW" ]; then echo "Secrets not set: backup skipped."; echo "run=false" >> "$GITHUB_OUTPUT"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Dump and encrypt
+        if: steps.chk.outputs.run == 'true'
+        env: { DB: "${{ secrets.CAIRN_DB_URL }}", PW: "${{ secrets.CAIRN_BACKUP_PASSPHRASE }}" }
+        run: |
+          set -euo pipefail
+          f="cairn-$(date -u +%Y-%m-%d).sql.gz"
+          docker run --rm -e DB postgres:17 sh -c 'pg_dump "$DB" --schema=public --no-owner --no-privileges' | gzip -9 > "$f"
+          test "$(stat -c%s "$f")" -gt 1000
+          gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$PW" -o "$f.gpg" "$f"
+          shred -u "$f"
+          echo "FILE=$f.gpg" >> "$GITHUB_ENV"
+      - name: Keep 90 days
+        if: steps.chk.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with: { name: cairn-backup, path: "${{ env.FILE }}", retention-days: 90, if-no-files-found: error }

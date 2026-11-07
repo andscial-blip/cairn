@@ -13,6 +13,8 @@ const FILE = "private/golden-views.json";
 const has = existsSync(FILE);
 const G = has ? JSON.parse(readFileSync(FILE, "utf8")) : { snapshot: {}, runs: {} };
 const VIEWS = ["vHome", "vInv", "vPrev", "vContr", "vMis", "vF24", "vTasse", "vFisco", "compliancePanel", "redditiPanel", "vEntrate", "vSpese", "vInvest", "vRisp", "vAnal", "vSet"] as const;
+/** Panels moved between sections by the redesign: their figures may appear in the destination view. */
+const MOVED: Partial<Record<(typeof VIEWS)[number], (typeof VIEWS)[number][]>> = { vTasse: ["vRisp"] };
 const figures = (html: string) => new Set((html.replace(/<[^>]+>/g, " ").match(/-?\d{1,3}(?:\.\d{3})*(?:,\d+)?\s?(?:€|%)/g) ?? []).map((x) => x.replace(/\s/g, "")));
 
 describe.skipIf(!has)("redesign keeps every figure identical", () => {
@@ -29,6 +31,7 @@ describe.skipIf(!has)("redesign keeps every figure identical", () => {
         const eo = new Engine(structuredClone(snap), today), en = new Engine(structuredClone(snap), today);
         const O = createOld(env({ ...structuredClone(snap), ...ui() }, eo)), N = createNew(env({ ...structuredClone(snap), ...ui() }, en));
         const before = figures(O[v](O._fisco())), after = figures(N[v](N._fisco()));
+        for (const m of MOVED[v] ?? []) for (const x of figures(O[m](O._fisco()))) before.add(x);
         const invented = [...after].filter((x) => !before.has(x));
         expect(invented, `figures not in the original ${v}`).toEqual([]);
         if (before.size) expect(after.size).toBeGreaterThan(0);

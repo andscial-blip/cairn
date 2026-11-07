@@ -401,14 +401,9 @@ details.fold:not([open])>summary{border-bottom:0}
 /* Cards fill the row instead of leaving half of it empty */
 .pgrid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 /* Settings index */
-.pindex{display:flex;flex-wrap:wrap;gap:8px}
-.pindex a{font-family:var(--f-ui);font-size:13px;font-weight:600;color:var(--fg);text-decoration:none;background:var(--surface);border:1px solid var(--line-2);border-radius:999px;padding:6px 12px}
-.pindex a:hover{border-color:var(--line);background:var(--surface-2)}
 #app .panel[id]{scroll-margin-top:16px}
 @media (max-width:760px){
-  .pindex{flex-wrap:nowrap;overflow-x:auto;margin:0 calc(-1 * var(--s4));padding:0 var(--s4) 2px;scrollbar-width:none}
-  .pindex a{white-space:nowrap}
-  #app input:not([type=checkbox]):not([type=radio]),#app select{min-height:40px}
+      #app input:not([type=checkbox]):not([type=radio]),#app select{min-height:40px}
 }
 /* Type scale (8 steps): 12 · 13 · 14 · 16 · 20 · 24 · 28 · 32 px. Every size in the app maps to one of these. */
 /* Quick search (⌘K) */
@@ -445,7 +440,7 @@ details.fold{align-self:start}
 .hbar{height:30px;gap:2px;border:0;border-radius:8px;background:var(--surface-2)}
 .hbar i{color:var(--fg);font-weight:600;font-size:12px;border-radius:0}
 .hbar i:first-child{border-radius:8px 0 0 8px}.hbar i:last-child{border-radius:0 8px 8px 0}
-.hbar i[style*="var(--cost)"],.hbar i[style*="var(--slate)"]{color:var(--surface)}
+.hbar i[style*="var(--cost)"],.hbar i[style*="var(--c-ink)"]{color:var(--surface)}
 /* Chart system: panels in a row share the height; a chart fills its panel and stays vertically centred,
    so two charts side by side line up; labels get a halo so they stay legible over bars and lines. */
 .grid>.panel{display:flex;flex-direction:column}
@@ -456,3 +451,48 @@ details.fold{align-self:start}
 .split2 .mini{margin:0}
 @media (max-width:1099px){.split2{grid-template-columns:minmax(0,1fr)}}
 .legend.under{margin:10px 0 0;justify-content:flex-start}
+/* Conto tasse row in Risparmi; row actions on one line */
+.ctrow-b{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px}
+.ctrow-a{display:flex;gap:8px;flex-wrap:wrap}
+td.acts{white-space:nowrap}
+/* Invoice form: labels in sentence case; phone save bar with running total */
+.line .tag{text-transform:none;letter-spacing:0;font-weight:600;font-size:12px;color:var(--muted)}
+.line textarea.cell-in{overflow:hidden;resize:none}
+.sheet-foot{display:none}
+@media (max-width:760px){
+  .sheet-foot{position:sticky;bottom:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--surface);border-top:1px solid var(--line-2);box-shadow:0 -6px 18px rgba(16,21,28,.08);
+    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .sheet-foot .sf-t{display:flex;flex-direction:column;line-height:1.2}
+  .sheet-foot small{font-size:12px;color:var(--muted)} .sheet-foot b{font-size:20px;font-weight:600}
+  .sheet-foot .btn{min-height:44px;padding:0 22px}
+  .sheet .sheet-h #fmSave{display:none}
+}
+.ycols{margin:0 16px 10px}
+table.one-year td,table.one-year th{white-space:normal}
+table.one-year td:not(:first-child),table.one-year th:not(:first-child){text-align:right;width:40%}
+.settabs{margin-bottom:0}
+.main>.panel{margin-top:var(--s5)!important}
+.main>.panel[hidden]{display:none!important}
+/* Panoramica: customise visible cards */
+.hero-h{position:relative}
+.hcust{position:relative;margin-left:auto}
+.hcust-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);box-shadow:var(--sh-2);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:200px;font-size:14px}
+.hcust-pop label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.hcust-pop small{color:var(--faint);font-size:12px}
+.home.v2 [hidden]{display:none!important}
+/* Loading skeleton: same rhythm as the content it replaces */
+.skel{display:flex;flex-direction:column;gap:var(--s5)}
+.skel-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s5)}
+.skel-b{height:96px;border-radius:var(--r-lg);background:linear-gradient(90deg,var(--surface-2) 0%,var(--surface) 50%,var(--surface-2) 100%);background-size:200% 100%;border:1px solid var(--line-2)}
+@media (prefers-reduced-motion:no-preference){.skel-b{animation:skel 1.4s ease-in-out infinite}@keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}}
+@media (max-width:760px){.skel-row{grid-template-columns:1fr 1fr}.skel-row .skel-b:last-child{display:none}}
+table.one-year{min-width:0!important;width:100%!important;table-layout:auto}
+/* Chart ink: the main data colour. Dark navy on light, light blue-grey on dark (navy bars vanished on the dark background). */
+:root{--c-ink:#2E3D52}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--c-ink:#9DB2CF}}
+:root[data-theme="dark"]{--c-ink:#9DB2CF}
+.meter i{background:var(--c-ink)}
+table.one-year td:first-child,table.one-year th:first-child{min-width:0!important;width:60%}
+table.one-year input{width:100%;max-width:120px}
+[hidden]{display:none!important}

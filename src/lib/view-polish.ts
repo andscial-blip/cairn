@@ -67,20 +67,36 @@ export function polishTables(root: ParentNode) {
 
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-/** Settings: chips that jump to each panel. */
+/** Settings: five tabs instead of one long page. A #hash naming a panel (e.g. #calendario) opens its tab. */
+const SET_GROUPS: [string, RegExp][] = [
+  ["Clienti e parametri", /^Clienti|Parametri/], ["Profilo", /intestazione|proforma/i], ["Sicurezza", /Sicurezza/],
+  ["Calendario", /Calendario/], ["Dati e backup", /Backup|Modello Excel|Dati e sincronizzazione|Cronologia/],
+];
+let setTab = 0;
 export function settingsIndex(root: HTMLElement) {
   const scope = document.getElementById("main") ?? root;
-  const heads = [...scope.querySelectorAll<HTMLElement>(".panel > .panel-h h2, .panel > summary h2")];
-  if (heads.length < 4 || root.querySelector(".pindex")) return;
-  const nav = document.createElement("nav"); nav.className = "pindex"; nav.setAttribute("aria-label", "Sezioni delle impostazioni");
-  for (const h of heads) {
-    const p = h.closest<HTMLElement>(".panel")!; const label = h.textContent!.trim();
-    if (!p.id) p.id = slug(label);
-    const a = document.createElement("a"); a.href = "#" + p.id; a.textContent = label;
-    a.addEventListener("click", (e) => { e.preventDefault(); p.scrollIntoView({ behavior: "smooth", block: "start" }); history.replaceState(null, "", "#" + p.id); });
-    nav.appendChild(a);
+  const panels = [...scope.querySelectorAll<HTMLElement>(":scope .panel")].filter((p) => p.querySelector(":scope > .panel-h h2, :scope > summary h2"));
+  if (panels.length < 4) return;
+  const groupOf = (p: HTMLElement) => { const t = p.querySelector("h2")!.textContent!.trim(); const i = SET_GROUPS.findIndex(([, re]) => re.test(t)); return i < 0 ? SET_GROUPS.length - 1 : i; };
+  panels.forEach((p) => { if (!p.id) p.id = slug(p.querySelector("h2")!.textContent!.trim()); });
+  const fromHash = () => { const h = decodeURIComponent(location.hash.slice(1)); const p = h && panels.find((x) => x.id === h); return p ? groupOf(p) : -1; };
+  const hi = fromHash(); if (hi >= 0) setTab = hi;
+  let bar = root.querySelector<HTMLElement>(".settabs");
+  const show = () => {
+    panels.forEach((p) => { p.hidden = groupOf(p) !== setTab; });
+    bar?.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-selected", String(i === setTab)));
+  };
+  if (!bar) {
+    bar = document.createElement("div"); bar.className = "segs settabs"; bar.setAttribute("role", "tablist"); bar.setAttribute("aria-label", "Sezioni delle impostazioni");
+    SET_GROUPS.forEach(([label], i) => { const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "tab"); b.textContent = label;
+      b.addEventListener("click", () => { setTab = i; history.replaceState(null, "", location.pathname); show(); window.scrollTo({ top: 0 }); }); bar!.appendChild(b); });
+    root.prepend(bar);
   }
-  root.prepend(nav);
+  if (!(window as unknown as { __setHash?: boolean }).__setHash) {
+    (window as unknown as { __setHash?: boolean }).__setHash = true;
+    window.addEventListener("hashchange", () => { const r = document.getElementById("app"); if (r && location.pathname.startsWith("/impostazioni")) settingsIndex(r); });
+  }
+  show();
 }
 
 /** Half-width chart panels: the legend goes under the chart, so charts side by side start at the same height. */
@@ -94,11 +110,13 @@ export function legendsUnderCharts(root: ParentNode) {
   });
 }
 
-export function polish(root: HTMLElement, view: string) {
+export function polish(root: HTMLElement, view: string, year = new Date().getFullYear()) {
   legendsUnderCharts(root);
+  yearColumns(root, year);
   polishTables(root);
   polishCharts(root);
   if (view === "set") settingsIndex(root);
+  if (view === "home") homeCustomize(root);
 }
 
 let bound = false;
@@ -106,7 +124,77 @@ let bound = false;
 export function bindPolish(getRoot: () => HTMLElement | null) {
   if (bound || typeof window === "undefined") return; bound = true;
   let raf = 0;
-  window.addEventListener("resize", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const r = getRoot(); if (r) { polishTables(r); polishCharts(r); } }); });
+  window.addEventListener("resize", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const r = getRoot(); if (r) { yearColumns(r, new Date().getFullYear()); polishTables(r); polishCharts(r); } }); });
   document.addEventListener("click", (e) => { const d = (e.target as Element).closest?.(".rem-d"); if (d) d.classList.toggle("open"); });
   document.addEventListener("toggle", (e) => { const r = getRoot(); if (r && (e.target as Element).closest?.(".fold")) polishCharts(r); }, true);
+}
+
+/**
+ * Invoice form on phones: a save bar fixed at the bottom with the running total, and description fields that grow
+ * with their text. Watches the sheet container; the form itself is unchanged.
+ */
+export function bindSheetPolish() {
+  if (typeof window === "undefined") return;
+  const root = document.getElementById("sheetRoot"); if (!root || root.dataset.polish) return; root.dataset.polish = "1";
+  const grow = (t: HTMLTextAreaElement) => { t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight + 2, 240) + "px"; };
+  const enhance = () => {
+    const sheet = root.querySelector<HTMLElement>(".sheet"); const save = root.querySelector<HTMLButtonElement>("#fmSave");
+    root.querySelectorAll<HTMLTextAreaElement>("textarea.cell-in").forEach((t) => { if (!t.dataset.grow) { t.dataset.grow = "1"; t.addEventListener("input", () => grow(t)); } grow(t); });
+    if (!sheet || !save || sheet.querySelector(".sheet-foot")) return;
+    const foot = document.createElement("div"); foot.className = "sheet-foot";
+    foot.innerHTML = `<span class="sf-t"><small>Totale documento</small><b class="num" id="sfTot">—</b></span>`;
+    const b = document.createElement("button"); b.type = "button"; b.className = "btn primary"; b.textContent = save.textContent || "Salva";
+    b.addEventListener("click", () => save.click()); foot.appendChild(b); sheet.appendChild(foot);
+    const box = root.querySelector<HTMLElement>("#sumBox");
+    const upd = () => { const row = [...(box?.querySelectorAll(".sum-row") ?? [])].find((r) => /Totale documento/.test(r.textContent || "")); const v = row?.querySelector(".num")?.textContent; const t = foot.querySelector("#sfTot"); if (t && v) t.textContent = v; };
+    if (box) new MutationObserver(upd).observe(box, { childList: true, subtree: true, characterData: true }); upd();
+  };
+  new MutationObserver(enhance).observe(root, { childList: true, subtree: true });
+}
+
+/** Phones: tables with one column per year (Calcolo fiscale annuale) show one year at a time, chosen with chips. */
+export function yearColumns(root: ParentNode, year: number) {
+  const narrow = typeof window !== "undefined" && window.innerWidth <= 760;
+  root.querySelectorAll<HTMLTableElement>("table").forEach((t) => {
+    const heads = [...(t.tHead?.rows[0]?.cells ?? [])];
+    const yi = heads.map((h, i) => (/^\d{4}$/.test(h.textContent?.trim() || "") ? i : -1)).filter((i) => i > 0);
+    if (yi.length < 3) return;
+    const wrap = t.closest<HTMLElement>(".tw"); if (!wrap) return;
+    let bar = wrap.previousElementSibling as HTMLElement | null;
+    if (!narrow) { if (bar?.classList.contains("ycols")) bar.remove(); t.classList.remove("one-year"); [...t.rows].forEach((r) => [...r.cells].forEach((c) => (c.style.display = ""))); return; }
+    const want = String(year); const keyOf = (i: number) => heads[i]!.textContent!.trim();
+    let sel = Number(t.dataset.ycol) || (yi.find((i) => keyOf(i) === want) ?? yi[0]!);
+    const show = () => {
+      t.dataset.ycol = String(sel); t.classList.add("one-year");
+      [...t.rows].forEach((r) => { if (r.cells.length !== heads.length) return; [...r.cells].forEach((c, i) => { c.style.display = i === 0 || i === sel || !yi.includes(i) ? "" : "none"; }); });
+      bar?.querySelectorAll("button").forEach((b) => b.setAttribute("aria-selected", String(Number(b.dataset.i) === sel)));
+    };
+    if (!bar?.classList.contains("ycols")) {
+      bar = document.createElement("div"); bar.className = "segs ycols"; bar.setAttribute("role", "tablist"); bar.setAttribute("aria-label", "Anno da mostrare");
+      for (const i of yi) { const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "tab"); b.dataset.i = String(i); b.textContent = keyOf(i); b.addEventListener("click", () => { sel = i; show(); }); bar.appendChild(b); }
+      wrap.before(bar);
+    }
+    show();
+  });
+}
+
+/** Panoramica: show or hide the cards (Da fare, Tasse, Patrimonio). Saved on this device, so phone and computer can differ. */
+const HOME_KEY = "cairn-home-cards";
+const HOME_CARDS: [string, string][] = [[".h-todo", "Da fare"], [".h-card[data-go-v='tasse']", "Tasse"], [".h-card[data-go-v='invest']", "Patrimonio"]];
+function homePrefs(): Record<string, boolean> { try { return JSON.parse(localStorage.getItem(HOME_KEY) || "{}"); } catch { return {}; } }
+export function homeCustomize(root: HTMLElement) {
+  const home = root.querySelector<HTMLElement>(".home.v2"); if (!home) return;
+  const prefs = homePrefs();
+  const apply = () => { for (const [sel, label] of HOME_CARDS) { const el = home.querySelector<HTMLElement>(sel); if (el) el.hidden = prefs[label] === false; }
+    const duo = home.querySelector<HTMLElement>(".h-duo"); if (duo) duo.hidden = [...duo.children].every((c) => (c as HTMLElement).hidden); };
+  apply();
+  const hero = home.querySelector(".hero-h"); if (!hero || hero.querySelector(".hcust")) return;
+  const wrap = document.createElement("div"); wrap.className = "hcust";
+  const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn small ghost"; btn.textContent = "Personalizza"; btn.setAttribute("aria-expanded", "false");
+  const pop = document.createElement("div"); pop.className = "hcust-pop"; pop.hidden = true; pop.setAttribute("role", "group"); pop.setAttribute("aria-label", "Schede della panoramica");
+  pop.innerHTML = `<b>Schede visibili</b>` + HOME_CARDS.map(([, l], i) => `<label><input type="checkbox" id="hc-${i}" ${prefs[l] === false ? "" : "checked"}> ${l}</label>`).join("") + `<small>Salvato su questo dispositivo</small>`;
+  pop.querySelectorAll<HTMLInputElement>("input").forEach((inp, i) => inp.addEventListener("change", () => { prefs[HOME_CARDS[i]![1]] = inp.checked; try { localStorage.setItem(HOME_KEY, JSON.stringify(prefs)); } catch { /* private mode */ } apply(); }));
+  btn.addEventListener("click", () => { pop.hidden = !pop.hidden; btn.setAttribute("aria-expanded", String(!pop.hidden)); });
+  document.addEventListener("click", (e) => { if (!wrap.contains(e.target as Node)) { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); } });
+  wrap.append(btn, pop); hero.appendChild(wrap);
 }
