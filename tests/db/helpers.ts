@@ -1,4 +1,8 @@
 import pg from "pg";
+// Return numerics as numbers and dates as plain "YYYY-MM-DD" strings, like PostgREST JSON.
+pg.types.setTypeParser(1700, (v) => Number(v));
+pg.types.setTypeParser(1082, (v) => v);
+pg.types.setTypeParser(20, (v) => Number(v));
 import { randomUUID } from "node:crypto";
 // @ts-expect-error plain ESM script without types
 import { resetDatabase } from "../../scripts/db-local.mjs";

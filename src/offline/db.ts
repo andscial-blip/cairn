@@ -21,6 +21,8 @@ export class LocalDB extends Dexie {
     };
     for (const e of ENTITIES) stores[e] = "id, ledger_id, updated_at, _dirty";
     this.version(1).stores(stores);
+    // v2: other_income table (Dexie keeps existing data and adds the new store).
+    this.version(2).stores(stores);
   }
 
   rows(entity: (typeof ENTITIES)[number]): Table<LocalRow, string> {

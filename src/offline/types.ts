@@ -1,6 +1,6 @@
 export const ENTITIES = [
   "clients", "contracts", "missions", "invoices", "invoice_lines", "f24_payments", "reminders", "tax_returns",
-  "monthly_expenses", "savings_accounts", "investment_accounts", "holdings", "attachments", "ledger_settings",
+  "monthly_expenses", "savings_accounts", "investment_accounts", "holdings", "attachments", "ledger_settings", "other_income",
 ] as const;
 export type Entity = (typeof ENTITIES)[number];
 
