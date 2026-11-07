@@ -19,7 +19,7 @@ function firstDiff(a: string, b: string) { let i = 0; while (i < a.length && a[i
 describe.skipIf(!has)("views on Cairn-stored data = original", async () => {
   const s = G.snapshot;
   // PDFs live in Storage now and are linked differently: compare without them.
-  const legacy = { ...s, invoices: s.invoices.map((v: Record<string, unknown>) => { const o = { ...v }; delete o.pdf; return o; }), config: s.cfgRaw };
+  const legacy = { ...s, invoices: (s.invoices ?? []).map((v: Record<string, unknown>) => { const o = { ...v }; delete o.pdf; return o; }), config: s.cfgRaw };
   const { rows, ids } = has ? await legacyToRows(legacy) : { rows: {}, ids: {} };
   const back = new Map(Object.entries(ids as Record<string, string>).map(([k, u]) => [u, k.slice(k.indexOf(":") + 1)]));
   const unmap = (h: string) => h.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, (u) => back.get(u) ?? u);
