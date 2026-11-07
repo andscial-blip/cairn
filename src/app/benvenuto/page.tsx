@@ -1,4 +1,5 @@
 "use client";
+import { Logo } from "@/components/logo";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -39,10 +40,10 @@ export default function Benvenuto() {
   }
 
   return (
-    <main className="wrap" style={{ maxWidth: 440, paddingTop: 64 }}>
-      <section className="panel">
-        <div className="panel-h"><h2>Benvenuto in Cairn</h2></div>
-        <div className="panel-b">
+    <main className="auth">
+      <section className="auth-card">
+        <div className="auth-brand"><Logo /><h1>Benvenuto in Cairn</h1></div>
+        <div>
           {!ready && <p className="muted">Verifico il link…</p>}
           {ready && !email && <p className="muted">Il link non è valido o è scaduto. Chiedi un nuovo invito oppure usa "Password dimenticata" dalla pagina di accesso.</p>}
           {ready && email && (
@@ -53,7 +54,7 @@ export default function Benvenuto() {
                 <div className="f s2"><label htmlFor="p2">Ripeti password</label><input id="p2" type="password" autoComplete="new-password" required value={pw2} onChange={(e) => setPw2(e.target.value)} /></div>
               </div>
               {msg && <p role="status" className="muted" style={{ marginTop: 12 }}>{msg}</p>}
-              <button className="btn primary" style={{ marginTop: 16 }} type="submit" disabled={busy}>{busy ? "Salvataggio…" : "Salva password"}</button>
+              <button className="btn primary" style={{ marginTop: 18, width: "100%", minHeight: 46 }} type="submit" disabled={busy}>{busy ? "Salvataggio…" : "Salva password"}</button>
             </form>
           )}
         </div>

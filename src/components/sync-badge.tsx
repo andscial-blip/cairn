@@ -10,7 +10,7 @@ const ago = (iso: string | null) => {
 };
 
 /** Always-visible sync state: online/offline, pending operations, conflicts, last sync. */
-export function SyncBadge() {
+export function SyncBadge({ compact = false }: { compact?: boolean }) {
   const { status, auth } = useApp();
   if (auth.kind !== "ready") return null;
   const online = status?.online ?? !auth.offline;
@@ -23,9 +23,9 @@ export function SyncBadge() {
     : status?.pending ? `${status.pending} in attesa di invio`
     : `Sincronizzato · ${ago(status?.lastSyncAt ?? null)}`;
   return (
-    <Link href="/sincronizzazione" className={`cdp ${tone}`} style={{ textDecoration: "none", whiteSpace: "nowrap" }} aria-live="polite" title="Stato della sincronizzazione">
-      <span aria-hidden="true" style={{ display: "inline-block", width: 8, height: 8, borderRadius: 4, marginRight: 6, background: online ? "var(--green-soft)" : "var(--tax)" }} />
-      <span className={tone === "far" ? "sb-hide-sm" : undefined}>{label}</span>
+    <Link href="/sincronizzazione" className={`sync ${tone}${compact ? " compact" : ""}`} aria-live="polite" title={label} aria-label={`Sincronizzazione: ${label}`}>
+      <span aria-hidden="true" className={`sync-dot ${online ? "on" : "off"}`} />
+      {(!compact || tone !== "far") && <span className="sync-l">{compact && tone !== "far" ? (status?.pending ? String(status.pending) : "!") : label}</span>}
     </Link>
   );
 }

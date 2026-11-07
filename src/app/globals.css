@@ -1,29 +1,43 @@
 /* Design tokens and base styles carried over 1:1 from the approved artifact (formerly "Cassa e Fisco", v34). */
 
 /* Layout: sticky slate header + section nav; one column of panels on phone, 12-col grid on desktop. Palette taken from Andrea's Excel. */
+/* ============================================================================================
+   Cairn design system v2 — tokens. Palette: blu notte + toni tenui (verde acqua, lilla, giallo).
+   Semantics: --green = positive, --red/--pink = alert, --lilac = forecast/hypothesis, --amber = attention.
+   Text contrast on white: --fg 15:1, --muted 6:1, --faint 4.6:1 (AA for small text).
+   ============================================================================================ */
 :root{
-  --slate:#44546A; --slate-2:#5B6B82; --navy:#16324F;
-  --green:#2F7D4D; --green-soft:#63C384; --red:#B42318; --amber:#8A6100; --amber-soft:#E8BE5A; --cost:#2E3D52; --cyan:#0094C9;--tax:#E3897A;--sky:#7FAFD9;--gold-d:#C9A03A;
-  --bg:#EEF1F5; --surface:#FFFFFF; --surface-2:#F3F4F6; --band:#DAE3F3; --line:#D0D7DE; --line-2:#E4E8ED;
-  --fg:#1C2633; --muted:#5E6B7C; --faint:#8A95A3;
-  --pink:#FCE3E6; --pink-fg:#A3121E; --ok-bg:#E5F4EA; --warn-bg:#FFF4D6;
+  --slate:#2E3D52; --slate-2:#4A5B73; --navy:#1E2B3C; --mist:#C9D6EA;
+  --green:#23735F; --green-soft:#5FB8A3; --red:#B23B32; --amber:#8A6100; --amber-soft:#E8BE5A; --cost:#2E3D52;
+  --cyan:#3D7BD9; --tax:#E2917F; --sky:#8FAFD6; --gold-d:#C9A03A; --lilac:#8C80D3; --lilac-bg:#EEEBFA;
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#F2F5F9; --band:#E3EAF4; --line:#D6DDE6; --line-2:#E7EBF0;
+  --fg:#18222F; --muted:#556275; --faint:#6B7889;
+  --pink:#FBE9E6; --pink-fg:#A3362E; --ok-bg:#E2F2ED; --warn-bg:#FFF3D3;
   --on-slate:#FFFFFF;
-  --f-ui:"IBM Plex Sans Condensed","Aptos Narrow","Arial Narrow",system-ui,sans-serif;
-  --f-body:"IBM Plex Sans","Aptos",system-ui,sans-serif;
-  --r:6px;
+  --f-ui:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:10px; --r-sm:8px; --r-lg:14px;
+  --sh-1:0 1px 2px rgba(16,24,40,.04),0 1px 1px rgba(16,24,40,.03);
+  --sh-2:0 8px 24px rgba(16,24,40,.08),0 2px 6px rgba(16,24,40,.05);
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px;
+  --sidebar:236px; --topbar:56px; --tap:44px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --slate:#3A4A61; --slate-2:#55667F; --navy:#C9D6E8;
-  --green:#5CC685; --green-soft:#63C384; --red:#FF7B72; --amber:#F2B632; --amber-soft:#E8BE5A; --cost:#C9D6E8; --cyan:#4CC3F0;--tax:#EE9A8C;--sky:#8DBBE4;--gold-d:#F2C55C;
-  --bg:#12171E; --surface:#1A212B; --surface-2:#212A36; --band:#24324A; --line:#334052; --line-2:#2A3442;
-  --fg:#E7ECF2; --muted:#9AA7B6; --faint:#6F7C8B;
-  --pink:#3A1E24; --pink-fg:#FF9AA5; --ok-bg:#1C3326; --warn-bg:#3A3018; --on-slate:#FFFFFF; color-scheme:dark}}
+  --slate:#2B3A4F; --slate-2:#506179; --navy:#DCE5F1; --mist:#C9D6EA;
+  --green:#6CCBB3; --green-soft:#5FB8A3; --red:#FF8A80; --amber:#F2C55C; --amber-soft:#E8BE5A; --cost:#C9D6E8;
+  --cyan:#7FB0FF; --tax:#EE9A8C; --sky:#8DBBE4; --gold-d:#F2C55C; --lilac:#A99EEA; --lilac-bg:#2B2840;
+  --bg:#10151C; --surface:#171E27; --surface-2:#1E2732; --band:#243247; --line:#2E3A4A; --line-2:#26303D;
+  --fg:#E8EDF3; --muted:#A3B0C0; --faint:#8592A3;
+  --pink:#3A2023; --pink-fg:#FFA39B; --ok-bg:#183229; --warn-bg:#382F17; --on-slate:#FFFFFF;
+  --sh-1:none; --sh-2:0 8px 24px rgba(0,0,0,.4); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --slate:#3A4A61; --slate-2:#55667F; --navy:#C9D6E8;
-  --green:#5CC685; --green-soft:#63C384; --red:#FF7B72; --amber:#F2B632; --amber-soft:#E8BE5A; --cost:#C9D6E8; --cyan:#4CC3F0;--tax:#EE9A8C;--sky:#8DBBE4;--gold-d:#F2C55C;
-  --bg:#12171E; --surface:#1A212B; --surface-2:#212A36; --band:#24324A; --line:#334052; --line-2:#2A3442;
-  --fg:#E7ECF2; --muted:#9AA7B6; --faint:#6F7C8B;
-  --pink:#3A1E24; --pink-fg:#FF9AA5; --ok-bg:#1C3326; --warn-bg:#3A3018; --on-slate:#FFFFFF; color-scheme:dark}
+  --slate:#2B3A4F; --slate-2:#506179; --navy:#DCE5F1; --mist:#C9D6EA;
+  --green:#6CCBB3; --green-soft:#5FB8A3; --red:#FF8A80; --amber:#F2C55C; --amber-soft:#E8BE5A; --cost:#C9D6E8;
+  --cyan:#7FB0FF; --tax:#EE9A8C; --sky:#8DBBE4; --gold-d:#F2C55C; --lilac:#A99EEA; --lilac-bg:#2B2840;
+  --bg:#10151C; --surface:#171E27; --surface-2:#1E2732; --band:#243247; --line:#2E3A4A; --line-2:#26303D;
+  --fg:#E8EDF3; --muted:#A3B0C0; --faint:#8592A3;
+  --pink:#3A2023; --pink-fg:#FFA39B; --ok-bg:#183229; --warn-bg:#382F17; --on-slate:#FFFFFF;
+  --sh-1:none; --sh-2:0 8px 24px rgba(0,0,0,.4); color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
 body{color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}

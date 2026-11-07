@@ -3,9 +3,11 @@ import Link from "next/link";
 import { LegacyView } from "@/components/legacy-view";
 import { CalendarPanel } from "@/components/calendar-panel";
 import { TemplatePanel } from "@/components/template-panel";
+import { SecurityPanel } from "@/components/security-panel";
 export default function Page() {
   return (<>
     <LegacyView view="set" />
+    <SecurityPanel />
     <CalendarPanel />
     <TemplatePanel />
     <section className="panel" style={{ marginTop: 18 }}>

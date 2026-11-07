@@ -4,6 +4,8 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { LocalDB } from "@/offline/db";
 import { checkOfflineAccess, type OfflineGrant } from "@/offline/session";
 import { isNetworkError } from "@/offline/net";
+import { Logo } from "@/components/logo";
+import { BRAND } from "@/lib/brand";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -51,20 +53,18 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="wrap" style={{ maxWidth: 420, paddingTop: 64 }}>
-      <section className="panel">
-        <div className="panel-h"><h2>Accedi a Cairn</h2></div>
-        <form className="panel-b" onSubmit={submit}>
+    <main className="auth">
+      <section className="auth-card" aria-labelledby="t">
+        <div className="auth-brand"><Logo /><h1 id="t">Cairn</h1><p>{BRAND.tagline}</p></div>
+        <form onSubmit={submit}>
           <div className="fields">
-            <div className="f s2"><label htmlFor="email">Email</label><input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+            <div className="f s2"><label htmlFor="email">Email</label><input id="email" type="email" autoComplete="username" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
             <div className="f s2"><label htmlFor="pw">Password</label><input id="pw" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           </div>
           {msg && <p className="muted" role="status" style={{ marginTop: 12 }}>{msg}</p>}
           {offlineUntil && <p className="muted" style={{ marginTop: 12 }}>Questo dispositivo ha l&apos;accesso offline fino al {new Date(offlineUntil).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}. <a href="/">Entra senza connessione</a></p>}
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            <button className="btn primary" type="submit" disabled={busy}>{busy ? "Accesso…" : "Accedi"}</button>
-            <button className="btn ghost" type="button" onClick={reset}>Password dimenticata</button>
-          </div>
+          <button className="btn primary" type="submit" disabled={busy} style={{ width: "100%", minHeight: 46, marginTop: 18 }}>{busy ? "Accesso…" : "Accedi"}</button>
+          <button className="btn ghost" type="button" onClick={reset} style={{ width: "100%", marginTop: 6 }}>Password dimenticata</button>
         </form>
       </section>
     </main>

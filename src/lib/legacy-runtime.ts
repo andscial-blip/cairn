@@ -36,7 +36,13 @@ export const V3_PATH = (ledger: string) => `${ledger}/templates/excel-v3.xlsx`;
 const COMPOSE: Record<string, (FX: unknown) => string> = {
   home: (FX) => app!.vHome(FX), entr: (FX) => app!.vEntrate(FX), spese: (FX) => app!.vSpese(FX), risp: (FX) => app!.vRisp(FX),
   invest: (FX) => app!.vInvest(FX), anal: (FX) => app!.vAnal(FX), inv: (FX) => app!.vInv(FX), prev: (FX) => app!.vPrev(FX), f24: (FX) => app!.vF24(FX),
-  tasse: (FX) => app!.compliancePanel() + app!.vTasse(FX) + `<div style="height:8px"></div>` + app!.vFisco(FX) + app!.redditiPanel(),
+  // Fisco › Tasse e F24: compliance always on top, then one of three focused views (was one 5,000 px page).
+  tasse: (FX) => {
+    const T = [["f24", "Versamenti e conto tasse"], ["calc", "Calcolo annuale"], ["redditi", "Altri redditi"]];
+    const t = T.some((x) => x[0] === S.ttab) ? S.ttab : "f24";
+    const bar = `<div class="segs" role="tablist" aria-label="Viste di tasse e F24">${T.map(([k, l]) => `<button type="button" role="tab" aria-selected="${k === t}" data-ttab-go="${k}">${l}</button>`).join("")}</div>`;
+    return app!.compliancePanel() + bar + (t === "f24" ? app!.vTasse(FX) : t === "calc" ? app!.vFisco(FX) : app!.redditiPanel());
+  },
   contr: (FX) => app!.vContr(FX) + `<div class="eyebrow" style="margin:22px 0 4px">Missioni</div>` + app!.vMis(FX),
   set: (FX) => app!.vSet(FX),
 };
@@ -61,6 +67,17 @@ export function renderLegacy() {
     h += (COMPOSE[S.view] ?? COMPOSE.home!)(FX);
     el.innerHTML = h;
     app.bindView(FX);
+    // In-page tabs (Analisi, Tasse e F24): remember the choice in S and redraw.
+    if (!el.dataset.tabs) {
+      el.dataset.tabs = "1";
+      el.addEventListener("click", (e) => {
+        const b = (e.target as Element).closest?.("[data-atab-go],[data-ttab-go],[data-prev-all],[data-f24-past]") as HTMLElement | null; if (!b) return;
+        if (b.dataset.prevAll) S.prevAll = !S.prevAll;
+        else if (b.dataset.f24Past) S.f24past = !S.f24past;
+        else if (b.dataset.atabGo) S.atab = b.dataset.atabGo; else S.ttab = b.dataset.ttabGo;
+        renderLegacy();
+      });
+    }
     schedulePublish();
   } catch (e) {
     console.error(e);

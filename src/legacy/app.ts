@@ -1,6 +1,7 @@
 // @ts-nocheck
 /* eslint-disable */
-// GENERATED — do not edit by hand (private/tools/gen-app.cjs). Source: the original Cairn single-file app.
+// Source of the views, forms and actions (originally extracted from the single-file app; maintained here since v2).
+// The pre-redesign copy is frozen in tests/fixtures/legacy-original.ts: tests use it to prove calculations are unchanged.
 // Rendering, forms, sheets and actions are the original code, extracted verbatim. What is injected instead:
 //  - engine calls → src/domain/engine.ts (verified equal on real data), following scenario edits of S;
 //  - S.db → the write bridge (src/legacy/bridge.ts) on the offline outbox;
@@ -253,24 +254,26 @@ function vHome(FX){
   const KV={};{const curM=y===cy?new Date().getMonth():11;const mn=i=>MESI_L[i].charAt(0)+MESI_L[i].slice(1).toLowerCase();
    KV.inc=VZ.cols(mInc,[curM],"Incassato per mese\n"+mInc.map((v,i)=>v?mn(i)+": "+eur0(v):null).filter(Boolean).join("\n"),i=>i===curM&&y===cy?"var(--amber-soft)":"var(--slate)");
    const op=f.oneriPct||0;KV.net=VZ.cols(mInc.map(v=>v*(1-op)),[],"Netto per mese (stima)\n"+mInc.map((v,i)=>v?mn(i)+": "+eur0(v*(1-op)):null).filter(Boolean).join("\n"),()=>"var(--green-soft)");
-   const ip=f.oneri?f.inps/f.oneri:0;if(oneri>0)KV.one=VZ.stack([{v:oneri*ip,c:"#8497B0"},{v:oneri*(1-ip),c:"var(--amber-soft)"}],Math.max(1,oneri),[],`INPS: ${eur0(oneri*ip)}\nImposta: ${eur0(oneri*(1-ip))}`)+`<div class="vzl"><span>INPS ${eur0(oneri*ip)}</span><span>imposta ${eur0(oneri*(1-ip))}</span></div>`;
-   if(accant>0)KV.acc=VZ.stack([{v:oneri,c:"#8497B0"},{v:Math.max(0,accant-oneri),c:"var(--amber-soft)"}],Math.max(1,accant),[],`Oneri stimati: ${eur0(oneri)}\nMargine di sicurezza: ${eur0(Math.max(0,accant-oneri))}`)+`<div class="vzl"><span>oneri</span><span>+ margine ${pct(P(y).margine,0)}</span></div>`;
-   const op2=y>cy?projY.map(x=>({v:x.imponibile,c:"#C9D6EA",t:c2n(x.cliente)+" "+x.label})):open.map(v=>({v:tot(v).documento,c:stato(v)==="Scaduta"?"var(--tax)":"var(--slate)",t:v.num+" "+c2n(v.cliente)}));
+   const ip=f.oneri?f.inps/f.oneri:0;if(oneri>0)KV.one=VZ.stack([{v:oneri*ip,c:"var(--c-mid)"},{v:oneri*(1-ip),c:"var(--amber-soft)"}],Math.max(1,oneri),[],`INPS: ${eur0(oneri*ip)}\nImposta: ${eur0(oneri*(1-ip))}`)+`<div class="vzl"><span>INPS ${eur0(oneri*ip)}</span><span>imposta ${eur0(oneri*(1-ip))}</span></div>`;
+   if(accant>0)KV.acc=VZ.stack([{v:oneri,c:"var(--c-mid)"},{v:Math.max(0,accant-oneri),c:"var(--amber-soft)"}],Math.max(1,accant),[],`Oneri stimati: ${eur0(oneri)}\nMargine di sicurezza: ${eur0(Math.max(0,accant-oneri))}`)+`<div class="vzl"><span>oneri</span><span>+ margine ${pct(P(y).margine,0)}</span></div>`;
+   const op2=y>cy?projY.map(x=>({v:x.imponibile,c:"var(--c-pale)",t:c2n(x.cliente)+" "+x.label})):open.map(v=>({v:tot(v).documento,c:stato(v)==="Scaduta"?"var(--tax)":"var(--slate)",t:v.num+" "+c2n(v.cliente)}));
    KV.ape=op2.length?VZ.stack(op2,Math.max(1,op2.reduce((a,x)=>a+x.v,0)),[],op2.map(x=>x.t+": "+eur0(x.v)).join("\n")):"";
-   const max=Math.max(s.s85,f.ric||0)*1.02;const segs=[{v:f.inc||0,c:"var(--slate)"},{v:f.att||0,c:"#8497B0"},{v:(f.contr||0)+(f.stima||0),c:"#C9D6EA"}];const tp=`Incassato: ${eur0(f.inc||0)}\nFatture aperte: ${eur0(f.att||0)}\nDa contratti: ${eur0((f.contr||0)+(f.stima||0))}\nSoglia: ${eur0(s.s85)}`;
+   const max=Math.max(s.s85,f.ric||0)*1.02;const segs=[{v:f.inc||0,c:"var(--slate)"},{v:f.att||0,c:"var(--c-mid)"},{v:(f.contr||0)+(f.stima||0),c:"var(--c-pale)"}];const tp=`Incassato: ${eur0(f.inc||0)}\nFatture aperte: ${eur0(f.att||0)}\nDa contratti: ${eur0((f.contr||0)+(f.stima||0))}\nSoglia: ${eur0(s.s85)}`;
    KV.prev=VZ.stack(segs,max,[{v:s.s85,c:"var(--tax)"}],tp);
    KV.sog=VZ.stack([{v:f.ric||0,c:(f.ric||0)>=s.allerta?"var(--tax)":"var(--slate)"}],s.s85,[{v:s.allerta,c:"var(--gold-d)",dash:1}],`Previsione: ${eur0(f.ric||0)}\nAllerta: ${eur0(s.allerta)}\nSoglia: ${eur0(s.s85)}`);
    if(y===cy){const fr=f24Rows(FX);const m12=[];const d=new Date();for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()+i,1);m12.push(x.getFullYear()+"-"+pad(x.getMonth()+1))}
      const vv=m12.map(m=>fr.filter(r=>!r.versato&&r.data.slice(0,7)===m).reduce((a,r)=>a+r.importo,0));const hi=nx?[m12.indexOf(nx.data.slice(0,7))]:[];
-     KV.f24=VZ.cols(vv,hi,"F24 nei prossimi 12 mesi\n"+m12.map((m,i)=>vv[i]?MESI[+m.slice(5)-1]+" "+m.slice(2,4)+": "+eur0(vv[i]):null).filter(Boolean).join("\n"),i=>hi.includes(i)?"var(--cost)":"#ADB9CA")}}
+     KV.f24=VZ.cols(vv,hi,"F24 nei prossimi 12 mesi\n"+m12.map((m,i)=>vv[i]?MESI[+m.slice(5)-1]+" "+m.slice(2,4)+": "+eur0(vv[i]):null).filter(Boolean).join("\n"),i=>hi.includes(i)?"var(--cost)":"var(--c-soft)")}}
   return `
-  <section>
+  <div class="home"><section class="h-kpi">
     <div class="eyebrow" style="margin-bottom:8px">Anno fiscale ${y} · per data di incasso${y>cy?" · anno futuro: valori da contratti":y<cy?" · anno chiuso":""}</div>
     <div class="kpis">
       <div class="kpi amber"><div class="l">Fatturato incassato</div><div class="v">${eur0(incassato)}</div>${KV.inc||""}<div class="s">${paid.length} fatture</div></div>
       <div class="kpi green"><div class="l">Netto reale</div><div class="v">${eur0(netto)}</div>${KV.net||""}<div class="s">${eur0(netto/mesiTrasc)} / mese</div></div>
       <div class="kpi"><div class="l">Oneri (INPS + imposta)</div><div class="v">${eur0(oneri)}</div>${KV.one||""}<div class="s">${pct(f.oneriPct||0)} dei ricavi</div></div>
       <div class="kpi"><div class="l">Da accantonare</div><div class="v">${eur0(accant)}</div>${KV.acc||""}<div class="s">sugli incassi ${y}</div></div>
+    </div>
+    <div class="kpis kpis-2">
       <div class="kpi ${late.length?"alert":""}"><div class="l">${y>cy?"Previsto da contratti":"Da incassare "+y}</div><div class="v">${aperto?eur0(aperto):"—"}</div>${KV.ape||""}<div class="s">${y>cy?projY.length+" fatture previste":open.length?open.length+" aperte"+(late.length?` · <b style="color:var(--pink-fg)">${late.length} scadute</b>`:""):"tutto incassato"}</div></div>
       <div class="kpi"><div class="l">Previsione anno</div><div class="v">${y>cy?approx(f.ric):eur0(f.ric||0)}</div>${KV.prev||""}<div class="s">${FMIN[y]&&FMIN[y].ric<(f.ric||0)-1?"minimo garantito "+eur0(FMIN[y].ric):"incassi + aperte + contratti"}</div></div>
       <div class="kpi ${(f.soglia||0)>=s.allerta/s.s85?"alert":""}"><div class="l">Soglia ${eur0(s.s85)}</div><div class="v">${pct(f.soglia||0)}</div>${KV.sog||""}<div class="s">usata (previsione)</div></div>
@@ -278,9 +281,9 @@ function vHome(FX){
        :`<div class="kpi"><div class="l">F24 ${y>cy?"previsti":"versati"} nel ${y}</div><div class="v">${f24Ytot?eur0(f24Ytot):"—"}</div><div class="s">${f24Ytot?(y>cy?"stima":"registrati nell'app"):y<cy?"non registrati nell'app":"nessuno"}</div></div>`}
     </div>
   </section>
-  ${personalPanel(FX)}
-  <div class="grid">
-    <section class="panel c7"><div class="panel-h"><h2>Da fare ora</h2><span class="eyebrow tday" style="margin-left:4px">oggi ${dmy(todayISO())}</span><div class="spacer"></div><button class="btn small ghost" data-calsync="1" type="button" title="Aggiorna Google Calendar">${ico("sync",14)} Calendario</button></div>
+  <div class="h-pers">${personalPanel(FX)}</div>
+  <div class="grid h-main">
+    <section class="panel c7 h-todo"><div class="panel-h"><h2>Da fare ora</h2><span class="eyebrow tday" style="margin-left:4px">oggi ${dmy(todayISO())}</span><div class="spacer"></div><button class="btn small ghost" data-calsync="1" type="button" title="Aggiorna Google Calendar">${ico("sync",14)} Calendario</button></div>
       <ul class="tlist">${todo.map(t=>{const ci=t.date?cdInfo(t.date):null;
         return `<li class="${t.lvl}"><span class="dot ${t.lvl}">${DOTICON[t.ic]?ico(DOTICON[t.ic],13):t.ic}</span><div class="tm"><div class="tt">${t.title}</div>${t.sub?`<div class="ts">${t.sub}</div>`:""}</div><div class="tr">${t.big?`<b class="num">${t.big}${t.bigL?` <small>${t.bigL}</small>`:""}</b>`:""}${ci?`<span class="cdp ${ci.c}">${ci.t}</span>`:""}</div><div class="ta">${t.act||""}</div></li>`}).join("")}</ul>
     </section>
@@ -293,8 +296,8 @@ function vHome(FX){
       <div style="margin-top:4px">${cRows}</div>
       </div>
     </section>
-    <section class="panel c12"><div class="panel-h"><h2>Trend mensile ${y}</h2><div class="spacer"></div><div class="legend"><span><i style="background:var(--slate)"></i>Incassato</span><span><i style="background:var(--band);border:1px solid var(--line)"></i>Fatture aperte</span><span><i style="background:repeating-linear-gradient(135deg,#8497B0 0 3px,transparent 3px 6px);border:1px solid #8497B0"></i>Da contratto</span></div></div><div class="panel-b chart">${chart}</div></section>
-  </div>`;
+    <section class="panel c12"><div class="panel-h"><h2>Trend mensile ${y}</h2><div class="spacer"></div><div class="legend"><span><i style="background:var(--slate)"></i>Incassato</span><span><i style="background:var(--band);border:1px solid var(--line)"></i>Fatture aperte</span><span><i style="background:repeating-linear-gradient(135deg,var(--c-mid) 0 3px,transparent 3px 6px);border:1px solid var(--c-mid)"></i>Da contratto</span></div></div><div class="panel-b chart">${chart}</div></section>
+  </div></div>`;
 }
 function barChart(a,b,c){c=c||Array(12).fill(0);
   const W=720,H=250,L=56,R=10,T=14,B=28,max=Math.max(1000,...a.map((v,i)=>v+b[i]+c[i]));
@@ -302,11 +305,11 @@ function barChart(a,b,c){c=c||Array(12).fill(0);
   let g="";for(let t=0;t<=top+.1;t+=step){g+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)"/><text x="${L-8}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${t>=1000?(t/1000).toLocaleString("it-IT")+"k":t}</text>`}
   let bars="";a.forEach((v,i)=>{const x=L+sx*i+(sx-bw)/2;const h1=(H-T-B)*v/top,h2=(H-T-B)*b[i]/top;
     if(v>0)bars+=`<rect x="${x}" y="${y(v)}" width="${bw}" height="${h1}" fill="var(--slate)" rx="2"></rect>`;
-    if(b[i]>0)bars+=`<rect x="${x}" y="${y(v+b[i])}" width="${bw}" height="${h2}" fill="var(--band)" stroke="#8497B0" stroke-dasharray="3 2" rx="2"></rect>`;
-    if(c[i]>0)bars+=`<rect x="${x}" y="${y(v+b[i]+c[i])}" width="${bw}" height="${(H-T-B)*c[i]/top}" fill="url(#hatch)" stroke="#8497B0" rx="2"></rect>`;
+    if(b[i]>0)bars+=`<rect x="${x}" y="${y(v+b[i])}" width="${bw}" height="${h2}" fill="var(--band)" stroke="var(--c-mid)" stroke-dasharray="3 2" rx="2"></rect>`;
+    if(c[i]>0)bars+=`<rect x="${x}" y="${y(v+b[i]+c[i])}" width="${bw}" height="${(H-T-B)*c[i]/top}" fill="url(#hatch)" stroke="var(--c-mid)" rx="2"></rect>`;
     {const tl=[MESI_L[i].charAt(0)+MESI_L[i].slice(1).toLowerCase()];if(v)tl.push("Incassato: "+eur0(v));if(b[i])tl.push("Fatture aperte: "+eur0(b[i]));if(c[i])tl.push("Da contratto: "+eur0(c[i]));if(tl.length>2)tl.push("Totale: "+eur0(v+b[i]+c[i]));if(tl.length===1)tl.push("Nessun incasso");bars+=`<rect class="hov" x="${L+sx*i}" y="${T}" width="${sx}" height="${H-T-B}" data-tip="${esc(tl.join("\n"))}"></rect>`}
     bars+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${MESI[i]}</text>`});
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ricavi per mese"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--surface)"/><rect width="3" height="6" fill="#8497B0" opacity=".55"/></pattern></defs>${g}${bars}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ricavi per mese"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--surface)"/><rect width="3" height="6" fill="var(--c-mid)" opacity=".55"/></pattern></defs>${g}${bars}</svg>`;
 }
 function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x)));const n=x/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p}
 function filtered(){
@@ -353,12 +356,15 @@ function vPrev(FX){
     <div class="pc-amt num">${eur(x.comp+x.ind+x.bollo)}</div>
     <div class="muted" style="font-size:12.5px">${eur(x.comp)} compenso${x.ind?` + ${x.gg} gg trasferta (${eur(x.ind)})`:""} + bollo</div>
     <button class="btn primary" data-proj="${esc(x.contratto)}|${x.months[0]}" type="button" style="margin-top:10px;width:100%">${ico("pen",14)} Crea fattura</button></div>`;
-  let lastM="";const rows=later.map(x=>{const m=x.data.slice(0,7);const head=m!==lastM?`<tr class="mhead"><td colspan="6">${MESI_L[+m.slice(5)-1].toLowerCase()} ${m.slice(0,4)}</td></tr>`:"";lastM=m;
+  // v2: show the next 6 months; the rest on request (the list used to span ~2 years, 48 rows).
+  const lim=addDays(today,183), shown=S.prevAll?later:later.filter(x=>x.data<=lim), hiddenN=later.length-shown.length;
+  let lastM="";const rows=shown.map(x=>{const m=x.data.slice(0,7);const head=m!==lastM?`<tr class="mhead"><td colspan="6">${MESI_L[+m.slice(5)-1].toLowerCase()} ${m.slice(0,4)}</td></tr>`:"";lastM=m;
     return head+`<tr><td class="num">${dayName(x.data).slice(0,3)} ${dmyShort(x.data)}</td><td class="cli">${esc(c2n(x.cliente))}</td><td>${x.label}${x.ipotesi?' <span class="pill est">ipotesi</span>':""}</td><td class="r num">${x.ind?`<span class="muted">${x.gg} gg · </span>`+eur(x.ind):"—"}</td><td class="r num"><b>${eur(x.comp+x.ind+x.bollo)}</b></td><td class="r"><button class="btn small ghost" data-proj="${esc(x.contratto)}|${x.months[0]}" type="button">Crea</button></td></tr>`}).join("");
   return `${intro("Le fatture che dovrai emettere, calcolate dai <b>contratti</b> (importi e date) e dalle <b>missioni</b> (indennità). Quando crei una fattura, sparisce da qui e passa nel registro.")}
   <section class="panel"><div class="panel-h"><h2>${ico("pen",18)} Da emettere ora</h2></div><div class="panel-b">${now.length?`<div class="pgrid">${now.map(card).join("")}</div>`:`<div class="empty" style="padding:12px">Nessuna fattura da emettere nei prossimi 10 giorni.${PR[0]?` La prossima: <b>${esc(c2n(PR[0].cliente))}</b> il ${dmy(PR[0].data)}.`:""}</div>`}</div></section>
   <section class="panel"><div class="panel-h"><h2>${ico("cal",18)} In arrivo</h2><div class="spacer"></div>${Object.entries(byYear).map(([y,v])=>`<span class="pill est">${y}: ${eur0(v)}</span>`).join(" ")}</div>
    <div class="tw"><table class="tl"><thead><tr><th>Emissione</th><th>Cliente</th><th>Periodo</th><th class="r">Trasferta</th><th class="r">Totale</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="empty">Nessuna altra fattura prevista.</td></tr>`}</tbody></table></div>
+   ${hiddenN>0||S.prevAll?`<div class="panel-b" style="text-align:center;padding:10px"><button class="btn small ghost" type="button" data-prev-all="1">${S.prevAll?"Mostra solo i prossimi 6 mesi":`Mostra tutte (altre ${hiddenN})`}</button></div>`:""}
    <div class="panel-b note" style="margin:0">"Ipotesi" = da un rinnovo non ancora firmato o da giorni di missione stimati. I totali per anno sono per data di incasso.</div></section>`;
 }
 function vContr(FX){
@@ -529,13 +535,13 @@ async function restoreLog(id){const e=S.storico.find(x=>x.id===id);if(!e)return;
   await write(db=>e.prima?db.doc(e.path).set(e.prima):db.doc(e.path).delete(),"Ripristinato")}
 const approx=v=>"≈ "+eur0(Math.round((v||0)/500)*500);
 const STRAORD=new Set(["Casa e lavori"]);
-const SPAL=["var(--slate)","var(--green-soft)","var(--amber-soft)","#8497B0","var(--sky)","#9FD3B2","#F2D58F","#ADB9CA"];
+const SPAL=["var(--slate)","var(--green-soft)","var(--amber-soft)","var(--c-mid)","var(--sky)","var(--c-green-soft)","var(--c-sun-soft)","var(--c-soft)"];
 function spesePanel(inTot,outTot,opt={}){const st=speseStats();
   if(!st)return `<section class="panel c12"><div class="panel-h"><h2>Spese personali</h2></div><div class="panel-b muted">Carica gli estratti conto: le spese mensili per categoria compariranno qui.</div></section>`;
   const cats=Object.entries(st.tot).sort((a,b)=>b[1]-a[1]).map(([k])=>k);const top=cats.slice(0,7),rest=cats.slice(7);
   const ms=st.L.map(m=>m.mese);const lab=ms.map(m=>MESI[+m.slice(5)-1]+" "+m.slice(2,4));
   const ser=top.map((k,i)=>({name:k,color:SPAL[i%SPAL.length],vals:st.L.map(m=>+((m.cat||{})[k])||0)}));
-  if(rest.length)ser.push({name:"Altre",color:"#C9D1DC",vals:st.L.map(m=>rest.reduce((a,k)=>a+(+((m.cat||{})[k])||0),0))});
+  if(rest.length)ser.push({name:"Altre",color:"var(--c-pale)",vals:st.L.map(m=>rest.reduce((a,k)=>a+(+((m.cat||{})[k])||0),0))});
   const chart=svgBars(lab,ser,{stacked:true,label:"Spese personali per mese"});
   const netto=inTot-outTot-st.avgRec*12;
   const rows=cats.map(k=>`<tr><td>${esc(k)}${STRAORD.has(k)?' <span class="pill est">straordinaria</span>':""}</td><td class="r num">${eur0(st.tot[k]/st.n)}</td><td class="r num muted">${eur0(st.tot[k])}</td></tr>`).join("");
@@ -552,10 +558,10 @@ function vSpese(FX){const st=speseStats();const {inTot,outTot}=cash12(FX);
   if(!st)return head+`<section class="panel empty">Nessuna spesa registrata.</section>`;
   const net=inTot-outTot-st.avgRec*12;const last=st.L[st.L.length-1];
   const ml=st.L.map(m=>MESI[+m.mese.slice(5)-1]+" "+m.mese.slice(2,4));const sp=st.avgRec*12;
-  const KS={rec:VZ.cols(st.rec,[],"Spesa ricorrente per mese\n"+st.rec.map((v,i)=>ml[i]+": "+eur0(v)).join("\n")+"\nMedia: "+eur0(st.avgRec),i=>st.rec[i]>st.avgRec?"var(--slate)":"#8497B0"),
+  const KS={rec:VZ.cols(st.rec,[],"Spesa ricorrente per mese\n"+st.rec.map((v,i)=>ml[i]+": "+eur0(v)).join("\n")+"\nMedia: "+eur0(st.avgRec),i=>st.rec[i]>st.avgRec?"var(--slate)":"var(--c-mid)"),
     stra:VZ.cols(st.stra,[],"Lavori casa per mese\n"+st.stra.map((v,i)=>ml[i]+": "+eur0(v)).join("\n"),()=>"var(--amber-soft)"),
     inv:VZ.cols(st.L.map(m=>+m.investito||0),[],"Investito per mese\n"+st.L.map((m,i)=>ml[i]+": "+eur0(+m.investito||0)).join("\n"),()=>"var(--green-soft)"),
-    net:VZ.stack([{v:Math.max(0,net),c:"var(--green-soft)"},{v:sp,c:"var(--amber-soft)"},{v:outTot,c:"#8497B0"}],Math.max(1,inTot),[],`Entrate previste: ${eur0(inTot)}\nLibero: ${eur0(net)}\nSpese ricorrenti: ${eur0(sp)}\nF24: ${eur0(outTot)}`)+`<div class="vzl"><span>libero</span><span>spese</span><span>F24</span></div>`};
+    net:VZ.stack([{v:Math.max(0,net),c:"var(--green-soft)"},{v:sp,c:"var(--amber-soft)"},{v:outTot,c:"var(--c-mid)"}],Math.max(1,inTot),[],`Entrate previste: ${eur0(inTot)}\nLibero: ${eur0(net)}\nSpese ricorrenti: ${eur0(sp)}\nF24: ${eur0(outTot)}`)+`<div class="vzl"><span>libero</span><span>spese</span><span>F24</span></div>`};
   const monthRows=st.L.map((m,i)=>`<tr><td class="num">${MESI[+m.mese.slice(5)-1]} ${m.mese.slice(0,4)}</td><td class="r num">${eur0(st.rec[i])}</td><td class="r num muted">${st.stra[i]?eur0(st.stra[i]):"—"}</td><td class="r num">${eur0(+m.investito||0)}</td></tr>`).join("");
   return head+`<div class="kpis">
     <div class="kpi"><div class="l">Spesa ricorrente al mese</div><div class="v">${eur0(st.avgRec)}</div>${KS.rec}<div class="s">media di ${st.n} mesi</div></div>
@@ -565,7 +571,7 @@ function vSpese(FX){const st=speseStats();const {inTot,outTot}=cash12(FX);
    </div>
    <div class="grid">${spesePanel(inTot,outTot,{noMini:1,extra:`<section class="panel"><div class="panel-h"><h2>Mese per mese</h2><div class="spacer"></div><span class="eyebrow">ultimo mese caricato: ${MESI[+last.mese.slice(5)-1]} ${last.mese.slice(0,4)}</span></div><div class="tw"><table><thead><tr><th>Mese</th><th class="r">Spesa ricorrente</th><th class="r">Lavori casa</th><th class="r">Investito</th></tr></thead><tbody>${monthRows}</tbody></table></div></section>`})}
    </div>`}
-const IPAL=["var(--cost)","var(--sky)","var(--amber-soft)","var(--green-soft)","#ADB9CA","#8497B0","#C9D6EA"];
+const IPAL=["var(--cost)","var(--sky)","var(--amber-soft)","var(--green-soft)","var(--c-soft)","var(--c-mid)","var(--c-pale)"];
 const INV_REV_SUM="📈 Rivedi le % del PAC Trading 212",INV_REV_DESC="Controlla la suddivisione degli ETF (attuale contro obiettivo) e l'orizzonte residuo del PAC. Nell'app: Cairn → Investimenti → Rivedi suddivisione.";
 const addMonthsD=(s,n)=>{const [y,m,d]=s.split("-").map(Number);const x=new Date(y,m-1+n,1);const last=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();return x.getFullYear()+"-"+pad(x.getMonth()+1)+"-"+pad(Math.min(d,last))};
 function invProj(c,r){const i=Math.pow(1+r,1/12)-1;const fv=k=>c.tot*Math.pow(1+i,k)+c.pac*(i?(Math.pow(1+i,k)-1)/i:k);return fv}
@@ -583,7 +589,7 @@ function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
   const today=todayISO(),cy=new Date().getFullYear();
   const mm=Object.entries(a.mensile||{}).sort();const ml=mm.map(([m])=>MESI[+m.slice(5)-1]+" "+m.slice(2,4));
   const K={val:VZ.stack([{v:Math.min(c.costo,c.tot),c:"var(--slate)"},{v:Math.max(0,c.pl),c:"var(--green-soft)"}],Math.max(c.tot,c.costo),[],`Costo di carico: ${eur(c.costo)}\nPlusvalenza latente: ${eur(c.pl)}\nValore: ${eur(c.tot)}`)+`<div class="vzl"><span>costo ${eur0(c.costo)}</span><span>+ ${eur0(c.pl)}</span></div>`,
-    dep:VZ.cols(mm.map(([,v])=>v),[],"Versamenti netti per mese\n"+mm.map(([,v],i)=>ml[i]+": "+eur0(v)).join("\n"),i=>mm[i][1]<0?"var(--tax)":mm[i][1]>=c.pac?"var(--slate)":"#8497B0"),
+    dep:VZ.cols(mm.map(([,v])=>v),[],"Versamenti netti per mese\n"+mm.map(([,v],i)=>ml[i]+": "+eur0(v)).join("\n"),i=>mm[i][1]<0?"var(--tax)":mm[i][1]>=c.pac?"var(--slate)":"var(--c-mid)"),
     pl:VZ.cols(c.T.map(t=>t.pl),[],"Plus/minus per ETF\n"+c.T.map(t=>t.ticker+": "+(t.pl>=0?"+":"−")+eur(Math.abs(t.pl))).join("\n"),i=>c.T[i].pl>=0?"var(--green-soft)":"var(--tax)"),
     pac:VZ.stack([{v:c.trasc,c:"var(--slate)"},{v:c.n,c:"var(--line-2)"}],c.mesiTot,[],`Mesi passati: ${c.trasc}\nMesi rimanenti: ${c.n}\nFine PAC: ${dmy(c.fine)}`)+`<div class="vzl"><span>${c.trasc} mesi</span><span>${c.n} da fare</span></div>`};
   const real=(a.realizzate||[]).reduce((s,x)=>s+(+x.importo||0),0);
@@ -591,7 +597,7 @@ function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
   const legend=c.T.map((t,i)=>`<div class="alrow"><i style="background:${IPAL[i%IPAL.length]}"></i><div class="an"><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.classe||"")}</span></div><div class="ap num">${pct(t.peso)}</div><div class="at num muted">obiettivo ${t.target}%</div></div>`).join("");
   const rows=c.T.map((t,i)=>`<tr><td><span class="sw" style="background:${IPAL[i%IPAL.length]}"></span><b>${esc(t.ticker)}</b><div class="muted" style="font-size:12px">${esc(t.nome)} · ${esc(t.isin)}${t.valuta&&t.valuta!=="EUR"?" · quotato in "+esc(t.valuta):""}</div></td><td class="r num">${(+t.quote).toLocaleString("it-IT",{maximumFractionDigits:3})}</td><td class="r num">${eur(t.costo)}</td><td class="r num"><b>${eur(t.valore)}</b></td><td class="r num ${t.pl>=0?"pos":"bad"}">${t.pl>=0?"+":"−"}${eur(Math.abs(t.pl))}<div style="font-size:11.5px">${t.pl>=0?"+":"−"}${pct(Math.abs(t.pl/(+t.costo||1)))}</div></td><td class="r num">${pct(t.peso)}</td><td class="r num">${t.target}%</td><td class="r">${dPill(t)}</td></tr>`).join("");
   // proiezione
-  const rates=[[.03,"Prudente 3%","#8497B0"],[.05,"Medio 5%","var(--cost)"],[.07,"Dinamico 7%","var(--green-soft)"]];
+  const rates=[[.03,"Prudente 3%","var(--c-mid)"],[.05,"Medio 5%","var(--cost)"],[.07,"Dinamico 7%","var(--green-soft)"]];
   const endY=+c.fine.slice(0,4);const ys=[];for(let y=cy;y<=endY;y++)ys.push(y);
   const kAt=y=>{if(y===cy)return 0;const t=y===endY?c.fine:y+"-12-31";let k=0,d=today.slice(0,8)+pad(+c.p.giorno||1);if(d<=today)d=addMonthsD(d,1);while(d<=t&&d<=c.fine){k++;d=addMonthsD(d,1)}return k};
   const ks=ys.map(kAt);const series=[{name:"Versato",vals:ks.map(k=>c.netDep+c.pac*k),color:"var(--gold-d)",dash:"5 4",w:2}].concat(rates.map(([r,n,col])=>{const f=invProj(c,r);return {name:n,vals:ks.map(k=>f(k)),color:col,area:r===.05}}));
@@ -656,8 +662,8 @@ function vRisp(FX){const head=intro("La liquidità messa da parte: salvadanai e 
   const fv=m=>R.L.reduce((s,c)=>s+rispFV(+c.saldo||0,+((c.versamento||{}).importo)||0,c.netto-(+c.bollo||0),m),0);
   const toTarget=(()=>{if(R.tot>=target)return 0;for(let m=1;m<=600;m++)if(fv(m)>=target)return m;return null})();
   const K={tot:VZ.stack(R.L.map((c,i)=>({v:+c.saldo||0,c:IPAL[i%IPAL.length]})),Math.max(1,R.tot),[],R.L.map(c=>c.nome+": "+eur(c.saldo)).join("\n"))+`<div class="vzl">${R.L.slice(0,2).map(c=>`<span>${esc(c.nome)}</span>`).join("")}</div>`,
-    gain:(()=>{const n12=fv(12)-R.tot-R.mens*12;return VZ.bars2([{v:R.gain,c:"var(--green-soft)"},{v:n12,c:"#9FD3B2"}],`Interessi maturati finora: ${eur(R.gain)}\nInteressi attesi nei prossimi 12 mesi: ${eur(n12)}`)+`<div class="vzl"><span>finora ${eur0(R.gain)}</span><span>prossimi 12 mesi ${eur0(n12)}</span></div>`})(),
-    rend:VZ.bars2([{v:R.lordo,c:"#8497B0"},{v:Math.max(0,R.reale),c:"var(--green-soft)"}],`Rendimento lordo: ${R.lordo.toFixed(2).replace(".",",")}%\nNetto costi: ${R.netto.toFixed(2).replace(".",",")}%\nNetto bollo e tasse: ${R.reale.toFixed(2).replace(".",",")}%`)+`<div class="vzl"><span>lordo ${R.lordo.toFixed(2).replace(".",",")}%</span><span>in tasca ${R.reale.toFixed(2).replace(".",",")}%</span></div>`,
+    gain:(()=>{const n12=fv(12)-R.tot-R.mens*12;return VZ.bars2([{v:R.gain,c:"var(--green-soft)"},{v:n12,c:"var(--c-green-soft)"}],`Interessi maturati finora: ${eur(R.gain)}\nInteressi attesi nei prossimi 12 mesi: ${eur(n12)}`)+`<div class="vzl"><span>finora ${eur0(R.gain)}</span><span>prossimi 12 mesi ${eur0(n12)}</span></div>`})(),
+    rend:VZ.bars2([{v:R.lordo,c:"var(--c-mid)"},{v:Math.max(0,R.reale),c:"var(--green-soft)"}],`Rendimento lordo: ${R.lordo.toFixed(2).replace(".",",")}%\nNetto costi: ${R.netto.toFixed(2).replace(".",",")}%\nNetto bollo e tasse: ${R.reale.toFixed(2).replace(".",",")}%`)+`<div class="vzl"><span>lordo ${R.lordo.toFixed(2).replace(".",",")}%</span><span>in tasca ${R.reale.toFixed(2).replace(".",",")}%</span></div>`,
     em:VZ.stack([{v:Math.min(R.mesi,cfgE),c:R.mesi>=3?"var(--green-soft)":"var(--amber-soft)"}],cfgE,[{v:3,c:"var(--gold-d)",dash:1}],`Coperti: ${R.mesi.toLocaleString("it-IT",{maximumFractionDigits:1})} mesi\nObiettivo: ${cfgE} mesi (${eur0(target)})\nSpesa ricorrente: ${eur0(R.avg)}/mese`)+`<div class="vzl"><span>0</span><span>3 mesi</span><span>${cfgE}</span></div>`};
   const f2=v=>(+v||0).toFixed(2).replace(".",",")+"%";
   const conti=R.L.map((c,i)=>`<div class="acrow">${logoImg(c.logo,c.nome)}<div class="acn"><b>${esc(c.nome)} · ${esc(c.prodotto||"")}</b><span>${f2(c.tassoLordo)} lordo${c.fondo?" · "+esc(c.fondo):""}</span><span>${(c.versamento||{}).importo?`${eur0(c.versamento.importo)} al mese${c.versamento.giorno?" il "+c.versamento.giorno:""}${c.versamento.nota?" + "+esc(c.versamento.nota):""}`:""} · dati al ${dmy(c.aggiornato)}</span></div><div class="acv"><b class="num">${eur(c.saldo)}</b><span class="pos">+${eur(c.guadagno||0)}</span><span>${f2(c.reale)} in tasca</span></div><button class="btn small ghost" data-risp="${esc(c.id)}" type="button">${ico("pen",14)} Aggiorna</button></div>`).join("")
@@ -701,12 +707,12 @@ function personalAnal(FX){const R=rispCalc(),inv=invCalc((S.investimenti||[]).fi
   const f2=v=>pct(v,0);
   // 1. entrate vs uscite mese per mese
   let p1="";if(st){const ml=st.L.map(m=>MESI[+m.mese.slice(5)-1]+" "+m.mese.slice(2,4));
-    p1=`<section class="panel c7"><div class="panel-h"><h2>Dove vanno i soldi ogni mese</h2><div class="spacer"></div>${lg([["Spese ricorrenti","var(--amber-soft)"],["Lavori casa","#F2D58F"],["Investito","var(--cost)"]])}</div><div class="panel-b chart">${svgBars(ml,[{name:"Spese ricorrenti",vals:st.rec,color:"var(--amber-soft)"},{name:"Lavori casa",vals:st.stra,color:"#F2D58F"},{name:"Investito",vals:st.L.map(m=>+m.investito||0),color:"var(--cost)"}],{stacked:1,h:250,refs:[{v:netM,color:"var(--green-soft)",label:"entrate nette medie "+eur0(netM)}],label:"Uscite mensili"})}</div></section>`}
+    p1=`<section class="panel c7"><div class="panel-h"><h2>Dove vanno i soldi ogni mese</h2><div class="spacer"></div>${lg([["Spese ricorrenti","var(--amber-soft)"],["Lavori casa","var(--c-sun-soft)"],["Investito","var(--cost)"]])}</div><div class="panel-b chart">${svgBars(ml,[{name:"Spese ricorrenti",vals:st.rec,color:"var(--amber-soft)"},{name:"Lavori casa",vals:st.stra,color:"var(--c-sun-soft)"},{name:"Investito",vals:st.L.map(m=>+m.investito||0),color:"var(--cost)"}],{stacked:1,h:250,refs:[{v:netM,color:"var(--green-soft)",label:"entrate nette medie "+eur0(netM)}],label:"Uscite mensili"})}</div></section>`}
   // 2. composizione patrimonio
   const comp=[];if(R)R.L.forEach(c=>comp.push({ticker:c.nome,nome:c.prodotto||"",valore:+c.saldo||0}));
   if(inv){const az=inv.T.filter(t=>!/obblig/i.test(t.classe||"")).reduce((a,t)=>a+t.valore,0),ob=inv.T.filter(t=>/obblig/i.test(t.classe||"")).reduce((a,t)=>a+t.valore,0);comp.push({ticker:"ETF azionari",nome:"Trading 212",valore:az},{ticker:"ETF obbligazionari",nome:"Trading 212",valore:ob})}
   comp.forEach(x=>x.peso=x.valore/Math.max(1,pat));
-  const PC=["var(--sky)","#9DC3E6","var(--cost)","#8497B0","var(--green-soft)"];
+  const PC=["var(--sky)","var(--c-sky-soft)","var(--cost)","var(--c-mid)","var(--green-soft)"];
   let acc=0;const Rr=74,C=2*Math.PI*Rr;const seg=comp.map((x,i)=>{const s=`<circle cx="100" cy="100" r="${Rr}" fill="none" stroke="${PC[i%PC.length]}" stroke-width="26" stroke-dasharray="${Math.max(0,x.peso*C-1.5).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc*C).toFixed(2)}" transform="rotate(-90 100 100)" data-tip="${esc(x.ticker+" · "+x.nome+"\n"+eur(x.valore)+" · "+pct(x.peso))}"></circle>`;acc+=x.peso;return s}).join("");
   const p2=`<section class="panel c5"><div class="panel-h"><h2>Composizione del patrimonio</h2></div><div class="panel-b"><div class="alloc"><svg class="donut" viewBox="0 0 200 200" role="img" aria-label="Composizione del patrimonio">${seg}<text x="100" y="94" text-anchor="middle" font-size="11" fill="var(--muted)">Patrimonio</text><text x="100" y="114" text-anchor="middle" font-size="19" font-weight="700" fill="var(--navy)">${eur0(pat)}</text></svg><div class="alist">${comp.map((x,i)=>`<div class="alrow"><i style="background:${PC[i%PC.length]}"></i><div class="an"><b>${esc(x.ticker)}</b> <span class="muted">${esc(x.nome)}</span></div><div class="ap num">${pct(x.peso)}</div><div class="at num muted">${eur0(x.valore)}</div></div>`).join("")}</div></div></div></section>`;
   // 3. indicatori
@@ -728,15 +734,15 @@ function vEntrate(FX){const head=intro("Le tue entrate per data di incasso: quel
   const fixed=F.sp+F.pac+F.rm;const netM=(F.tin-F.tf24)/12;const firmQ=F.tin?F.tfirm/F.tin:0;
   const cl=id=>(clientById(id)||{nome:id}).nome;
   const K={past:VZ.cols(pv.slice(0,12),[],"Incassato per mese\n"+past.map((m,i)=>ml(m)+": "+eur0(pv[i])).join("\n"),()=>"var(--cost)"),
-    fut:VZ.cols(F.rows.map(r=>r.in),[],"Entrate previste\n"+F.rows.map(r=>ml(r.m)+": "+eur0(r.in)+(r.ipo?` (di cui ipotesi ${eur0(r.ipo)})`:"")).join("\n"),i=>F.rows[i].ipo>F.rows[i].firm?"#C9D6EA":"var(--slate)"),
+    fut:VZ.cols(F.rows.map(r=>r.in),[],"Entrate previste\n"+F.rows.map(r=>ml(r.m)+": "+eur0(r.in)+(r.ipo?` (di cui ipotesi ${eur0(r.ipo)})`:"")).join("\n"),i=>F.rows[i].ipo>F.rows[i].firm?"var(--c-pale)":"var(--slate)"),
     net:VZ.stack([{v:F.tf24/12,c:"var(--tax)"},{v:fixed,c:"var(--amber-soft)"},{v:Math.max(0,netM-fixed),c:"var(--green-soft)"}],Math.max(1,F.tin/12),[],`Entrate medie: ${eur0(F.tin/12)}\nF24: ${eur0(F.tf24/12)}\nSpese, PAC e risparmi: ${eur0(fixed)}\nMargine: ${eur0(netM-fixed)}`)+`<div class="vzl"><span>F24</span><span>uscite fisse</span><span>margine</span></div>`,
-    firm:VZ.stack([{v:F.tfirm,c:"var(--slate)"},{v:F.tipo,c:"#C9D6EA"}],Math.max(1,F.tin),[],`Da contratti firmati e fatture aperte: ${eur0(F.tfirm)}\nDa rinnovi ipotizzati: ${eur0(F.tipo)}`)+`<div class="vzl"><span>firmato ${eur0(F.tfirm)}</span><span>ipotesi ${eur0(F.tipo)}</span></div>`};
+    firm:VZ.stack([{v:F.tfirm,c:"var(--slate)"},{v:F.tipo,c:"var(--c-pale)"}],Math.max(1,F.tin),[],`Da contratti firmati e fatture aperte: ${eur0(F.tfirm)}\nDa rinnovi ipotizzati: ${eur0(F.tipo)}`)+`<div class="vzl"><span>firmato ${eur0(F.tfirm)}</span><span>ipotesi ${eur0(F.tipo)}</span></div>`};
   // 24-month chart
   const cats=[...past,...F.rows.map(r=>r.m)].map(m=>m.endsWith("-01")?"Gen "+m.slice(2,4):MESI[+m.slice(5)-1]);
-  const chart=svgBars(cats,[{name:"Incassato",color:"var(--cost)",vals:[...pv.slice(0,12),...F.rows.map(r=>r.done)]},{name:"Previsto (firmato)",color:"#6F8FBF",vals:[...past.map(()=>0),...F.rows.map(r=>r.firm-r.done)]},{name:"Previsto (ipotesi)",color:"#8497B0",vals:[...past.map(()=>0),...F.rows.map(r=>r.ipo)],dashed:cats.map(()=>true)}],{stacked:1,w:1000,h:300,refs:[{v:fixed,color:"var(--gold-d)",label:"spese + PAC + risparmi "+eur0(fixed)}],label:"Entrate 24 mesi"});
+  const chart=svgBars(cats,[{name:"Incassato",color:"var(--cost)",vals:[...pv.slice(0,12),...F.rows.map(r=>r.done)]},{name:"Previsto (firmato)",color:"var(--c-blue)",vals:[...past.map(()=>0),...F.rows.map(r=>r.firm-r.done)]},{name:"Previsto (ipotesi)",color:"var(--c-mid)",vals:[...past.map(()=>0),...F.rows.map(r=>r.ipo)],dashed:cats.map(()=>true)}],{stacked:1,w:1000,h:300,refs:[{v:fixed,color:"var(--gold-d)",label:"spese + PAC + risparmi "+eur0(fixed)}],label:"Entrate 24 mesi"});
   // per cliente 12 mesi
   const byC={};F.rows.forEach(r=>Object.entries(r.src).forEach(([k,v])=>byC[k]=(byC[k]||0)+v));const cr=Object.entries(byC).sort((a,b)=>b[1]-a[1]);
-  const cRows=cr.map(([k,v],i)=>`<div class="alrow"><i style="background:${["var(--slate)","#8497B0","#ADB9CA","#C9D6EA"][i%4]}"></i><div class="an"><b>${esc(cl(k))}</b></div><div class="ap num">${eur0(v)}</div><div class="at num muted">${pct(v/Math.max(1,F.tin),0)} delle entrate · ${eur0(v/12)} al mese</div></div>`).join("")||`<div class="muted">Nessuna entrata prevista.</div>`;
+  const cRows=cr.map(([k,v],i)=>`<div class="alrow"><i style="background:${["var(--slate)","var(--c-mid)","var(--c-soft)","var(--c-pale)"][i%4]}"></i><div class="an"><b>${esc(cl(k))}</b></div><div class="ap num">${eur0(v)}</div><div class="at num muted">${pct(v/Math.max(1,F.tin),0)} delle entrate · ${eur0(v/12)} al mese</div></div>`).join("")||`<div class="muted">Nessuna entrata prevista.</div>`;
   // tabella flusso
   const neg=v=>v<0?"bad":"pos";
   const tRows=F.rows.map(r=>`<tr><td class="num">${ml(r.m)}</td><td class="r num">${eur0(r.in)}${r.done?`<div class="muted" style="font-size:11px">incassati ${eur0(r.done)}</div>`:""}${r.ipo?`<div class="muted" style="font-size:11px">ipotesi ${eur0(r.ipo)}</div>`:""}</td><td class="r num">${r.f24?"−"+eur0(r.f24):"—"}</td><td class="r num">−${eur0(r.sp)}</td><td class="r num">−${eur0(r.pac+r.rm)}</td><td class="r num ${neg(r.saldo)}"><b>${r.saldo<0?"−":"+"}${eur0(Math.abs(r.saldo))}</b></td><td class="r num ${neg(r.cum)}">${eur0(r.cum)}</td></tr>`).join("");
@@ -748,7 +754,7 @@ function vEntrate(FX){const head=intro("Le tue entrate per data di incasso: quel
     <div class="kpi ${firmQ<.5?"alert":""}"><div class="l">Entrate già firmate</div><div class="v">${pct(firmQ,0)}</div>${K.firm}<div class="s">il resto dipende dai rinnovi</div></div>
   </div>
   <div class="grid">
-    <section class="panel c12"><div class="panel-h"><h2>Entrate mese per mese, 24 mesi</h2><div class="spacer"></div>${lg([["Incassato","var(--cost)"],["Previsto firmato","#6F8FBF"],["Previsto ipotesi","#8497B0",1]])}</div><div class="panel-b chart">${chart}<div class="chart-note">Per data di incasso. La linea arancione è quanto esce ogni mese per spese ricorrenti, PAC e risparmi: i mesi sotto la linea si reggono sulla cassa accumulata.</div></div></section>
+    <section class="panel c12"><div class="panel-h"><h2>Entrate mese per mese, 24 mesi</h2><div class="spacer"></div>${lg([["Incassato","var(--cost)"],["Previsto firmato","var(--c-blue)"],["Previsto ipotesi","var(--c-mid)",1]])}</div><div class="panel-b chart">${chart}<div class="chart-note">Per data di incasso. La linea arancione è quanto esce ogni mese per spese ricorrenti, PAC e risparmi: i mesi sotto la linea si reggono sulla cassa accumulata.</div></div></section>
     <section class="panel c8"><div class="panel-h"><h2>Flusso di cassa prossimi 12 mesi</h2><div class="spacer"></div><span class="eyebrow">entrate − F24 − spese − PAC e risparmi</span></div><div class="tw"><table><thead><tr><th>Mese</th><th class="r">Entrate</th><th class="r">F24</th><th class="r">Spese</th><th class="r">PAC e risp.</th><th class="r">Saldo mese</th><th class="r">Cumulato</th></tr></thead><tbody>${tRows}</tbody><tfoot><tr><td><b>Totale</b></td><td class="r num"><b>${eur0(F.tin)}</b></td><td class="r num">−${eur0(F.tf24)}</td><td class="r num">−${eur0(F.sp*12)}</td><td class="r num">−${eur0((F.pac+F.rm)*12)}</td><td class="r num ${neg(F.tsal)}"><b>${F.tsal<0?"−":"+"}${eur0(Math.abs(F.tsal))}</b></td><td></td></tr></tfoot></table></div></section>
     <section class="panel c4"><div class="panel-h"><h2>Da chi arrivano</h2><div class="spacer"></div><span class="eyebrow">12 mesi</span></div><div class="panel-b"><div class="alist">${cRows}</div>
       <ul class="chk" style="margin-top:14px"><li>${minC<0?`<b class="bad">Cassa sotto zero</b> a ${ml(minR.m)} (${eur0(minC)}): serve la liquidità accumulata sul conto corrente.`:`<b class="pos">Cassa sempre positiva</b> nei prossimi 12 mesi: il punto più basso è ${eur0(minC)} a ${ml(minR.m)}.`}</li>
@@ -781,23 +787,23 @@ const VZ={
 function tileViz(t,ctx){const {fA,fN,FX,s,sel,nowY,cliRows,totSel,fast,tr,ggPrev,inM,outM,m12,inTot,outTot}=ctx;const l=t.l;const ys=years().filter(y=>FX[y]&&FX[y].ric>0);
   const yl=ys.map(y=>y+": "+eur0(FX[y].ric));
   if(/già firmati/.test(l)){const q=parseFloat(String(t.v).replace(",","."))/100;t.ring=VZ.ring(q,"var(--gold-d)",t.s);
-    t.viz=VZ.stack([{v:q,c:"var(--slate)"},{v:1-q,c:"#E3E8EF"}],1,[],t.s);t.vzl=`<div class="vzl"><span>firmato</span><span>da rinnovare</span></div>`}
+    t.viz=VZ.stack([{v:q,c:"var(--slate)"},{v:1-q,c:"var(--c-faint)"}],1,[],t.s);t.vzl=`<div class="vzl"><span>firmato</span><span>da rinnovare</span></div>`}
   else if(/^Previsione chiusura|^Ricavi previsti|^Ricavi \d/.test(l)&&fA){const max=Math.max(s.s85,fA.ric)*1.02;
-    t.viz=VZ.stack([{v:fA.inc,c:"var(--slate)"},{v:fA.att,c:"#8497B0"},{v:fA.contr+fA.stima,c:"#C9D6EA"}],max,[{v:s.allerta,c:"var(--gold-d)",dash:1},{v:s.s85,c:"var(--tax)"}],`Incassato: ${eur0(fA.inc)}\nFatture aperte: ${eur0(fA.att)}\nDa contratti: ${eur0(fA.contr+fA.stima)}\nAllerta: ${eur0(s.allerta)}\nSoglia: ${eur0(s.s85)}`);
+    t.viz=VZ.stack([{v:fA.inc,c:"var(--slate)"},{v:fA.att,c:"var(--c-mid)"},{v:fA.contr+fA.stima,c:"var(--c-pale)"}],max,[{v:s.allerta,c:"var(--gold-d)",dash:1},{v:s.s85,c:"var(--tax)"}],`Incassato: ${eur0(fA.inc)}\nFatture aperte: ${eur0(fA.att)}\nDa contratti: ${eur0(fA.contr+fA.stima)}\nAllerta: ${eur0(s.allerta)}\nSoglia: ${eur0(s.s85)}`);
     t.vzl=`<div class="vzl"><span>0</span><span>allerta ${eur0(s.allerta)}</span><span>${eur0(s.s85)}</span></div>`}
-  else if(/^Netto \d/.test(l))t.viz=VZ.cols(ys.map(y=>FX[y].netto),[ys.indexOf(sel)],"Netto per anno\n"+ys.map(y=>y+": "+eur0(FX[y].netto)).join("\n"),i=>ys[i]===sel?"var(--green-soft)":ys[i]>nowY?"#CFE9D8":"#9FD3B2");
-  else if(/^Ricavi vs/.test(l))t.viz=VZ.cols(ys.map(y=>FX[y].ric),[ys.indexOf(sel),ys.indexOf(sel-1)],"Ricavi per anno\n"+yl.join("\n"),i=>ys[i]===sel?"var(--slate)":ys[i]===sel-1?"#8497B0":"var(--band)");
+  else if(/^Netto \d/.test(l))t.viz=VZ.cols(ys.map(y=>FX[y].netto),[ys.indexOf(sel)],"Netto per anno\n"+ys.map(y=>y+": "+eur0(FX[y].netto)).join("\n"),i=>ys[i]===sel?"var(--green-soft)":ys[i]>nowY?"var(--c-green-pale)":"var(--c-green-soft)");
+  else if(/^Ricavi vs/.test(l))t.viz=VZ.cols(ys.map(y=>FX[y].ric),[ys.indexOf(sel),ys.indexOf(sel-1)],"Ricavi per anno\n"+yl.join("\n"),i=>ys[i]===sel?"var(--slate)":ys[i]===sel-1?"var(--c-mid)":"var(--band)");
   else if(/^Oneri sui ricavi/.test(l)){const tp=`Oneri ${sel}: ${pct(fA.oneriPct)}${fN&&fN.ric>0?`\nOneri ${sel+1}: ${pct(fN.oneriPct)}`:""}`;t.ring=VZ.ring(fA.oneriPct/0.3,"var(--gold-d)",tp);
-    if(fN&&fN.ric>0){t.viz=VZ.bars2([{v:fA.oneriPct,c:"#8497B0"},{v:fN.oneriPct,c:"var(--amber-soft)"}],tp);t.vzl=`<div class="vzl"><span>${sel}: ${pct(fA.oneriPct,0)}</span><span>${sel+1}: ${pct(fN.oneriPct,0)}</span></div>`}}
-  else if(/^F24 di giugno/.test(l)){if(sel===nowY&&outM){const hi=m12.map((m,i)=>m.endsWith("-06")?i:-1).filter(i=>i>=0);t.viz=VZ.cols(outM,hi,"F24 nei prossimi 12 mesi\n"+m12.map((m,i)=>outM[i]?MESI[+m.slice(5)-1]+" "+m.slice(2,4)+": "+eur0(outM[i]):null).filter(Boolean).join("\n"),i=>hi.includes(i)?"var(--cost)":"#ADB9CA")}
+    if(fN&&fN.ric>0){t.viz=VZ.bars2([{v:fA.oneriPct,c:"var(--c-mid)"},{v:fN.oneriPct,c:"var(--amber-soft)"}],tp);t.vzl=`<div class="vzl"><span>${sel}: ${pct(fA.oneriPct,0)}</span><span>${sel+1}: ${pct(fN.oneriPct,0)}</span></div>`}}
+  else if(/^F24 di giugno/.test(l)){if(sel===nowY&&outM){const hi=m12.map((m,i)=>m.endsWith("-06")?i:-1).filter(i=>i>=0);t.viz=VZ.cols(outM,hi,"F24 nei prossimi 12 mesi\n"+m12.map((m,i)=>outM[i]?MESI[+m.slice(5)-1]+" "+m.slice(2,4)+": "+eur0(outM[i]):null).filter(Boolean).join("\n"),i=>hi.includes(i)?"var(--cost)":"var(--c-soft)")}
     else t.viz=VZ.cols(ys.map(y=>FX[y].giugno),[ys.indexOf(sel)],"F24 di giugno dell'anno dopo\n"+ys.map(y=>(y+1)+": "+eur0(FX[y].giugno)).join("\n"))}
   else if(/^Cassa libera/.test(l)){const st=speseStats();const sp=st?st.avgRec*12:0;const net=Math.max(0,inTot-outTot-sp);
-    t.viz=VZ.stack([{v:net,c:"var(--green-soft)"},{v:sp,c:"var(--amber-soft)"},{v:outTot,c:"#8497B0"}],Math.max(1,inTot),[],`Entrate previste: ${eur0(inTot)}\nLibero: ${eur0(net)}\nSpese ricorrenti: ${eur0(sp)}\nF24: ${eur0(outTot)}`);
+    t.viz=VZ.stack([{v:net,c:"var(--green-soft)"},{v:sp,c:"var(--amber-soft)"},{v:outTot,c:"var(--c-mid)"}],Math.max(1,inTot),[],`Entrate previste: ${eur0(inTot)}\nLibero: ${eur0(net)}\nSpese ricorrenti: ${eur0(sp)}\nF24: ${eur0(outTot)}`);
     t.vzl=`<div class="vzl"><span>libero</span><span>spese</span><span>F24</span></div>`}
   else if(/^Peso di/.test(l)){const q=parseFloat(String(t.v).replace(",","."))/100;const cr=cliRows.filter(r=>r.ricSel>0);const tp=cr.map(r=>r.c.nome+": "+pct(r.ricSel/totSel,0)).join("\n");t.ring=VZ.ring(q,q>.6?"var(--gold-d)":"var(--slate)",tp);
-    t.viz=VZ.stack(cr.map((r,i)=>({v:r.ricSel/totSel,c:["var(--slate)","#8497B0","#ADB9CA","#C9D6EA"][i%4]})),1,[],tp);t.vzl=`<div class="vzl">${cr.slice(0,2).map(r=>`<span>${esc(r.c.nome.split(" ")[0])} ${pct(r.ricSel/totSel,0)}</span>`).join("")}</div>`}
+    t.viz=VZ.stack(cr.map((r,i)=>({v:r.ricSel/totSel,c:["var(--slate)","var(--c-mid)","var(--c-soft)","var(--c-pale)"][i%4]})),1,[],tp);t.vzl=`<div class="vzl">${cr.slice(0,2).map(r=>`<span>${esc(r.c.nome.split(" ")[0])} ${pct(r.ricSel/totSel,0)}</span>`).join("")}</div>`}
   else if(/^Giorni medi/.test(l)&&fast&&fast.length>1){const a=fast[0],b=fast[fast.length-1];t.viz=VZ.bars2([{v:a.avg,c:"var(--green-soft)"},{v:b.avg,c:"var(--amber-soft)"}],`${a.c.nome}: ${Math.round(a.avg)} gg\n${b.c.nome}: ${Math.round(b.avg)} gg`)}
-  else if(/^Netto per giorno/.test(l)){t.viz=VZ.stack([{v:tr.gg||0,c:"var(--sky)"},{v:ggPrev||0,c:"#9DC3E6"}],Math.max(1,(tr.gg||0)+(ggPrev||0)),[],`Giorni fatturati: ${tr.gg||0}\nGiorni previsti: ${ggPrev||0}`);t.vzl=`<div class="vzl"><span>fatturati ${tr.gg||0}</span><span>previsti ${ggPrev||0}</span></div>`}
+  else if(/^Netto per giorno/.test(l)){t.viz=VZ.stack([{v:tr.gg||0,c:"var(--sky)"},{v:ggPrev||0,c:"var(--c-sky-soft)"}],Math.max(1,(tr.gg||0)+(ggPrev||0)),[],`Giorni fatturati: ${tr.gg||0}\nGiorni previsti: ${ggPrev||0}`);t.vzl=`<div class="vzl"><span>fatturati ${tr.gg||0}</span><span>previsti ${ggPrev||0}</span></div>`}
   else if(/^Da accantonare/.test(l)){const q=parseFloat(String(t.v).replace(",","."))/100;t.ring=VZ.ring(q/0.35,"var(--slate)",t.s)}
   else if(/^Ricavo medio mensile/.test(l)){t.viz=VZ.cols(ys.map(y=>FX[y].ric/12),[ys.indexOf(sel)],"Ricavo medio mensile\n"+ys.map(y=>y+": "+eur0(FX[y].ric/12)).join("\n"))}
   return t}
@@ -838,7 +844,7 @@ function bindSim(){const out=$("#simOut");if(!out)return;out.innerHTML=simOutHTM
           if(q)await db.doc("missioni/"+q.id).update({giorni:on?(+r.gg||0):0});else if(on&&+r.gg>0)await db.doc("missioni/quota-"+Y+"-"+c.cliente).set({tipo:"quota",anno:Y,cliente:c.cliente,giorni:+r.gg,ipotesi:true,note:"Dal simulatore"})}}},"Ipotesi aggiornate");
     if(ok){S.sim=null}};
 }
-const PAL=["var(--slate)","var(--green-soft)","var(--amber-soft)","#8497B0","#ADB9CA","var(--tax)","var(--sky)","#9DC3E6"];
+const PAL=["var(--slate)","var(--green-soft)","var(--amber-soft)","var(--c-mid)","var(--c-soft)","var(--tax)","var(--sky)","var(--c-sky-soft)"];
 function axis(top,step,L,W,R,y){let g="";for(let t=0;t<=top+.1;t+=step){g+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)"/><text x="${L-8}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${t>=1000?(t/1000).toLocaleString("it-IT")+"k":Math.round(t)}</text>`}return g}
 function svgBars(cats,series,opt={}){
   const W=opt.w||720,H=opt.h||260,L=56,R=10,T=16,B=30,n=cats.length,k=series.length;
@@ -892,7 +898,7 @@ function vAnal(FX){
   const cum=y=>{const m=Array(12).fill(0);S.invoices.forEach(v=>{if(fy(v)!==y)return;m[+effDate(v).slice(5,7)-1]+=tot(v).imponibile});let a=0;return m.map(v=>a+=v)};
   const cSel=cum(sel), cPrev=cum(sel-1);
   const cumSeries=[{name:String(sel),color:"var(--slate)",vals:cSel,area:true,w:2.8}];
-  if(cPrev[11]>0)cumSeries.push({name:String(sel-1),color:"#8497B0",vals:cPrev,dash:"5 4",w:2});
+  if(cPrev[11]>0)cumSeries.push({name:String(sel-1),color:"var(--c-mid)",vals:cPrev,dash:"5 4",w:2});
   const cumChart=svgLines(MESI,cumSeries,{refs:[{v:s.s85,label:"soglia "+eur0(s.s85),color:"var(--tax)"},{v:s.allerta,label:"allerta "+eur0(s.allerta),color:"var(--gold-d)"}],label:"Ricavi cumulati"});
   // run-rate
   const mesiT=sel<nowY?12:sel>nowY?0:nowM+1;
@@ -918,7 +924,7 @@ function vAnal(FX){
   const f24Chart=usedM.length?svgBars(usedM.map(m=>MESI[+m.slice(5)-1]+" "+m.slice(2,4)),[
      {name:"Versato",color:"var(--green-soft)",vals:usedM.map(m=>fr.filter(r=>r.data.slice(0,7)===m&&r.versato).reduce((a,r)=>a+r.importo,0))},
      {name:"Da versare",color:"var(--tax)",vals:usedM.map(m=>fr.filter(r=>r.data.slice(0,7)===m&&!r.versato&&!r.stima).reduce((a,r)=>a+r.importo,0))},
-     {name:"Stima",color:"#8497B0",vals:usedM.map(m=>fr.filter(r=>r.data.slice(0,7)===m&&r.stima).reduce((a,r)=>a+r.importo,0)),dashed:usedM.map(()=>true)}],{stacked:true,label:"Calendario F24"}):`<div class="empty">Nessuna scadenza.</div>`;
+     {name:"Stima",color:"var(--c-mid)",vals:usedM.map(m=>fr.filter(r=>r.data.slice(0,7)===m&&r.stima).reduce((a,r)=>a+r.importo,0)),dashed:usedM.map(()=>true)}],{stacked:true,label:"Calendario F24"}):`<div class="empty">Nessuna scadenza.</div>`;
   const f24next12=fr.filter(r=>!r.versato&&r.data>=todayISO()&&r.data<=addDays(todayISO(),365)).reduce((a,r)=>a+r.importo,0);
   // 6. trasferte
   const tr=by[sel]||{gg:0,ind:0};const fs=FX[sel]||{oneriPct:0};
@@ -942,7 +948,7 @@ function vAnal(FX){
   // 8. where 100 EUR go (selected year and next)
   const split=f=>f&&f.ric>0?{inps:f.inps/f.ric,imp:f.imp/f.ric,net:f.netto/f.ric}:null;
   const hb=(lab,f)=>{const x=split(f);if(!x)return"";const seg=(w,c,t)=>`<i style="width:${Math.max(0,w*100)}%;background:${c}" title="${t}">${w>=.07?Math.round(w*100)+" €":""}</i>`;
-    return `<div style="margin:8px 0 14px"><div style="display:flex;justify-content:space-between;font-family:var(--f-ui);font-weight:600;font-size:13px;margin-bottom:4px"><span>${lab}</span><span class="muted">${eur0(f.ric)} di ricavi</span></div><div class="hbar">${seg(x.net,"var(--green-soft)","Netto")}${seg(x.inps,"#8497B0","INPS")}${seg(x.imp,"var(--tax)","Imposta")}</div></div>`};
+    return `<div style="margin:8px 0 14px"><div style="display:flex;justify-content:space-between;font-family:var(--f-ui);font-weight:600;font-size:13px;margin-bottom:4px"><span>${lab}</span><span class="muted">${eur0(f.ric)} di ricavi</span></div><div class="hbar">${seg(x.net,"var(--green-soft)","Netto")}${seg(x.inps,"var(--c-mid)","INPS")}${seg(x.imp,"var(--tax)","Imposta")}</div></div>`};
   const hundred=hb(String(sel),fA)+hb(String(sel+1)+(fN&&fN.contr>0?" (previsione)":""),fN)+(()=>{const F=flow12(FX);if(!F.tin)return"";const q=v=>v/F.tin;const seg=(w,c,t)=>`<i style="width:${Math.max(0,w*100)}%;background:${c}" title="${t}">${w>=.07?Math.round(w*100)+" €":""}</i>`;const mg=Math.max(0,F.tsal);
     return `<div style="margin:8px 0 14px"><div style="display:flex;justify-content:space-between;font-family:var(--f-ui);font-weight:600;font-size:13px;margin-bottom:4px"><span>Prossimi 12 mesi, entrate reali</span><span class="muted">${eur0(F.tin)} di entrate</span></div><div class="hbar">${seg(q(F.tf24),"var(--tax)","F24")}${seg(q(F.sp*12),"var(--amber-soft)","Spese")}${seg(q(F.pac*12),"var(--cost)","PAC")}${seg(q(F.rm*12),"var(--sky)","Risparmi")}${seg(q(mg),"var(--green-soft)","Margine")}</div></div>`})();
   // 9. cash next 12 months: expected receipts vs F24
@@ -970,10 +976,13 @@ function vAnal(FX){
   PRa.forEach(x=>{const k=x.incasso.slice(0,7);hv[k]=(hv[k]||0)+x.imponibile;hp[k]=1});
   const hmax=Math.max(1,...Object.values(hv));
   const heat=`<table class="heat"><thead><tr><th></th>${MESI.map(m=>`<th>${m}</th>`).join("")}<th>Tot.</th></tr></thead><tbody>${hy.map(y=>{let t=0;return `<tr><td class="y">${y}</td>${MESI.map((_,i)=>{const k=y+"-"+pad(i+1),v=hv[k]||0;t+=v;const a=v/hmax;return `<td style="background:${v?`color-mix(in srgb,var(--slate) ${Math.round(12+a*78)}%,var(--surface))`:"var(--surface-2)"};color:${a>.45?"#fff":"var(--fg)"};${hp[k]?"outline:1px dashed var(--slate-2);outline-offset:-2px;":""}" data-tip="${MESI[i]} ${y}\n${eur0(v)}${hp[k]?"\ninclude previsioni da contratto":""}">${v?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":""}</td>`}).join("")}<td class="num" style="font-weight:700">${(t/1000).toLocaleString("it-IT",{maximumFractionDigits:1})}k</td></tr>`}).join("")}</tbody></table>`;
+  const AT=[["sintesi","Sintesi"],["scenari","Scenari"],["cassa","Cassa e F24"],["clienti","Clienti"],["personali","Finanze personali"]];
+  const at=AT.some(x=>x[0]===S.atab)?S.atab:"sintesi", hid=k=>k===at?"":" hidden";
   return `
+  <div class="segs" role="tablist" aria-label="Viste dell'analisi">${AT.map(([k,l])=>`<button type="button" role="tab" aria-selected="${k===at}" data-atab-go="${k}">${l}</button>`).join("")}</div>
+  <div class="atab"${hid("sintesi")}>
   <section class="panel"><div class="panel-h"><h2>In sintesi</h2><div class="spacer"></div><span class="eyebrow">anno selezionato ${sel}</span></div><div class="itiles" style="--cols:${colsT}">${ins.map(t=>`<div class="itile">${t.ring||""}<div class="iv ${t.tone}" ${t.ring?'style="padding-right:52px"':""}>${t.v}</div><div class="il" ${t.ring?'style="padding-right:52px"':""}>${t.l}</div>${t.viz||""}${t.vzl||""}<div class="is">${t.s}</div></div>`).join("")||`<div class="empty">Servono più dati per le osservazioni.</div>`}</div></section>
   <div class="grid">
-   ${simPanel()}
    <section class="panel c7"><div class="panel-h"><h2>Andamento pluriennale</h2><div class="spacer"></div>${lg([["Ricavi","var(--slate)"],["Oneri","var(--tax)"],["Netto","var(--green-soft)"],["stima","var(--slate)",1]])}</div><div class="panel-b chart">${annual}<div class="chart-note">Anni con riquadro tratteggiato = includono ricavi stimati non ancora fatturati.</div></div></section>
    <section class="panel c5"><div class="panel-h"><h2>Confronto annuale</h2></div><div class="tw"><table><thead><tr><th>Anno</th><th class="r">Minimo</th><th class="r">Ricavi</th><th class="r">Var.</th><th class="r">Oneri</th><th class="r">%</th><th class="r">Netto</th><th class="r">/mese</th><th class="c">Fatt.</th></tr></thead><tbody>${aRows}</tbody></table></div></section>
    <section class="panel c7"><div class="panel-h"><h2>Ricavi cumulati ${sel}</h2><div class="spacer"></div>${lg(cumSeries.map(x=>[x.name,x.color]))}</div><div class="panel-b chart">${cumChart}<div class="chart-note">Include le fatture aperte alla data di incasso attesa.</div></div></section>
@@ -987,8 +996,13 @@ function vAnal(FX){
       <div><span>Netto medio / mese</span><b class="pos">${eur0(((FX[sel]||{}).netto||0)/12)}</b></div>
       <div><span>F24 nei prossimi 12 mesi</span><b class="neg">${eur0(f24next12)}</b></div>
    </div></div></section>
+  </div></div>
+  <div class="atab"${hid("scenari")}><div class="grid">
+   ${simPanel()}
+  </div></div>
+  <div class="atab"${hid("cassa")}><div class="grid">
    <section class="panel c7"><div class="panel-h"><h2>Cassa nei prossimi 12 mesi</h2><div class="spacer"></div>${lg([["Entrate previste","var(--slate)"],["F24","var(--tax)"],["Spese, PAC e risparmi","var(--amber-soft)"]])}</div><div class="panel-b chart">${cashChart}<div class="chart-note">Entrate = fatture aperte + previste dai contratti. Spese = media mensile dagli estratti conto, senza lavori di casa. Saldo dei 12 mesi: <b class="${FL.tsal<0?"bad":"pos"}">${FL.tsal<0?"−":"+"}${eur0(Math.abs(FL.tsal))}</b>. Dettaglio mese per mese nella scheda Entrate.</div></div></section>
-   <section class="panel c5"><div class="panel-h"><h2>Dove vanno 100 €</h2></div><div class="panel-b">${hundred||`<div class="empty">Nessun dato.</div>`}${lg([["Netto / margine","var(--green-soft)"],["INPS","#8497B0"],["Imposta / F24","var(--tax)"],["Spese","var(--amber-soft)"],["PAC","var(--cost)"],["Risparmi","var(--sky)"]])}
+   <section class="panel c5"><div class="panel-h"><h2>Dove vanno 100 €</h2></div><div class="panel-b">${hundred||`<div class="empty">Nessun dato.</div>`}${lg([["Netto / margine","var(--green-soft)"],["INPS","var(--c-mid)"],["Imposta / F24","var(--tax)"],["Spese","var(--amber-soft)"],["PAC","var(--cost)"],["Risparmi","var(--sky)"]])}
      <div class="mini" style="margin-top:14px">
       <div><span>Entrate previste 12 mesi</span><b class="num">${eur0(inTot)}</b></div>
       <div><span>F24 da versare 12 mesi</span><b class="num neg">${eur0(outTot)}</b></div>
@@ -996,19 +1010,23 @@ function vAnal(FX){
       <div><span>Mese più pesante</span><b class="num">${peakF>0?MESI[+m12[peakI].slice(5)-1]+" "+m12[peakI].slice(0,4)+" · "+eur0(peakF):"—"}</b></div>
      </div></div></section>
    <section class="panel c12"><div class="panel-h"><h2>Incassi mese per mese</h2><div class="spacer"></div><span class="eyebrow">per data di incasso · bordo tratteggiato = include previsioni da contratto</span></div><div class="panel-b" style="overflow-x:auto">${heat}</div></section>
+   <section class="panel c12"><div class="panel-h"><h2>Calendario F24</h2><div class="spacer"></div>${lg([["Versato","var(--green-soft)"],["Da versare","var(--tax)"],["Stima","var(--c-mid)",1]])}</div><div class="panel-b chart">${f24Chart}</div></section>
+  </div></div>
+  <div class="atab"${hid("clienti")}><div class="grid">
    <section class="panel c7"><div class="panel-h"><h2>Ricavi per cliente</h2><div class="spacer"></div>${lg(cSer.map(x=>[x.name,x.color]))}</div><div class="panel-b chart">${cliChart}</div></section>
    <section class="panel c5"><div class="panel-h"><h2>Composizione del fatturato</h2></div><div class="panel-b chart">${compChart}${lg([["Compenso","var(--slate)"],["Indennità","var(--sky)"],["Rimborsi","var(--green-soft)"]])}</div></section>
    <section class="panel c12"><div class="panel-h"><h2>Clienti a confronto</h2></div><div class="tw"><table><thead><tr><th>Cliente</th><th class="r">Ricavi totali</th><th class="r">Netto stimato</th><th class="r">Quota ${sel}</th><th class="c">Fatture</th><th class="r">Gg incasso medi</th><th class="r">min–max</th><th class="r">Gg trasferta</th><th class="r">Da incassare</th></tr></thead><tbody>
      ${cliRows.map(r=>`<tr><td class="cli">${esc(r.c.nome)}</td><td class="r num">${eur0(r.ric)}</td><td class="r num pos">${eur0(r.net)}</td><td class="r num ${r.ricSel/totSel>.6?"neg":""}">${pct(r.ricSel/totSel,0)}</td><td class="c num">${r.n}</td><td class="r num">${r.avg==null?"—":Math.round(r.avg)}</td><td class="r num muted">${r.min==null?"":r.min+"–"+r.max}</td><td class="r num">${r.gg||"—"}</td><td class="r num">${r.open?eur0(r.open):"—"}</td></tr>`).join("")}
    </tbody></table></div></section>
-   <section class="panel c8"><div class="panel-h"><h2>Calendario F24</h2><div class="spacer"></div>${lg([["Versato","var(--green-soft)"],["Da versare","var(--tax)"],["Stima","#8497B0",1]])}</div><div class="panel-b chart">${f24Chart}</div></section>
-   <section class="panel c4"><div class="panel-h"><h2>Trasferte ${sel}</h2></div><div class="panel-b"><div class="mini">
+   <section class="panel c12"><div class="panel-h"><h2>Trasferte ${sel}</h2></div><div class="panel-b"><div class="mini">
       <div><span>Giorni fatturati</span><b>${tr.gg||0}</b></div>
       <div><span>Indennità lorda</span><b>${eur0(tr.ind||0)}</b></div>
       <div><span>Indennità netta stimata</span><b class="pos">${eur0(indNet)}</b></div>
       <div><span>Netto per giorno</span><b>${tr.gg?eur(indNet/tr.gg):"—"}</b></div>
    </div><p class="note" style="margin:12px 0 0">L'indennità è tassata come compenso. Le spese documentate riaddebitate voce per voce (voli, trasporti, alloggio fuori sede) restano fuori dal reddito e dalla soglia.</p></div></section>
-  </div>${personalAnal(FX)}`;
+
+  </div></div>
+  <div class="atab"${hid("personali")}>${personalAnal(FX)}</div>`;
 }
 function contoTassePanel(rows){
   const ct=ctInfo()||{};const today=todayISO();
@@ -1036,13 +1054,15 @@ function vTasse(FX){
   const nx=open[0], d12=open.filter(r=>r.data<=addDays(today,365)).reduce((a,r)=>a+r.importo,0);
   const vers=rows.filter(r=>r.versato&&r.data.startsWith(String(cy))).reduce((a,r)=>a+r.importo,0);
   const ci=nx?cdInfo(nx.data):null;
+  // v2: payments of previous years are history: collapsed by default.
+  const pastN=rows.filter(r=>r.versato&&r.data<cy+"-01-01").length, rowsT=S.f24past?rows:rows.filter(r=>!(r.versato&&r.data<cy+"-01-01"));
   const KT={};{const lab=r=>dmy(r.data).slice(0,5)+" · "+(r.bollo?"bollo":r.descrizione.split(" – ")[0].split(" (")[0])+": "+eur0(r.importo);
-   const nx6=open.filter(r=>r.data<=addDays(today,120)).slice(0,6);if(nx6.length)KT.nx=VZ.cols(nx6.map(r=>r.importo),[0],"Prossimi versamenti\n"+nx6.map(lab).join("\n"),i=>i===0?"var(--cost)":"#ADB9CA")+`<div class="vzl"><span>${dmy(nx6[0].data).slice(0,5)}</span><span>${dmy(nx6[nx6.length-1].data).slice(0,5)}</span></div>`;
-   const yr=open.filter(r=>r.data.slice(0,4)===String(cy));const PC=["var(--cost)","#8497B0","#ADB9CA","#C9D6EA","#E3E8EF"];
+   const nx6=open.filter(r=>r.data<=addDays(today,120)).slice(0,6);if(nx6.length)KT.nx=VZ.cols(nx6.map(r=>r.importo),[0],"Prossimi versamenti\n"+nx6.map(lab).join("\n"),i=>i===0?"var(--cost)":"var(--c-soft)")+`<div class="vzl"><span>${dmy(nx6[0].data).slice(0,5)}</span><span>${dmy(nx6[nx6.length-1].data).slice(0,5)}</span></div>`;
+   const yr=open.filter(r=>r.data.slice(0,4)===String(cy));const PC=["var(--cost)","var(--c-mid)","var(--c-soft)","var(--c-pale)","var(--c-faint)"];
    if(yr.length)KT.yr=VZ.stack(yr.map((r,i)=>({v:r.importo,c:PC[i%PC.length]})),Math.max(1,resid),[],yr.map(lab).join("\n"))+`<div class="vzl"><span>${dmy(yr[0].data).slice(0,5)}</span><span>${dmy(yr[yr.length-1].data).slice(0,5)}</span></div>`;
    const m12=[];{const d=new Date();for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()+i,1);m12.push(x.getFullYear()+"-"+pad(x.getMonth()+1))}}
    const vv=m12.map(m=>open.filter(r=>r.data.slice(0,7)===m).reduce((a,r)=>a+r.importo,0));
-   KT.d12=VZ.cols(vv,[],"F24 nei prossimi 12 mesi\n"+m12.map((m,i)=>vv[i]?MESI[+m.slice(5)-1]+" "+m.slice(2,4)+": "+eur0(vv[i]):null).filter(Boolean).join("\n"),i=>vv[i]===Math.max(...vv)?"var(--cost)":"#ADB9CA");
+   KT.d12=VZ.cols(vv,[],"F24 nei prossimi 12 mesi\n"+m12.map((m,i)=>vv[i]?MESI[+m.slice(5)-1]+" "+m.slice(2,4)+": "+eur0(vv[i]):null).filter(Boolean).join("\n"),i=>vv[i]===Math.max(...vv)?"var(--cost)":"var(--c-soft)");
    const mm=Array.from({length:12},(_,i)=>rows.filter(r=>r.versato&&r.data.startsWith(cy+"-"+pad(i+1))).reduce((a,r)=>a+r.importo,0));
    KT.vers=VZ.cols(mm,[],"Versato nel "+cy+"\n"+mm.map((v,i)=>v?MESI[i]+": "+eur0(v):null).filter(Boolean).join("\n"),()=>"var(--green-soft)")}
   return `${intro("Tutti i versamenti con F24: imposta sostitutiva, contributi INPS e bollo delle fatture elettroniche. Le scadenze compaiono anche in Scadenze, in Dashboard e nel tuo Google Calendar.")}
@@ -1055,8 +1075,9 @@ function vTasse(FX){
   <section class="panel"><div class="panel-h"><h2>${ico("euro",18)} Versamenti F24</h2><div class="spacer"></div><button class="btn small" id="addF24" type="button">+ Aggiungi versamento</button></div>
   <details class="help panel-b"><summary>${ico("info",14)} Come funziona</summary><p>Le righe "stima" sono calcolate dal Calcolo fiscale e spariscono quando aggiungi il versamento reale dello stesso mese. Il bollo delle fatture elettroniche (€2 a fattura) lo precompila l'Agenzia nel portale Fatture e Corrispettivi: verifica con ${esc((cfg().commercialista||{}).nome||"la commercialista")} se lo versa già lei o con addebito diretto.</p></details>
   ${contoTassePanel(rows)}
+  ${pastN?`<div class="panel-b" style="padding:8px 16px"><button class="btn small ghost" type="button" data-f24-past="1">${S.f24past?"Nascondi i versamenti degli anni precedenti":`Mostra i versamenti degli anni precedenti (${pastN})`}</button></div>`:""}
   <div class="tw"><table class="stack"><thead><tr><th>Data</th><th>Mancano</th><th>Descrizione</th><th>Tributi</th><th class="r">Importo</th><th class="c">Stato</th><th></th></tr></thead><tbody>
-  ${rows.map(r=>{const late=!r.versato&&r.data<today, soon=!r.versato&&!late&&daysBetween(today,r.data)<=30;
+  ${rowsT.map(r=>{const late=!r.versato&&r.data<today, soon=!r.versato&&!late&&daysBetween(today,r.data)<=30;
     return `<tr class="u-${cdInfo(r.data,r.versato).c}"><td class="num">${dmy(r.data)}</td><td>${cdPill(r.data,r.versato)}</td><td>${esc(r.descrizione)}</td><td class="muted">${esc(r.tributi||"")}</td><td class="r num"><b class="neg">${eur(r.importo)}</b></td>
     <td class="c">${r.stima?`<span class="pill est">stima</span>`:r.versato?`<span class="pill ok">Versato</span>`:late?`<span class="pill late">Scaduto</span>`:soon?`<span class="pill late">Entro 30 gg</span>`:`<span class="pill open">Da versare</span>`}</td>
     <td class="r">${r.stima?"":`<button class="btn small ${r.versato?"ghost":""}" data-f24pay="${r.id}">${r.versato?"Annulla":"Segna versato"}</button> <button class="btn small ghost" data-f24edit="${r.id}" aria-label="Modifica">Modifica</button>`}</td></tr>`}).join("")||`<tr><td colspan="7" class="empty">Nessuna scadenza.</td></tr>`}
@@ -1141,7 +1162,7 @@ function vSet(){
    </div></div></section>
   ${historyPanel()}
   <section class="panel c12"><div class="panel-h"><h2>Backup ed esportazione</h2></div><div class="panel-b" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-    <button class="btn dark" id="exportV3b" type="button">Scarica Excel v3 aggiornato</button><button class="btn" id="exportX2" type="button">Esporta solo dati (tabella semplice)</button><button class="btn" id="exportJ" type="button">Scarica backup completo</button><button class="btn primary" id="exportCairn" type="button">Esporta per Cairn (con PDF)</button>
+    <button class="btn dark" id="exportV3b" type="button">Scarica Excel v3 aggiornato</button><button class="btn" id="exportX2" type="button">Esporta solo dati (tabella semplice)</button><button class="btn" id="exportJ" type="button">Scarica backup completo</button>
     <span class="muted" style="font-size:13px">"Excel v3 aggiornato" è il tuo file completo (dashboard, formule, grafici) riempito con tutte le fatture, gli incassi, gli F24 e i parametri di oggi: sostituisci la versione precedente.</span></div></section>
   </div>`;
 }

@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { Engine, mergeCfg } from "@/domain/engine";
-import { createLegacy } from "@/legacy/app";
+import { createLegacy } from "../fixtures/legacy-original";
 
 const FILE = "private/golden-views.json";
 const has = existsSync(FILE);

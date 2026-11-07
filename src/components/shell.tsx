@@ -1,4 +1,8 @@
 "use client";
+/**
+ * App frame v2. Desktop: side menu + page header with sub-tabs. Tablet: compact icon rail.
+ * Phone: sticky top bar (title, year, sync) + bottom bar. One component, adapted by CSS (no duplicated markup logic).
+ */
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -6,52 +10,78 @@ import { useApp } from "@/lib/app-context";
 import { Icon } from "./icon";
 import { Logo } from "./logo";
 import { SyncBadge } from "./sync-badge";
-
-import { VIEWS } from "@/lib/views-nav";
+import { SECTIONS, sectionOf } from "@/lib/views-nav";
 import { Tooltip } from "./tooltip";
 import { BottomNav } from "./bottom-nav";
 import { AttachmentLinks } from "./attachment-links";
 import { legacyApp } from "@/lib/legacy-runtime";
+import { LockScreen, useAppLock } from "./app-lock";
 
-const NAV = VIEWS;
+const EXTRA: Record<string, { label: string; hint: string; parent: string }> = {
+  "/importa": { label: "Importa", hint: "Dati dall'app precedente", parent: "set" },
+  "/sincronizzazione": { label: "Sincronizzazione", hint: "Stato, conflitti e operazioni in attesa", parent: "set" },
+};
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { auth, year, setYear, engine, signOut } = useApp();
   const path = usePathname();
   const router = useRouter();
+  const lock = useAppLock();
   useEffect(() => { if (auth.kind === "signed-out") router.replace(`/login${auth.reason ? `?m=${encodeURIComponent(auth.reason)}` : ""}`); }, [auth, router]);
-  if (auth.kind !== "ready") return <main className="wrap" style={{ paddingTop: 64 }}><p className="muted">Caricamento…</p></main>;
+  if (auth.kind !== "ready" || !lock.ready) return null; // the splash screen stays visible until the session is resolved
+  if (lock.locked && lock.cfg) return <LockScreen cfg={lock.cfg} onUnlocked={lock.unlocked} />;
   const years = engine ? engine.years() : [year];
+  const sec = sectionOf(path);
+  const extra = EXTRA[path];
+  const activeId = sec?.id ?? extra?.parent;
+  const title = sec?.label ?? extra?.label ?? "Cairn";
+  const hint = sec?.hint ?? extra?.hint ?? "";
+  const canWrite = auth.role !== "read_only";
   return (
-    <>
-      <header className="top">
-        <div className="wrap">
-          <div className="brandwrap"><Logo /><div className="brand"><b>Cairn</b><span>A. Scialabba · P.IVA, tasse e patrimonio</span></div></div>
-          <div className="spacer" />
-          <SyncBadge />
-          <label className="yearpick">Anno{" "}
-            <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
-              {years.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </label>
-          {auth.role !== "read_only" && <button className="btn primary" type="button" onClick={() => legacyApp().openForm()}>+ Nuova fattura</button>}
-          <button className="btn small ghost hide-sm" type="button" onClick={signOut} title={`Esci (${auth.email})`}>Esci</button>
-        </div>
-        <nav className="nav" aria-label="Sezioni"><div className="wrap">
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href} aria-current={path === n.href ? "page" : undefined} className="navlink">
-              <span className="nic"><Icon name={n.ic} /></span>{n.label}
+    <div className="app">
+      <a className="skip" href="#main">Vai al contenuto</a>
+      <aside className="side" aria-label="Sezioni">
+        <Link href="/" className="side-brand" aria-label="Cairn, panoramica"><Logo /><b>Cairn</b></Link>
+        <nav className="side-nav">
+          {SECTIONS.map((s) => (
+            <Link key={s.id} href={s.subs[0]!.href} className="side-link" aria-current={activeId === s.id ? "page" : undefined} title={s.label}>
+              <Icon name={s.ic} size={18} /><span>{s.label}</span>
             </Link>
           ))}
-        </div></nav>
-      </header>
-      {auth.offline && <div className="wrap" role="status" style={{ marginTop: 10 }}><p className="muted" style={{ margin: 0 }}>Modalità offline: le modifiche restano su questo dispositivo e vengono inviate appena torna la connessione. Accesso offline valido fino al {new Date(auth.grant!.expiresAt).toLocaleString("it-IT")}.</p></div>}
-      <main className="wrap">{children}</main>
+        </nav>
+        <div className="side-foot">
+          <SyncBadge />
+          <button className="side-link" type="button" onClick={signOut} title={`Esci (${auth.email})`}><Icon name="down" size={18} /><span>Esci</span></button>
+        </div>
+      </aside>
+      <div className="col">
+        <header className="phead">
+          <div className="phead-row">
+            <div className="ptitle"><h1>{title}</h1>{hint && <p>{hint}</p>}</div>
+            <div className="pctl">
+              <span className="only-phone"><SyncBadge compact /></span>
+              <label className="yearsel"><span className="vh">Anno</span>
+                <select value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Anno">
+                  {years.map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </label>
+              {canWrite && <button className="btn primary not-phone" type="button" onClick={() => legacyApp().openForm()}><Icon name="plus" size={16} />Nuova fattura</button>}
+            </div>
+          </div>
+          {sec && sec.subs.length > 1 && (
+            <nav className="subnav" aria-label={`Viste di ${sec.label}`}>
+              {sec.subs.map((x) => <Link key={x.href} href={x.href} aria-current={path === x.href ? "page" : undefined}>{x.label}</Link>)}
+            </nav>
+          )}
+        </header>
+        {auth.offline && <div className="offline-note" role="status">Offline: le modifiche restano su questo dispositivo e partono appena torna la rete. Accesso offline valido fino al {new Date(auth.grant!.expiresAt).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}.</div>}
+        <main className="main" id="main" data-ready={engine ? "1" : undefined}>{children}</main>
+      </div>
       <div id="sheetRoot" />
       <div id="toastRoot" />
       <AttachmentLinks />
       <Tooltip />
       <BottomNav />
-    </>
+    </div>
   );
 }
