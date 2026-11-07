@@ -9,7 +9,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit",
-    "test:db": "vitest run --project db",
+    "test:db": "vitest run --project db --no-file-parallelism",
     "test:all": "vitest run",
     "db:reset:local": "node scripts/db-local.mjs reset",
     "prebuild": "node scripts/vendor.mjs",
