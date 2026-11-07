@@ -382,3 +382,7 @@ ul.chk{margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:9px;fo
 @media (min-width:1000px){.nav .wrap{justify-content:flex-start;gap:4px}}
 .top .cdp{font-size:12px}
 .progress{height:8px;border-radius:4px;background:var(--line-2);overflow:hidden}.progress>i{display:block;height:100%;background:var(--green-soft);transition:width .2s}
+.pending-edit{opacity:.55;cursor:not-allowed}
+@media (max-width:760px){.top .hide-sm{display:none}}
+@media (max-width:520px){.sb-hide-sm{display:none}.top .brand span{display:none}.top .wrap{gap:10px}}
+a.btn{text-decoration:none;color:inherit}.top a.cdp{text-decoration:none}

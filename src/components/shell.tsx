@@ -7,13 +7,11 @@ import { Icon } from "./icon";
 import { Logo } from "./logo";
 import { SyncBadge } from "./sync-badge";
 
-/** Sections are added here as they are ported; nothing is listed before it works. */
-const NAV = [
-  { href: "/", label: "Dashboard", ic: "home" },
-  { href: "/fatture", label: "Fatture", ic: "file" },
-  { href: "/importa", label: "Importa", ic: "inbox" },
-  { href: "/sincronizzazione", label: "Sincronizzazione", ic: "check" },
-];
+import { VIEWS } from "@/lib/views-nav";
+import { Tooltip } from "./tooltip";
+import { BottomNav } from "./bottom-nav";
+
+const NAV = VIEWS;
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { auth, year, setYear, engine, signOut } = useApp();
@@ -34,7 +32,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </label>
-          <button className="btn small ghost" type="button" onClick={signOut} title={`Esci (${auth.email})`}>Esci</button>
+          <button className="btn small ghost hide-sm" type="button" onClick={signOut} title={`Esci (${auth.email})`}>Esci</button>
         </div>
         <nav className="nav" aria-label="Sezioni"><div className="wrap">
           {NAV.map((n) => (
@@ -45,7 +43,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div></nav>
       </header>
       {auth.offline && <div className="wrap" role="status" style={{ marginTop: 10 }}><p className="muted" style={{ margin: 0 }}>Modalità offline: le modifiche restano su questo dispositivo e vengono inviate appena torna la connessione. Accesso offline valido fino al {new Date(auth.grant!.expiresAt).toLocaleString("it-IT")}.</p></div>}
-      <main className="wrap" style={{ paddingTop: 16, paddingBottom: 48 }}>{children}</main>
+      <main className="wrap" id="app">{children}</main>
+      <Tooltip />
+      <BottomNav />
     </>
   );
 }

@@ -25,7 +25,7 @@ export function SyncBadge() {
   return (
     <Link href="/sincronizzazione" className={`cdp ${tone}`} style={{ textDecoration: "none", whiteSpace: "nowrap" }} aria-live="polite" title="Stato della sincronizzazione">
       <span aria-hidden="true" style={{ display: "inline-block", width: 8, height: 8, borderRadius: 4, marginRight: 6, background: online ? "var(--green-soft)" : "var(--tax)" }} />
-      {label}
+      <span className={tone === "far" ? "sb-hide-sm" : undefined}>{label}</span>
     </Link>
   );
 }

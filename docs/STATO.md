@@ -27,6 +27,6 @@ Legenda: ✅ verificato con test automatico · 🟡 implementato, verifica pende
 | Migrazione | File consegnato | Stato |
 |---|---|---|
 | 0100–0500 | cairn-1-setup.sql | ✅ applicata |
-| 0600 domain_fit | cairn-3-aggiornamento.sql | ⏳ da applicare (errore "other_income schema cache") |
+| 0600 domain_fit | cairn-3-aggiornamento.sql | ✅ applicata 07/11/2026 |
 
 Regola: ogni nuova migrazione → nuovo file numerato da incollare nel SQL Editor + `notify pgrst, 'reload schema'`.
