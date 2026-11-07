@@ -93,3 +93,15 @@ Ripristino: scarica l'artifact, `gpg -d cairn-AAAA-MM-GG.sql.gz.gpg | gunzip > d
   `history_on`. Applied only if it covers the deposits already known (`historyCovers`), so a short history never erases data.
 - New panels are wrapped in `<!--feat-->…<!--/feat-->`: the parity test ignores them; their figures are covered by
   `tests/unit/invest.test.ts` and `tests/unit/t212-history.test.ts`.
+
+## Spese: import of bank statements (Nov 2026)
+
+- Spese › Importa movimenti: UniCredit statement PDF, Revolut statement PDF or CSV, several files at once.
+  Read on the device (pdf.js legacy build, worker in /vendor); only monthly totals per category are saved.
+- `src/lib/bank-import.ts`: parsers, the categorisation rules used for the April–September 2026 figures, learned rules
+  (`cfg.speseRegole`, merchant key → category) from corrections, monthly aggregation (investito = net to investments/savings),
+  `planMonths`: a month counts for a bank only if its statements cover the whole month; months are kept per bank
+  (`monthly_expenses.by_source`) so one bank's import updates only its part; months saved before the split are replaced
+  only when all their banks are imported together.
+- Checked privately against the real statements: the in-app path reproduces the saved April–September months exactly.
+- To-do from the 3rd of each month when last month's statements are missing.

@@ -68,7 +68,7 @@ export async function legacyToRows(L: LegacyExport): Promise<{ rows: RowsByTable
   for (const r of L.promemoria) rows.reminders.push({ id: await id("reminder", r.id), key: r.id, due_date: r.data, title: r.titolo, notes: r.dettaglio ?? "",
     lead_days: num(r.preavviso, 14), client_id: r.cliente ? await id("client", r.cliente) : null, done_on: r.fatto ? r.data : null });
   for (const s of L.spese) rows.monthly_expenses.push({ id: await id("expenses", s.id), month: monthStart(s.mese), categories: s.cat ?? {}, invested: num(s.investito),
-    sources: (s.fonti ?? "").split(",").map((x) => x.trim()).filter(Boolean), notes: s.note ?? "" });
+    sources: (s.fonti ?? "").split(",").map((x) => x.trim()).filter(Boolean), notes: s.note ?? "", by_source: s.perFonte ?? {} });
   for (const a of L.risparmi) rows.savings_accounts.push({ id: await id("savings", a.id), name: a.nome, product: a.prodotto ?? "", logo: a.logo ?? null,
     role: a.ruolo === "tasse" ? "tax" : "savings", balance: num(a.saldo), gains: num(a.guadagno), as_of: a.aggiornato ?? new Date().toISOString().slice(0, 10),
     gross_rate: num(a.tassoLordo), cost_rate: num(a.costi), stamp_rate: num(a.bollo), tax_rate: num(a.aliquota, 26), contribution: a.versamento ?? {},
@@ -137,7 +137,7 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
   const promemoria: Reminder[] = live(R.reminders).map((r) => ({ id: r.id, data: String(r.due_date), titolo: String(r.title), dettaglio: s(r.notes),
     preavviso: num(r.lead_days, 14), cliente: s(r.client_id), fatto: !!r.done_on }));
   const spese: MonthlyExpenses[] = live(R.monthly_expenses).map((e) => ({ id: e.id, mese: String(e.month).slice(0, 7), cat: (e.categories as Record<string, number>) ?? {},
-    investito: num(e.invested), fonti: ((e.sources as string[]) ?? []).join(", "), note: s(e.notes) }));
+    investito: num(e.invested), fonti: ((e.sources as string[]) ?? []).join(", "), note: s(e.notes), perFonte: (e.by_source as MonthlyExpenses["perFonte"]) ?? {} }));
   const risparmi: SavingsAccount[] = live(R.savings_accounts).map((a) => ({ id: a.id, nome: String(a.name), prodotto: s(a.product), logo: s(a.logo),
     ...(a.role === "tax" ? { ruolo: "tasse" as const } : {}), ordine: num(a.sort, 9), saldo: num(a.balance), guadagno: num(a.gains), aggiornato: s(a.as_of),
     tassoLordo: num(a.gross_rate), costi: num(a.cost_rate), bollo: num(a.stamp_rate), aliquota: num(a.tax_rate, 26),
@@ -189,7 +189,7 @@ export function docToRow(coll: LegacyColl, d: Doc): Row {
     case "promemoria": return { id: d.id, due_date: d.data, title: d.titolo, notes: d.dettaglio ?? "", lead_days: num(d.preavviso, 14),
       client_id: d.cliente || null, done_on: d.fatto ? d.data : null };
     case "spese": return { id: d.id, month: monthStart(d.mese), categories: d.cat ?? {}, invested: num(d.investito),
-      sources: String(d.fonti ?? "").split(",").map((x) => x.trim()).filter(Boolean), notes: d.note ?? "" };
+      sources: String(d.fonti ?? "").split(",").map((x) => x.trim()).filter(Boolean), notes: d.note ?? "", by_source: d.perFonte ?? {} };
     case "risparmi": return { id: d.id, name: d.nome, product: d.prodotto ?? "", logo: d.logo ?? null, role: d.ruolo === "tasse" ? "tax" : "savings",
       balance: num(d.saldo), gains: num(d.guadagno), as_of: d.aggiornato ?? new Date().toISOString().slice(0, 10), gross_rate: num(d.tassoLordo),
       cost_rate: num(d.costi), stamp_rate: num(d.bollo), tax_rate: num(d.aliquota, 26), contribution: d.versamento ?? {}, covers_from: d.copreDal || null,

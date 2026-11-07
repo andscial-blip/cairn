@@ -12,6 +12,8 @@ import type { Engine } from "@/domain/engine";
 import { applyPositions } from "@/lib/t212";
 import { addSnapshot, snapshotOf, dietz, xirr, pacFlows, splitContribution, idleCash, thin, addSavingsPoint, savingsYield } from "@/lib/invest";
 import { accountFromHistory, historyCovers, pacCheck, taxByYear, yearEndValues } from "@/lib/t212-history";
+import { parseUniCredit, parseRevolutPdf, parseRevolutCsv, detect, statementPeriod, categorize, merchantKey, aggregate, planMonths, CATEGORIES, EXCLUDED } from "@/lib/bank-import";
+import { loadPdfLib, pdfToRows } from "@/lib/pdf-text";
 export type LegacyApp = Record<"vHome" | "vInv" | "vPrev" | "vContr" | "vMis" | "vF24" | "vTasse" | "vFisco" | "compliancePanel" | "redditiPanel" | "vEntrate" | "vSpese" | "vInvest" | "vRisp" | "vAnal" | "vSet" | "bindView" | "openForm" | "toast" | "autoT212" | "closeSheet" | "escClose" | "openDetail" | "calItems" | "_fisco", (...a: any[]) => any>;
 export interface LegacyEnv {
   S: any; engine: () => Engine; render: () => void; setView: (v: string) => void;
@@ -231,7 +233,7 @@ function vHome(FX){
       T({lvl:"do",ic:"%",title:`Incassi a fine dicembre: chiedi il bonifico entro il 31/12`,sub:`${risk.map(x=>cn(x.cliente)+" "+x.label).join(" · ")}: se slittano a gennaio passano al ${cy+1} con imposta al ${pct(P(cy+1).imp,0)} (circa ${eur0(extra)} in più).`,date:risk[0].incasso,big:eur0(amt),act:`<button class="btn small" data-go-v="prev" type="button">Vedi</button>`})}}
   {const lim=addDays(todayISO(),-60);const miss=S.invoices.filter(v=>emessa(v)&&!v.pdf&&((v.emessaSdi||v.data||"")>=lim));
    if(miss.length)T({lvl:"do",ic:"📎",title:miss.length>1?`Carica ${miss.length} fatture elettroniche`:`Carica la fattura elettronica ${esc(miss[0].num)}`,sub:miss.map(v=>esc(v.num)+" "+esc(cn(v.cliente))).join(" · ")+". Il PDF o l'XML ricevuto dopo l'emissione allo SdI.",act:`<button class="btn small" data-open="${miss[0].id}" type="button">Carica</button>`})}
-  invTodos(T);rispTodos(T);
+  invTodos(T);rispTodos(T);speseTodos(T);
   const rank={warn:0,do:1,ok:2};
   todo.sort((a,b)=>(rank[a.lvl]-rank[b.lvl])||((a.date||"9999")<(b.date||"9999")?-1:1));
   // year-aware KPI values
@@ -571,7 +573,7 @@ function spesePanel(inTot,outTot,opt={}){const st=speseStats();
      <div><span>Cassa libera netta 12 mesi</span><b class="num ${netto>=0?"pos":"bad"}">${eur0(netto)}</b></div>
    </div>`}<div class="tw" style="${opt.noMini?"":"margin-top:12px"}"><table><thead><tr><th>Categoria</th><th class="r">/ mese</th><th class="r">Totale</th></tr></thead><tbody>${rows}</tbody></table></div></div></section>`}
 function vSpese(FX){const st=speseStats();const {inTot,outTot}=cash12(FX);
-  const head=intro("Le tue spese personali, ricavate dagli estratti conto: solo totali mensili per categoria, nessun movimento singolo né IBAN. Sono esclusi i giroconti tra i tuoi conti, gli F24 (stanno in F24 e tasse) e gli investimenti. I lavori di casa sono tenuti a parte perché straordinari. Per aggiornarle carica in chat i nuovi estratti conto.")+`<div class="fonti"><span>Fonti:</span><span>${logoImg("unicredit","UniCredit").replace('class="lgo"','class="lgo s"')}UniCredit · conto corrente</span><span>${logoImg("revolut","Revolut").replace('class="lgo"','class="lgo s"')}Revolut · conto corrente</span></div>`;
+  const head=intro("Le tue spese personali, ricavate dagli estratti conto: solo totali mensili per categoria, nessun movimento singolo né IBAN. Sono esclusi i giroconti tra i tuoi conti, gli F24 (stanno in F24 e tasse) e gli investimenti. I lavori di casa sono tenuti a parte perché straordinari. Per aggiornarle usa Importa movimenti con gli estratti UniCredit e Revolut: i file restano sul dispositivo.")+`<div class="fonti"><span>Fonti:</span><span>${logoImg("unicredit","UniCredit").replace('class="lgo"','class="lgo s"')}UniCredit · conto corrente</span><span>${logoImg("revolut","Revolut").replace('class="lgo"','class="lgo s"')}Revolut · conto corrente</span><span class="spacer"></span>${S.writable?`<button class="btn small primary" id="speseImp" type="button">${ico("plus",14)} Importa movimenti</button>`:""}</div>`;
   if(!st)return head+`<section class="panel empty">Nessuna spesa registrata.</section>`;
   const net=inTot-outTot-st.avgRec*12;const last=st.L[st.L.length-1];
   const ml=st.L.map(m=>MESI[+m.mese.slice(5)-1]+" "+m.mese.slice(2,4));const sp=st.avgRec*12;
@@ -697,6 +699,60 @@ function histPatch(a,body,next,storico,today){if(!body||!body.history)return nul
   const fiscoAnni=taxByYear(body.history,{isGov:i=>/obblig/i.test(cls[i]||""),yearEnd:y=>yearEndValues(storico,y),current:Object.fromEntries(T.map(t=>[t.isin,t.quote*t.prezzoEur])),today,tickers:tick});
   return {mensile:acc.mensile,depositi:acc.depositi,prelievi:acc.prelievi,commDeposito:Math.max(acc.commDeposito,+a.commDeposito||0),commCambio:Math.max(acc.commCambio,+a.commCambio||0),realizzate:acc.realizzate.length||!(a.realizzate||[]).length?acc.realizzate:a.realizzate,proventi:acc.proventi,fiscoAnni,movimentiAl:today}}
 const HIST_MSG={scope:"la chiave non ha il permesso «History»",rate:"Trading 212 chiede di riprovare tra un minuto",too_long:"lo storico è troppo lungo da leggere in una volta",error:"Trading 212 non ha risposto"};
+/** Monthly reminder: import last month's statements (from the 3rd, once last month is closed). */
+function speseTodos(T){const st=speseStats();if(!st||!S.writable)return;const today=todayISO();if(+today.slice(8,10)<3)return;
+  const d=new Date(+today.slice(0,4),+today.slice(5,7)-2,1),prev=d.getFullYear()+"-"+pad(d.getMonth()+1),last=st.L[st.L.length-1].mese;
+  if(last<prev)T({lvl:"do",ic:"↧",title:`Importa i movimenti di ${MESI[d.getMonth()].toLowerCase()}`,sub:`Spese ferme a ${MESI[+last.slice(5)-1].toLowerCase()} ${last.slice(0,4)}. Scarica l'estratto UniCredit e quello Revolut (PDF o CSV) e caricali in Spese → Importa movimenti.`,act:`<button class="btn small" data-go-v="spese" type="button">Spese</button>`})}
+/* ---- Spese › Importa movimenti: statements read on the device, only monthly totals saved ---- */
+let SI=null;
+const SI_KIND={"unicredit-pdf":["UniCredit","estratto conto PDF"],"revolut-pdf":["Revolut","estratto PDF"],"revolut-csv":["Revolut","CSV"]};
+function openSpeseImport(){SI={files:[],tx:[],over:{},learn:{},pick:{},busy:false};
+  sheet("Importa movimenti",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Estratti <b>UniCredit</b> (PDF) e <b>Revolut</b> (PDF o CSV), anche più file insieme. Vengono letti su questo dispositivo: Cairn salva solo i totali del mese per categoria, mai i movimenti. Giroconti tra i tuoi conti, F24 e investimenti restano fuori dalle spese.</p>
+   <label class="btn primary" for="siFile" style="display:inline-flex">${ico("plus",14)} Scegli i file</label><input id="siFile" type="file" multiple accept=".pdf,.csv,application/pdf,text/csv" class="vh"></div><div id="siBody"></div></section>`,`<button class="btn primary" id="siSave" type="button" disabled>Salva</button>`);
+  $("#siFile").onchange=e=>{siRead([...e.target.files]);e.target.value=""};$("#siSave").onclick=siSave}
+async function siRead(files){const body=$("#siBody");if(!body)return;SI.busy=true;body.innerHTML=`<div class="panel-b muted">Lettura di ${files.length} file…</div>`;
+  for(const f of files){try{let kind,txs,text;
+      if(/\.pdf$/i.test(f.name)||f.type==="application/pdf"){const rows=await pdfToRows(await loadPdfLib(),await f.arrayBuffer());text=rows.map(r=>r.text).join("\n");kind=detect(f.name,rows.slice(0,150).map(r=>r.text).join("\n"));
+        txs=kind==="unicredit-pdf"?parseUniCredit(rows):kind==="revolut-pdf"?parseRevolutPdf(rows.map(r=>r.text)):null}
+      else{text=await f.text();kind=detect(f.name,text.split(/\r?\n/)[0]||"");txs=kind==="revolut-csv"?parseRevolutCsv(text):null}
+      if(!kind||!txs){SI.files.push({name:f.name,err:"formato non riconosciuto: servono estratti UniCredit o Revolut"});continue}
+      if(!txs.length){SI.files.push({name:f.name,err:"nessun movimento trovato"});continue}
+      const per=statementPeriod(kind,text,txs);const src=SI_KIND[kind][0];
+      if(SI.files.some(x=>x.src===src&&x.from===per.from&&x.to===per.to)){SI.files.push({name:f.name,err:"stesso periodo di un file già caricato"});continue}
+      SI.files.push({name:f.name,kind,src,from:per.from,to:per.to,n:txs.length});SI.tx.push(...txs)}
+    catch(e){console.warn(e);SI.files.push({name:f.name,err:"non leggibile ("+String(e&&e.message||e).slice(0,60)+")"})}}
+  SI.busy=false;siRender()}
+function siPlan(){const learned=[...(cfg().speseRegole||[]),...Object.entries(SI.learn).map(([k,c])=>({k,c}))];
+  const T=SI.tx.map((t,i)=>({...t,i,c:SI.over[i]??categorize(t,learned)}));const imp={};
+  for(const src of ["UniCredit","Revolut"]){const fs=SI.files.filter(f=>f.src===src);if(fs.length)imp[src]={months:aggregate(T.filter(t=>t.source===src)),periods:fs.map(f=>({from:f.from,to:f.to}))}}
+  const plan=planMonths(imp,(S.spese||[]).map(m=>({mese:m.mese,cat:m.cat||{},investito:+m.investito||0,fonti:m.fonti||"",perFonte:m.perFonte||{}})),todayISO());
+  plan.forEach(p=>{if(!(p.mese in SI.pick))SI.pick[p.mese]=(p.state==="update"||(p.state==="new"&&!p.missing))});return {T,plan}}
+function siRender(){const body=$("#siBody");if(!body)return;const {T,plan}=siPlan();
+  const fl=SI.files.map(f=>`<tr><td>${esc(f.name)}</td><td>${f.err?`<span class="bad">${esc(f.err)}</span>`:`${esc(f.src)} · ${esc(SI_KIND[f.kind][1])}`}</td><td class="num">${f.err?"":dmy(f.from)+" – "+dmy(f.to)}</td><td class="r num">${f.err?"":f.n}</td></tr>`).join("");
+  const ST={new:"nuovo",update:"aggiorna",same:"già uguale",partial:"mese non completo",["needs-other"]:"serve anche"};
+  const mrow=p=>{const can=p.next&&p.state!=="same";const lab=MESI[+p.mese.slice(5)-1]+" "+p.mese.slice(0,4);
+    const note=p.state==="needs-other"?`salvato prima con ${esc(p.before.fonti)}: carica anche ${esc(p.missing.join(", "))}`:p.state==="partial"?"il file non copre tutto il mese":p.missing?`manca ${esc(p.missing.join(", "))}`:p.state==="update"?`prima ${eur0(p.prevTotal)}`:"";
+    return `<tr><td>${can?`<input type="checkbox" data-sipick="${p.mese}" ${SI.pick[p.mese]?"checked":""} aria-label="Salva ${lab}">`:""}</td><td class="num"><b>${lab}</b></td><td>${p.next?esc(p.next.fonti):"—"}</td><td class="r num">${p.next?eur0(p.total):"—"}</td><td class="r num">${p.next?eur0(p.next.investito):"—"}</td><td><span class="pill ${p.state==="new"||p.state==="update"?"":"quiet"}">${ST[p.state]}${p.state==="needs-other"?" "+esc(p.missing.join(", ")):""}</span> <span class="muted" style="font-size:12px">${note}</span></td></tr>`};
+  const sel=new Set(plan.filter(p=>SI.pick[p.mese]).map(p=>p.mese));
+  const chk=T.filter(t=>t.amount<0&&sel.has(t.date.slice(0,7))&&t.c==="Altro").slice(0,60);
+  const opts=c=>CATEGORIES.map(k=>`<option ${k===c?"selected":""}>${esc(k)}</option>`).join("");
+  const crow=t=>`<tr><td class="num">${dmy(t.date)}</td><td>${esc(t.text.slice(0,90))}<div class="muted" style="font-size:12px">${esc(t.source)}</div></td><td class="r num">${eur(-t.amount)}</td><td><select class="in" data-sicat="${t.i}" aria-label="Categoria">${opts(t.c)}</select></td></tr>`;
+  body.innerHTML=(SI.files.length?`<div class="tw"><table><thead><tr><th>File</th><th>Tipo</th><th>Periodo</th><th class="r">Movimenti</th></tr></thead><tbody>${fl}</tbody></table></div>`:"")
+   +(plan.length?`<div class="panel-b" style="border-top:1px solid var(--line-2)"><h3 class="eyebrow" style="margin:0 0 8px">Mesi trovati</h3><div class="tw"><table><thead><tr><th></th><th>Mese</th><th>Fonti</th><th class="r">Spese</th><th class="r">Investito</th><th>Stato</th></tr></thead><tbody>${plan.map(mrow).join("")}</tbody></table></div></div>`:"")
+   +(chk.length?`<div class="panel-b" style="border-top:1px solid var(--line-2)"><h3 class="eyebrow" style="margin:0 0 8px">Da controllare · ${chk.length} movimenti senza categoria</h3><p class="muted" style="margin:0 0 8px;font-size:13px">Scegli la categoria: Cairn la ricorda per lo stesso esercente nei prossimi import.</p><div class="tw"><table><thead><tr><th>Data</th><th>Movimento</th><th class="r">Importo</th><th>Categoria</th></tr></thead><tbody>${chk.map(crow).join("")}</tbody></table></div></div>`:"");
+  body.querySelectorAll("[data-sipick]").forEach(c=>c.onchange=()=>{SI.pick[c.dataset.sipick]=c.checked;siRender()});
+  body.querySelectorAll("[data-sicat]").forEach(c=>c.onchange=()=>{const t=SI.tx[+c.dataset.sicat];SI.over[+c.dataset.sicat]=c.value;const k=merchantKey(t.text);if(k)SI.learn[k]=c.value;siRender()});
+  const n=plan.filter(p=>SI.pick[p.mese]&&p.next&&p.state!=="same").length;const b=$("#siSave");if(b){b.disabled=!n;b.textContent=n?`Salva ${n} ${n===1?"mese":"mesi"}`:"Salva"}}
+async function siSave(){if(SI.busy)return;const {plan}=siPlan();
+  // Months already equal but saved before the per-bank split: store the split too, so a later single-bank import can update them.
+  const go=plan.filter(p=>p.next&&((SI.pick[p.mese]&&p.state!=="same")||(p.state==="same"&&!Object.keys((p.before||{}).perFonte||{}).length)));if(!go.length)return;
+  const learned=Object.entries(SI.learn).map(([k,c])=>({k,c}));
+  const ok=await write(async db=>{for(const p of go){const ex=(S.spese||[]).find(m=>m.mese===p.mese);const n=p.next;
+      const doc={mese:n.mese,cat:n.cat,investito:n.investito,fonti:n.fonti,note:"Da estratti conto; esclusi giroconti, F24 e investimenti"+(p.missing?` · manca ${p.missing.join(", ")}`:""),perFonte:n.perFonte};
+      await db.doc("spese/"+(ex?ex.id:n.mese)).set(doc)}
+    if(learned.length){const keep=(cfg().speseRegole||[]).filter(r=>!SI.learn[r.k]);await saveCfg(db,{speseRegole:[...keep,...learned]})}},
+    `${go.filter(p=>p.state!=="same").length||go.length} ${go.length===1?"mese salvato":"mesi salvati"}`);
+  if(ok)closeSheet()}
 function openInvRev(){const a=(S.investimenti||[]).find(isMainInv);const c=invCalc(a);if(!c)return;
   sheet("Rivedi suddivisione PAC",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Imposta le percentuali obiettivo (totale 100%), come nella pie di Trading 212. Salvando, la revisione risulta fatta oggi e la prossima scade tra i mesi indicati.</p><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Peso attuale</th><th class="r">Obiettivo %</th></tr></thead><tbody>${c.T.map(t=>`<tr><td><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.classe||"")}</span></td><td class="r num">${pct(t.peso)}</td><td class="r"><input class="in num" style="max-width:90px" data-tg="${esc(t.isin)}" inputmode="decimal" value="${t.target}"></td></tr>`).join("")}</tbody><tfoot><tr><td><b>Totale</b></td><td></td><td class="r num"><b id="tgSum"></b></td></tr></tfoot></table></div>
    <div class="fields" style="margin-top:14px"><div class="f s2"><label for="ip-imp">PAC € / mese</label><input id="ip-imp" class="in num" inputmode="decimal" value="${c.pac}"></div><div class="f s2"><label for="ip-g">Giorno del mese</label><input id="ip-g" class="in num" inputmode="numeric" value="${c.p.giorno||1}"></div><div class="f s2"><label for="ip-m">Revisione ogni (mesi)</label><input id="ip-m" class="in num" inputmode="numeric" value="${c.p.revisioneMesi||6}"></div><div class="f s2"><label for="ip-s">Allerta scostamento (punti)</label><input id="ip-s" class="in num" inputmode="decimal" value="${c.soglia}"></div></div></div></section>`,`<button class="btn primary" id="ipSave" type="button">Salva revisione</button>`);
@@ -1263,7 +1319,7 @@ function vSet(){
 function bindView(FX){
   const app=$("#app");
   app.querySelectorAll("[data-proj]").forEach(b=>b.onclick=()=>{const [cid,m]=b.dataset.proj.split("|");const x=projections().find(p=>p.contratto===cid&&p.months[0]===m);if(x)openFormFromProj(x)});
-  app.querySelectorAll("[data-risp]").forEach(b=>b.onclick=()=>openRisp(b.dataset.risp));{const r=$("#invRev");if(r)r.onclick=openInvRev;const p=$("#invPrices");if(p)p.onclick=openInvPrices;const sy=$("#invSync");if(sy)sy.onclick=openT212Sync}
+  app.querySelectorAll("[data-risp]").forEach(b=>b.onclick=()=>openRisp(b.dataset.risp));{const r=$("#invRev");if(r)r.onclick=openInvRev;const p=$("#invPrices");if(p)p.onclick=openInvPrices;const sy=$("#invSync");if(sy)sy.onclick=openT212Sync;const si=$("#speseImp");if(si)si.onclick=openSpeseImport}
   app.querySelectorAll("[data-calsync]").forEach(b=>b.onclick=async()=>{b.disabled=true;await syncCalendar();b.disabled=false});
   app.querySelectorAll("[data-mail]").forEach(b=>b.onclick=()=>{const v=S.invoices.find(x=>x.id===b.dataset.mail);if(v)openMail(v)});
   app.querySelectorAll("[data-pm-done]").forEach(b=>b.onclick=()=>{const r=S.promemoria.find(x=>x.id===b.dataset.pmDone);if(r)write(db=>db.doc("promemoria/"+r.id).update({fatto:!r.fatto}),r.fatto?"Riaperto":"Segnato come fatto")});

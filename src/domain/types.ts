@@ -25,7 +25,10 @@ export interface Mission {
 }
 export interface Reminder { id: string; data: string; titolo: string; dettaglio?: string; preavviso?: number; cliente?: string; fatto?: boolean; auto?: boolean; }
 export interface IncomeRecord { id: string; data: string; tipo: string; importo: number; note?: string; }
-export interface MonthlyExpenses { id: string; mese: string; cat: Record<string, number>; investito?: number; fonti?: string; note?: string; }
+export interface MonthlyExpenses { id: string; mese: string; cat: Record<string, number>; investito?: number; fonti?: string; note?: string;
+  /** Per source (bank) totals, from the statement import: the month's figures are their sum. */
+  perFonte?: Record<string, { cat: Record<string, number>; investito: number; al?: string }>;
+}
 export interface SavingsAccount {
   id: string; nome: string; prodotto?: string; logo?: string; ruolo?: "tasse"; ordine?: number; saldo: number; guadagno?: number;
   aggiornato?: string; tassoLordo?: number; costi?: number; bollo?: number; aliquota?: number;

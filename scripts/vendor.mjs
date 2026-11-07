@@ -6,6 +6,8 @@ const FILES = {
   "xlsx.full.min.js": "node_modules/xlsx/dist/xlsx.full.min.js",
   "jspdf.umd.min.js": "node_modules/jspdf/dist/jspdf.umd.min.js",
   "jspdf.plugin.autotable.min.js": "node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js",
+  // PDF reading for the statement import (Spese): pdf.js worker, legacy build (older Safari), same version as the package.
+  "pdf.worker.min.mjs": "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs",
 };
 mkdirSync("public/vendor", { recursive: true });
 for (const [name, src] of Object.entries(FILES)) copyFileSync(src, `public/vendor/${name}`);
