@@ -15,7 +15,8 @@ const G = has ? JSON.parse(readFileSync(FILE, "utf8")) : { snapshot: {}, runs: {
 const VIEWS = ["vHome", "vInv", "vPrev", "vContr", "vMis", "vF24", "vTasse", "vFisco", "compliancePanel", "redditiPanel", "vEntrate", "vSpese", "vInvest", "vRisp", "vAnal", "vSet"] as const;
 /** Panels moved between sections by the redesign: their figures may appear in the destination view. */
 const MOVED: Partial<Record<(typeof VIEWS)[number], (typeof VIEWS)[number][]>> = { vTasse: ["vRisp"] };
-const figures = (html: string) => new Set((html.replace(/<[^>]+>/g, " ").match(/-?\d{1,3}(?:\.\d{3})*(?:,\d+)?\s?(?:€|%)/g) ?? []).map((x) => x.replace(/\s/g, "")));
+// New features (no counterpart in the original) are wrapped in <!--feat-->…<!--/feat--> and checked by their own tests.
+const figures = (html: string) => new Set((html.replace(/<!--feat-->[\s\S]*?<!--\/feat-->/g, " ").replace(/<[^>]+>/g, " ").match(/-?\d{1,3}(?:\.\d{3})*(?:,\d+)?\s?(?:€|%)/g) ?? []).map((x) => x.replace(/\s/g, "")));
 
 describe.skipIf(!has)("redesign keeps every figure identical", () => {
   for (const today of Object.keys(G.runs as object)) {

@@ -55,6 +55,7 @@ function syncFromEngine() {
 }
 
 /** The original render(): draw the current section into #app and bind its controls. */
+let autoT212Tried = false;
 export function renderLegacy() {
   const el = typeof document !== "undefined" ? document.getElementById("app") : null;
   if (!el || !deps?.engine || !app) return;
@@ -198,6 +199,11 @@ export function updateRuntime(d: RuntimeDeps) {
   S.ready = !!d.engine; S.writable = d.writable; S.year = d.year; S.view = d.view;
   if (d.engine && d.engine !== syncedEngine) syncFromEngine();
   if (feedActive === null && d.ledgerId && d.writable) void checkFeed();
+  // Trading 212: once per app start, online and writable, a quiet daily sync (see autoT212 in the legacy app).
+  if (!autoT212Tried && d.engine && d.writable && d.ledgerId && typeof navigator !== "undefined" && navigator.onLine) {
+    autoT212Tried = true;
+    setTimeout(() => { void Promise.resolve(app?.autoT212()).then((r) => { if (r === "review") toast("Trading 212: c'è un ETF nuovo o venduto. Controlla in Investimenti → Sincronizza."); }).catch(() => undefined); }, 2500);
+  }
 }
 export const legacyApp = () => ensureApp();
 export { S as legacyState };

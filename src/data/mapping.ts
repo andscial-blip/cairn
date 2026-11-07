@@ -77,7 +77,7 @@ export async function legacyToRows(L: LegacyExport): Promise<{ rows: RowsByTable
     const aid = await id("investment", a.id);
     rows.investment_accounts.push({ id: aid, name: a.nome ?? a.id, logo: a.id === "trading212" ? "t212" : null, as_of: a.aggiornato ?? new Date().toISOString().slice(0, 10),
       deposits: num(a.depositi), withdrawals: num(a.prelievi), deposit_fees: num(a.commDeposito), fx_fees: num(a.commCambio),
-      realized: a.realizzate ?? [], monthly: a.mensile ?? {}, pac: a.pac ?? {} });
+      realized: a.realizzate ?? [], monthly: a.mensile ?? {}, pac: a.pac ?? {}, history: a.storico ?? [] });
     for (const t of a.titoli ?? []) rows.holdings.push({ id: await id("holding", `${a.id}#${t.isin}`), account_id: aid, isin: t.isin, ticker: t.ticker, name: t.nome,
       asset_class: t.classe ?? "", units: num(t.quote), cost: num(t.costo), price_eur: num(t.prezzoEur), currency: t.valuta ?? "EUR", target_pct: num(t.target) });
   }
@@ -144,7 +144,7 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
     versamento: (a.contribution as SavingsAccount["versamento"]) ?? {}, copreDal: s(a.covers_from), note: (a.notes as string[]) ?? [], fondo: s(a.fund) }));
   const investimenti: InvestmentAccount[] = live(R.investment_accounts).map((a) => ({ id: a.id, nome: s(a.name), ...(a.logo ? { logo: String(a.logo) } : {}), aggiornato: s(a.as_of),
     depositi: num(a.deposits), prelievi: num(a.withdrawals), commDeposito: num(a.deposit_fees), commCambio: num(a.fx_fees),
-    realizzate: (a.realized as InvestmentAccount["realizzate"]) ?? [], mensile: (a.monthly as Record<string, number>) ?? {}, pac: (a.pac as InvestmentAccount["pac"]) ?? {},
+    realizzate: (a.realized as InvestmentAccount["realizzate"]) ?? [], mensile: (a.monthly as Record<string, number>) ?? {}, pac: (a.pac as InvestmentAccount["pac"]) ?? {}, storico: (a.history as InvestmentAccount["storico"]) ?? [],
     titoli: (holdings.get(a.id) ?? []).map((h) => ({ isin: String(h.isin), ticker: String(h.ticker), nome: String(h.name), classe: s(h.asset_class),
       quote: num(h.units), costo: num(h.cost), prezzoEur: num(h.price_eur), valuta: s(h.currency), target: num(h.target_pct) })) }));
   const redditi: IncomeRecord[] = live(R.other_income).map((r) => ({ id: r.id, data: String(r.received_on), tipo: String(r.kind), importo: num(r.amount), note: s(r.notes) }));
@@ -195,7 +195,7 @@ export function docToRow(coll: LegacyColl, d: Doc): Row {
       cost_rate: num(d.costi), stamp_rate: num(d.bollo), tax_rate: num(d.aliquota, 26), contribution: d.versamento ?? {}, covers_from: d.copreDal || null,
       sort: num(d.ordine, 9), notes: d.note ?? [], fund: d.fondo ?? "" };
     case "investimenti": return { id: d.id, name: d.nome ?? "", as_of: d.aggiornato ?? new Date().toISOString().slice(0, 10), deposits: num(d.depositi),
-      withdrawals: num(d.prelievi), deposit_fees: num(d.commDeposito), fx_fees: num(d.commCambio), realized: d.realizzate ?? [], monthly: d.mensile ?? {}, pac: d.pac ?? {} };
+      withdrawals: num(d.prelievi), deposit_fees: num(d.commDeposito), fx_fees: num(d.commCambio), realized: d.realizzate ?? [], monthly: d.mensile ?? {}, pac: d.pac ?? {}, history: d.storico ?? [] };
     case "redditi": return { id: d.id, received_on: d.data, kind: d.tipo, amount: num(d.importo), notes: d.note ?? "" };
   }
 }

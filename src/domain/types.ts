@@ -38,6 +38,8 @@ export interface InvestmentAccount {
   commDeposito?: number; commCambio?: number; realizzate?: { data: string; isin: string; importo: number }[];
   mensile?: Record<string, number>;
   pac?: { importo?: number; giorno?: number; inizio?: string; anni?: number; revisioneMesi?: number; soglia?: number; ultimaRevisione?: string };
+  /** Daily snapshots from the Trading 212 sync: d = date, v = value of the ETFs, c = cost basis, cash = uninvested cash. */
+  storico?: { d: string; v: number; c: number; cash?: number | null }[];
 }
 export interface YearParams { coef: number; inps: number; imp: number; margine: number; }
 export interface Config {

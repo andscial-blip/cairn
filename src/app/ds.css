@@ -512,3 +512,6 @@ table.one-year input{width:100%;max-width:120px}
   .t212s tbody td{display:flex;justify-content:space-between;gap:12px;padding:0!important;border:0!important;background:transparent!important;text-align:left}
   .t212s tbody td[data-l]::before{content:attr(data-l);color:var(--muted);font-size:13px}
 }
+/* Investimenti › Andamento reale: empty state with the chart's footprint, so the two panels stay aligned. */
+.perf-empty{min-height:190px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:18px 20px;border:1px dashed var(--line);border-radius:10px;background:var(--band);font-size:14px;color:var(--muted)}
+.perf-empty b{color:var(--navy);font-size:16px}

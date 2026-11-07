@@ -10,7 +10,8 @@
 import { tot, DEFAULT_CFG as ENGINE_DEFAULT_CFG } from "@/domain/engine";
 import type { Engine } from "@/domain/engine";
 import { applyPositions } from "@/lib/t212";
-export type LegacyApp = Record<"vHome" | "vInv" | "vPrev" | "vContr" | "vMis" | "vF24" | "vTasse" | "vFisco" | "compliancePanel" | "redditiPanel" | "vEntrate" | "vSpese" | "vInvest" | "vRisp" | "vAnal" | "vSet" | "bindView" | "openForm" | "toast" | "closeSheet" | "escClose" | "openDetail" | "calItems" | "_fisco", (...a: any[]) => any>;
+import { addSnapshot, snapshotOf, dietz, xirr, pacFlows, splitContribution, idleCash, thin } from "@/lib/invest";
+export type LegacyApp = Record<"vHome" | "vInv" | "vPrev" | "vContr" | "vMis" | "vF24" | "vTasse" | "vFisco" | "compliancePanel" | "redditiPanel" | "vEntrate" | "vSpese" | "vInvest" | "vRisp" | "vAnal" | "vSet" | "bindView" | "openForm" | "toast" | "autoT212" | "closeSheet" | "escClose" | "openDetail" | "calItems" | "_fisco", (...a: any[]) => any>;
 export interface LegacyEnv {
   S: any; engine: () => Engine; render: () => void; setView: (v: string) => void;
   downloads: { save: (o: { filename: string; data: unknown }) => Promise<unknown> } | null;
@@ -594,12 +595,13 @@ function invTodos(T){const a=(S.investimenti||[]).find(isMainInv);const c=invCal
   const go=`<button class="btn small" data-go-v="invest" type="button">Investimenti</button>`;
   if(Math.abs(c.maxD.drift)>c.soglia)T({lvl:"warn",ic:"%",title:`PAC: ${esc(c.maxD.ticker)} fuori obiettivo di ${Math.abs(c.maxD.drift).toLocaleString("it-IT",{maximumFractionDigits:1})} punti`,sub:`Peso ${pct(c.maxD.peso)} contro obiettivo ${c.maxD.target}%. Ribilancia con i prossimi versamenti o rivedi le percentuali.`,act:go});
   const dd=daysBetween(today,c.rev);if(dd<=21)T({lvl:dd<0?"warn":"do",ic:"%",title:"Rivedi la suddivisione del PAC",sub:`Revisione ogni ${c.p.revisioneMesi||6} mesi · ultima il ${dmy(c.p.ultimaRevisione)} · mancano ${c.anniRes.toLocaleString("it-IT",{maximumFractionDigits:1})} anni alla fine del PAC.`,date:c.rev,act:go});
-  if(a.aggiornato&&daysBetween(a.aggiornato,today)>45)T({lvl:"do",ic:"↧",title:"Aggiorna Trading 212",sub:`Valori fermi al ${dmy(a.aggiornato)}. Carica in chat l'export CSV o aggiorna i prezzi dall'app.`,act:go})}
+  if(a.aggiornato&&daysBetween(a.aggiornato,today)>45)T({lvl:"do",ic:"↧",title:"Aggiorna Trading 212",sub:`Valori fermi al ${dmy(a.aggiornato)}. ${env.t212?"Apri Investimenti e premi Sincronizza.":"Aggiorna i prezzi dall'app."}`,act:go});
+  const idle=idleCash(a.storico,today);if(idle)T({lvl:"do",ic:"€",title:`${eur0(idle.cash)} fermi sul conto Trading 212`,sub:`Liquidità non investita dal ${dmy(idle.since)}. Se non è voluta, investila con il prossimo acquisto o spostala sul conto remunerato.`,act:go})}
 function donut(T,tot){const R=74,W=26,C=2*Math.PI*R;let acc=0;
   const seg=T.map((t,i)=>{const f=t.valore/tot;const s=`<circle cx="100" cy="100" r="${R}" fill="none" stroke="${IPAL[i%IPAL.length]}" stroke-width="${W}" stroke-dasharray="${Math.max(0,f*C-1.5).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc*C).toFixed(2)}" transform="rotate(-90 100 100)" data-tip="${esc(`${t.ticker} · ${t.nome}\nValore: ${eur(t.valore)}\nPeso: ${pct(t.peso)} (obiettivo ${t.target}%)`)}"></circle>`;acc+=f;return s}).join("");
   return `<svg class="donut" viewBox="0 0 200 200" role="img" aria-label="Allocazione ETF">${seg}<text x="100" y="94" text-anchor="middle" font-size="11" fill="var(--muted)">Valore</text><text x="100" y="114" text-anchor="middle" font-size="19" font-weight="700" fill="var(--navy)">${eur0(tot)}</text></svg>`}
 function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
-  const head=intro("I tuoi investimenti e risparmi. Per ora c'è Trading 212 (PAC in ETF); seguiranno il salvadanaio remunerato Satispay e i risparmi Revolut. I valori vengono dall'export CSV di Trading 212: per aggiornarli carica in chat il nuovo file, oppure inserisci a mano i prezzi con Aggiorna prezzi. La proiezione è illustrativa: i rendimenti non sono garantiti.");
+  const head=intro("I tuoi investimenti e risparmi. Per ora c'è Trading 212 (PAC in ETF); seguiranno il salvadanaio remunerato Satispay e i risparmi Revolut. Quote, valori e costi arrivano da Trading 212 in sola lettura: Cairn si aggiorna da solo una volta al giorno quando apri l'app online, oppure con Sincronizza. Rendimenti e proiezione sono stime: i rendimenti futuri non sono garantiti.");
   const c=invCalc(a);if(!c)return head+`<section class="panel empty">Nessun investimento registrato.</section>`;
   const today=todayISO(),cy=new Date().getFullYear();
   const mm=Object.entries(a.mensile||{}).sort();const ml=mm.map(([m])=>MESI[+m.slice(5)-1]+" "+m.slice(2,4));
@@ -638,6 +640,7 @@ function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
         <li>Ti avviso in <b>Da fare ora</b> 3 settimane prima della revisione, se un ETF supera la soglia o se i dati hanno più di 45 giorni. La revisione va anche su Google Calendar con il pulsante <b>Calendario</b> della Dashboard.</li>
       </ul></div></section>
     <section class="panel c12"><div class="panel-h"><h2>ETF in portafoglio</h2><div class="spacer"></div><span class="eyebrow">${c.T.length} ETF ad accumulazione · domicilio Irlanda</span></div><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Quote</th><th class="r">Costo</th><th class="r">Valore</th><th class="r">Plus/minus</th><th class="r">Peso</th><th class="r">Obiettivo</th><th class="r">Scostamento</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td><b>Totale</b></td><td></td><td class="r num">${eur(c.costo)}</td><td class="r num"><b>${eur(c.tot)}</b></td><td class="r num ${c.pl>=0?"pos":"bad"}">${c.pl>=0?"+":"−"}${eur(Math.abs(c.pl))}</td><td class="r num">100%</td><td class="r num">${c.T.reduce((s,t)=>s+(+t.target||0),0)}%</td><td></td></tr></tfoot></table></div></section>
+    ${perfPanels(a,c,today)}
     <section class="panel c12"><div class="panel-h"><h2>Proiezione PAC fino al ${c.fine.slice(0,4)}</h2><div class="spacer"></div>${lg([["Versato","var(--gold-d)",0],...rates.map(([,n,col])=>[n,col,0])])}</div>
       <div class="panel-b chart">${svgLines(ys.map(String).map((y,i)=>i%2&&ys.length>12?"":y),series,{wide:true,label:"Proiezione PAC"})}</div>
       <div class="sstrip"><div><span>Versato a fine piano</span><b class="num">${eur0(vers)}</b><small>${eur0(c.netDep)} già versati + ${c.n} rate</small></div>${pRows}</div>
@@ -650,6 +653,27 @@ function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
       <li><b>IVAFE e quadro RW</b>: conto estero, 2‰ sul valore al 31/12, circa <b>${eur0(ivafe)}</b> per il ${cy}. Si versa con l'F24 di giugno insieme al saldo.</li>
     </ul></div></details>
   </div>`}
+/** Real performance (from the daily Trading 212 snapshots) and the split of the next contribution. New figures: marked for the parity test. */
+function perfPanels(a,c,today){const st=a.storico||[],last=st[st.length-1],cash=last&&last.cash!=null?+last.cash:null;
+  const pf=pacFlows(a.mensile||{},+c.p.giorno||1,c.pac,today);const irr=xirr(pf.flows,c.tot+(cash||0),today);const dz=dietz(st);
+  const sg=(x,d=1)=>(x>=0?"+":"−")+pct(Math.abs(x),d);
+  const pts=thin(st,24);let chart;
+  if(pts.length>=2){const cats=pts.map((x,i)=>{const lab=x.d.slice(8)+"/"+x.d.slice(5,7);return pts.length>12&&i%2&&i!==pts.length-1?"":lab});
+    chart=svgLines(cats,[{name:"Valore ETF",vals:pts.map(x=>x.v),color:"var(--c-ink)",area:1},{name:"Costo di carico",vals:pts.map(x=>x.c),color:"var(--gold-d)",dash:"5 4",w:2}],{wide:true,label:"Valore e costo nel tempo"})}
+  else chart=`<div class="perf-empty"><b>Il grafico si costruisce da oggi.</b><span>A ogni sincronizzazione (una volta al giorno) Cairn salva valore e costo di carico: dopo qualche giorno qui vedi l'andamento reale, non una proiezione.</span></div>`;
+  const s1=irr==null?`<div><span>Rendimento annuo</span><b class="num">—</b><small>serve almeno un trimestre di versamenti</small></div>`:`<div><span>Rendimento annuo stimato</span><b class="num ${irr>=0?"pos":"neg"}">${sg(irr)}</b><small>money-weighted dal ${dmy(pf.flows[0].d)}${pf.estimated?` · ${pf.estimated} ${pf.estimated===1?"mese stimato":"mesi stimati"} a ${eur0(c.pac)}`:""}</small></div>`;
+  const s2=dz?`<div><span>${dz.annual!=null?"Dal primo rilevamento, annuo":"Dal primo rilevamento"}</span><b class="num ${dz.r>=0?"pos":"neg"}">${sg(dz.annual!=null?dz.annual:dz.r)}</b><small>${dz.days} giorni · ${dz.annual!=null?sg(dz.r)+" nel periodo · ":""}esclusi i versamenti</small></div>`:`<div><span>Dal primo rilevamento</span><b class="num">—</b><small>${st.length?"pronto dopo una settimana di dati":"parte dalla prima sincronizzazione"}</small></div>`;
+  const s3=cash!=null?`<div><span>Liquidità sul conto</span><b class="num">${eur(cash)}</b><small>non investita · al ${dmy(last.d)}</small></div>`:`<div><span>Liquidità sul conto</span><b class="num">—</b><small>arriva con la sincronizzazione</small></div>`;
+  const sp=splitContribution(c.T.map(t=>({isin:t.isin,valore:t.valore,target:+t.target||0})),c.pac);const by=Object.fromEntries(sp.map(x=>[x.isin,x]));
+  const maxAfter=Math.max(...c.T.map(t=>Math.abs(by[t.isin].after*100-(+t.target||0))));
+  const pr=c.T.map((t,i)=>{const x=by[t.isin];return `<tr><td><span class="sw" style="background:${IPAL[i%IPAL.length]}"></span><b>${esc(t.ticker)}</b></td><td class="r num">${t.target}%</td><td class="r num">${pct(t.peso)}</td><td class="r num"><b>${x.add?eur0(x.add):"—"}</b></td><td class="r num">${pct(x.after)}</td></tr>`}).join("");
+  return `<!--feat--><section class="panel c7"><div class="panel-h"><h2>Andamento reale</h2><div class="spacer"></div>${pts.length>=2?lg([["Valore ETF","var(--c-ink)"],["Costo di carico","var(--gold-d)",0]]):`<span class="eyebrow">dai dati di Trading 212</span>`}</div>
+      <div class="sstrip sv">${s1}${s2}${s3}</div>
+      <div class="panel-b chart">${chart}</div>
+      <p class="muted" style="font-size:13px;margin:0;padding:10px 16px 14px;border-top:1px solid var(--line-2)">Stime, non rendiconti: il rendimento annuo pesa ogni versamento per il tempo in cui è stato investito (include la liquidità); quello dal primo rilevamento esclude gli acquisti dal guadagno (metodo Modified Dietz).</p></section>
+    <section class="panel c5"><div class="panel-h"><h2>Prossimo versamento</h2><div class="spacer"></div><span class="eyebrow">${eur0(c.pac)} senza vendere</span></div>
+      <div class="tw"><table><thead><tr><th>ETF</th><th class="r">Obiettivo</th><th class="r">Ora</th><th class="r">Metti</th><th class="r">Dopo</th></tr></thead><tbody>${pr}</tbody></table></div>
+      <p class="muted" style="font-size:13px;margin:0;padding:10px 16px 14px;border-top:1px solid var(--line-2)">Prima colma gli ETF sotto obiettivo, poi divide il resto secondo le %. ${maxAfter<=.5?"Dopo questo versamento i pesi sono in linea.":`Dopo questo versamento lo scostamento massimo resta di ${maxAfter.toLocaleString("it-IT",{maximumFractionDigits:1})} punti: servono altri mesi.`} La pie di Trading 212 divide da sola per %: usala come acquisto manuale o per ritoccare la pie per un mese.</p></section><!--/feat-->`}
 function openInvRev(){const a=(S.investimenti||[]).find(isMainInv);const c=invCalc(a);if(!c)return;
   sheet("Rivedi suddivisione PAC",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Imposta le percentuali obiettivo (totale 100%), come nella pie di Trading 212. Salvando, la revisione risulta fatta oggi e la prossima scade tra i mesi indicati.</p><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Peso attuale</th><th class="r">Obiettivo %</th></tr></thead><tbody>${c.T.map(t=>`<tr><td><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.classe||"")}</span></td><td class="r num">${pct(t.peso)}</td><td class="r"><input class="in num" style="max-width:90px" data-tg="${esc(t.isin)}" inputmode="decimal" value="${t.target}"></td></tr>`).join("")}</tbody><tfoot><tr><td><b>Totale</b></td><td></td><td class="r num"><b id="tgSum"></b></td></tr></tfoot></table></div>
    <div class="fields" style="margin-top:14px"><div class="f s2"><label for="ip-imp">PAC € / mese</label><input id="ip-imp" class="in num" inputmode="decimal" value="${c.pac}"></div><div class="f s2"><label for="ip-g">Giorno del mese</label><input id="ip-g" class="in num" inputmode="numeric" value="${c.p.giorno||1}"></div><div class="f s2"><label for="ip-m">Revisione ogni (mesi)</label><input id="ip-m" class="in num" inputmode="numeric" value="${c.p.revisioneMesi||6}"></div><div class="f s2"><label for="ip-s">Allerta scostamento (punti)</label><input id="ip-s" class="in num" inputmode="decimal" value="${c.soglia}"></div></div></div></section>`,`<button class="btn primary" id="ipSave" type="button">Salva revisione</button>`);
@@ -674,8 +698,19 @@ async function openT212Sync(){const a=(S.investimenti||[]).find(isMainInv);if(!a
    <div class="sstrip"><div><span>Valore ETF</span><b class="num">${eur(tot)}</b><small>${d.next.length} posizioni</small></div>${res.body.cash!=null?`<div><span>Liquidità sul conto</span><b class="num">${eur(res.body.cash)}</b><small>non investita</small></div>`:""}${res.body.total!=null?`<div><span>Totale conto</span><b class="num">${eur(res.body.total)}</b><small>secondo Trading 212</small></div>`:""}</div></div>
    ${d.changed.length?`<div class="tw"><table><thead><tr><th>ETF</th><th class="r">Quote</th><th class="r">Valore</th><th class="r">Costo</th></tr></thead><tbody>${d.changed.map(row).join("")}</tbody></table></div>`:`<div class="panel-b"><b>Già allineato:</b> nessuna differenza rispetto a Cairn.</div>`}</section>`,
    d.changed.length?`<button class="btn primary" id="t212Ok" type="button">Applica</button>`:"");
-  const ok=$("#t212Ok");if(ok)ok.onclick=async()=>{if(await write(db=>db.doc("investimenti/"+a.id).update({titoli:d.next,aggiornato:todayISO()}),"Trading 212 sincronizzato"))closeSheet()};
-  if(!d.changed.length&&a.aggiornato!==todayISO())await write(db=>db.doc("investimenti/"+a.id).update({aggiornato:todayISO()}),"Trading 212: già allineato")}
+  const storico=addSnapshot(a.storico,snapshotOf(d.next,res.body.cash,todayISO()));
+  const ok=$("#t212Ok");if(ok)ok.onclick=async()=>{if(await write(db=>db.doc("investimenti/"+a.id).update({titoli:d.next,aggiornato:todayISO(),storico}),"Trading 212 sincronizzato"))closeSheet()};
+  if(!d.changed.length)await write(db=>db.doc("investimenti/"+a.id).update({aggiornato:todayISO(),storico}),a.aggiornato!==todayISO()?"Trading 212: già allineato":null)}
+/** Daily automatic sync (called once per app start, online): applies quietly when only units, prices and costs change;
+ *  a new or sold ETF is left to the manual preview. Always records today's snapshot. Returns "ok", "review" or "skip". */
+async function autoT212(){const a=(S.investimenti||[]).find(isMainInv);const today=todayISO();
+  if(!a||!env.t212||!S.writable||!navigator.onLine||(a.storico||[]).some(x=>x.d===today))return "skip";
+  let res;try{res=await env.t212()}catch(e){return "skip"}
+  if(!res||res.status!==200)return "skip";
+  let d;try{d=applyPositions(a.titoli||[],res.body.positions||[])}catch(e){return "skip"}
+  if(d.changed.some(x=>!x.before||!x.after))return "review";
+  const storico=addSnapshot(a.storico,snapshotOf(d.next,res.body.cash,today));
+  return await write(db=>db.doc("investimenti/"+a.id).update({titoli:d.next,aggiornato:today,storico}),d.changed.length?"Trading 212 aggiornato":null)?"ok":"skip"}
 function openInvPrices(){const a=(S.investimenti||[]).find(isMainInv);if(!a)return;
   sheet("Aggiorna prezzi Trading 212",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Inserisci il prezzo in euro di ogni ETF (lo trovi nell'app Trading 212). Le quote restano quelle dell'ultimo export: dopo nuovi acquisti carica in chat il CSV aggiornato.</p><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Quote</th><th class="r">Prezzo €</th></tr></thead><tbody>${a.titoli.map(t=>`<tr><td><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.nome)}</span></td><td class="r num">${(+t.quote).toLocaleString("it-IT",{maximumFractionDigits:3})}</td><td class="r"><input class="in num" style="max-width:110px" data-px="${esc(t.isin)}" inputmode="decimal" value="${String(t.prezzoEur).replace(".",",")}"></td></tr>`).join("")}</tbody></table></div>
    <div class="fields" style="margin-top:14px"><div class="f s2"><label for="px-d">Prezzi al</label><input id="px-d" type="date" value="${todayISO()}"></div></div></div></section>`,`<button class="btn primary" id="pxSave" type="button">Salva</button>`);
@@ -1711,5 +1746,5 @@ function openF24(id){
     if(!doc.data||!doc.importo){toast("Inserisci data e importo");return}
     if(await write(db=>db.doc("f24/"+(id||doc.data+"-"+uid())).set(doc),"Versamento salvato"))closeSheet()};
 }
-return { vHome, vInv, vPrev, vContr, vMis, vF24, vTasse, vFisco, compliancePanel, redditiPanel, vEntrate, vSpese, vInvest, vRisp, vAnal, vSet, bindView, openForm, toast, closeSheet, escClose, openDetail, calItems, _fisco: () => curE().fisco() };
+return { vHome, vInv, vPrev, vContr, vMis, vF24, vTasse, vFisco, compliancePanel, redditiPanel, vEntrate, vSpese, vInvest, vRisp, vAnal, vSet, bindView, openForm, toast, autoT212, closeSheet, escClose, openDetail, calItems, _fisco: () => curE().fisco() };
 }
