@@ -83,3 +83,18 @@ it("thins a series keeping both ends", () => {
   const l = Array.from({ length: 100 }, (_, i) => i);
   const t = thin(l, 10); expect(t.length).toBe(10); expect(t[0]).toBe(0); expect(t[9]).toBe(99);
 });
+
+import { addSavingsPoint, savingsYield } from "@/lib/invest";
+describe("savings history", () => {
+  it("records the state before the first update", () => {
+    const l = addSavingsPoint([], { d: "2026-10-05", saldo: 300, guadagno: 3 }, { d: "2026-11-05", saldo: 321.28, guadagno: 3.97 });
+    expect(l).toEqual([{ d: "2026-10-05", saldo: 300, guadagno: 3 }, { d: "2026-11-05", saldo: 321.28, guadagno: 3.97 }]);
+    expect(addSavingsPoint(l, {}, { d: "2026-11-05", saldo: 322, guadagno: 4 })).toHaveLength(2);
+  });
+  it("effective yield on the time-weighted balance", () => {
+    // 1000 flat for a year, 25 € gained → 2,5%
+    const y = savingsYield([{ d: "2025-11-05", saldo: 1000, guadagno: 0 }, { d: "2026-11-05", saldo: 1000, guadagno: 25 }])!;
+    expect(y.annual).toBeCloseTo(0.025, 6); expect(y.days).toBe(365);
+    expect(savingsYield([{ d: "2026-11-01", saldo: 1000, guadagno: 0 }, { d: "2026-11-05", saldo: 1000, guadagno: 1 }])).toBeNull();
+  });
+});

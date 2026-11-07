@@ -72,7 +72,7 @@ export async function legacyToRows(L: LegacyExport): Promise<{ rows: RowsByTable
   for (const a of L.risparmi) rows.savings_accounts.push({ id: await id("savings", a.id), name: a.nome, product: a.prodotto ?? "", logo: a.logo ?? null,
     role: a.ruolo === "tasse" ? "tax" : "savings", balance: num(a.saldo), gains: num(a.guadagno), as_of: a.aggiornato ?? new Date().toISOString().slice(0, 10),
     gross_rate: num(a.tassoLordo), cost_rate: num(a.costi), stamp_rate: num(a.bollo), tax_rate: num(a.aliquota, 26), contribution: a.versamento ?? {},
-    covers_from: a.copreDal || null, sort: num(a.ordine, 9), notes: a.note ?? [], fund: a.fondo ?? "" });
+    covers_from: a.copreDal || null, sort: num(a.ordine, 9), notes: a.note ?? [], fund: a.fondo ?? "", history: a.storico ?? [] });
   for (const a of L.investimenti) {
     const aid = await id("investment", a.id);
     rows.investment_accounts.push({ id: aid, name: a.nome ?? a.id, logo: a.id === "trading212" ? "t212" : null, as_of: a.aggiornato ?? new Date().toISOString().slice(0, 10),
@@ -141,7 +141,7 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
   const risparmi: SavingsAccount[] = live(R.savings_accounts).map((a) => ({ id: a.id, nome: String(a.name), prodotto: s(a.product), logo: s(a.logo),
     ...(a.role === "tax" ? { ruolo: "tasse" as const } : {}), ordine: num(a.sort, 9), saldo: num(a.balance), guadagno: num(a.gains), aggiornato: s(a.as_of),
     tassoLordo: num(a.gross_rate), costi: num(a.cost_rate), bollo: num(a.stamp_rate), aliquota: num(a.tax_rate, 26),
-    versamento: (a.contribution as SavingsAccount["versamento"]) ?? {}, copreDal: s(a.covers_from), note: (a.notes as string[]) ?? [], fondo: s(a.fund) }));
+    versamento: (a.contribution as SavingsAccount["versamento"]) ?? {}, copreDal: s(a.covers_from), note: (a.notes as string[]) ?? [], fondo: s(a.fund), storico: (a.history as SavingsAccount["storico"]) ?? [] }));
   const investimenti: InvestmentAccount[] = live(R.investment_accounts).map((a) => ({ id: a.id, nome: s(a.name), ...(a.logo ? { logo: String(a.logo) } : {}), aggiornato: s(a.as_of),
     depositi: num(a.deposits), prelievi: num(a.withdrawals), commDeposito: num(a.deposit_fees), commCambio: num(a.fx_fees),
     realizzate: (a.realized as InvestmentAccount["realizzate"]) ?? [], mensile: (a.monthly as Record<string, number>) ?? {}, pac: (a.pac as InvestmentAccount["pac"]) ?? {}, storico: (a.history as InvestmentAccount["storico"]) ?? [], proventi: (a.income as InvestmentAccount["proventi"]) ?? [], fiscoAnni: (a.tax_years as InvestmentAccount["fiscoAnni"]) ?? [], movimentiAl: (a.history_on as string | null) ?? null,
@@ -193,7 +193,7 @@ export function docToRow(coll: LegacyColl, d: Doc): Row {
     case "risparmi": return { id: d.id, name: d.nome, product: d.prodotto ?? "", logo: d.logo ?? null, role: d.ruolo === "tasse" ? "tax" : "savings",
       balance: num(d.saldo), gains: num(d.guadagno), as_of: d.aggiornato ?? new Date().toISOString().slice(0, 10), gross_rate: num(d.tassoLordo),
       cost_rate: num(d.costi), stamp_rate: num(d.bollo), tax_rate: num(d.aliquota, 26), contribution: d.versamento ?? {}, covers_from: d.copreDal || null,
-      sort: num(d.ordine, 9), notes: d.note ?? [], fund: d.fondo ?? "" };
+      sort: num(d.ordine, 9), notes: d.note ?? [], fund: d.fondo ?? "", history: d.storico ?? [] };
     case "investimenti": return { id: d.id, name: d.nome ?? "", as_of: d.aggiornato ?? new Date().toISOString().slice(0, 10), deposits: num(d.depositi),
       withdrawals: num(d.prelievi), deposit_fees: num(d.commDeposito), fx_fees: num(d.commCambio), realized: d.realizzate ?? [], monthly: d.mensile ?? {}, pac: d.pac ?? {}, history: d.storico ?? [], income: d.proventi ?? [], tax_years: d.fiscoAnni ?? [], history_on: d.movimentiAl ?? null };
     case "redditi": return { id: d.id, received_on: d.data, kind: d.tipo, amount: num(d.importo), notes: d.note ?? "" };

@@ -67,7 +67,11 @@ export function renderLegacy() {
     let h = "";
     if (!S.invoices.length && !S.clients.length) h += `<div class="banner">Il registro è vuoto. Importa i dati dall'app precedente da <b>Impostazioni → Importa</b>, oppure aggiungi i clienti in <b>Impostazioni</b>.</div>`;
     h += (COMPOSE[S.view] ?? COMPOSE.home!)(FX);
-    el.innerHTML = h;
+    // Keep open folds (e.g. "Costi e fisco") open across redraws of the same section: a sync or a save redraws the page.
+    const key = (d: Element) => d.querySelector("summary")?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    const wasOpen = el.dataset.view === String(S.view) ? new Set([...el.querySelectorAll("details[open]")].map(key)) : new Set<string>();
+    el.innerHTML = h; el.dataset.view = String(S.view);
+    if (wasOpen.size) el.querySelectorAll("details").forEach((d) => { if (wasOpen.has(key(d))) (d as HTMLDetailsElement).open = true; });
     app.bindView(FX);
     // Accessibility: horizontally scrollable tables must be reachable and scrollable with the keyboard.
     el.querySelectorAll<HTMLElement>(".tw").forEach((t) => { if (t.scrollWidth > t.clientWidth) { t.tabIndex = 0; t.setAttribute("role", "region"); t.setAttribute("aria-label", t.closest(".panel")?.querySelector("h2")?.textContent?.trim() || "Tabella"); } });

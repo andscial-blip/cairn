@@ -107,3 +107,28 @@ export function thin<T>(list: T[], n = 24): T[] {
   for (let i = 0; i < n; i++) out.push(list[Math.round(i * step)]!);
   return out;
 }
+
+/** Savings: adds the point of a balance update (replacing one on the same day). The first update also records the state before it. */
+export function addSavingsPoint(list: { d: string; saldo: number; guadagno: number }[] | undefined, prev: { d?: string; saldo?: number; guadagno?: number }, next: { d: string; saldo: number; guadagno: number }, max = 400) {
+  let l = (list ?? []).slice();
+  if (!l.length && prev.d && prev.d < next.d && prev.saldo != null) l.push({ d: prev.d, saldo: r2(+prev.saldo || 0), guadagno: r2(+(prev.guadagno ?? 0) || 0) });
+  l = l.filter((x) => x.d !== next.d).concat({ d: next.d, saldo: r2(next.saldo), guadagno: r2(next.guadagno) }).sort((a, b) => a.d.localeCompare(b.d));
+  return l.length > max ? l.slice(l.length - max) : l;
+}
+
+/**
+ * Effective annual yield of a savings account from its updates: gains accrued in the period over the time-weighted
+ * average balance (trapezoid between updates). Net of costs, before the 26% if the provider shows gross gains.
+ * Null under `minDays` of history or without gains information.
+ */
+export function savingsYield(list: { d: string; saldo: number; guadagno: number }[] | undefined, minDays = 30): { annual: number; gained: number; days: number; from: string } | null {
+  const l = (list ?? []).filter((x) => Number.isFinite(x.saldo) && Number.isFinite(x.guadagno));
+  if (l.length < 2) return null;
+  const a = l[0]!, z = l[l.length - 1]!, T = days(a.d, z.d);
+  if (T < minDays) return null;
+  let area = 0;
+  for (let i = 1; i < l.length; i++) area += ((l[i - 1]!.saldo + l[i]!.saldo) / 2) * days(l[i - 1]!.d, l[i]!.d);
+  const avg = area / T, gained = z.guadagno - a.guadagno;
+  if (!(avg > 0) || gained < 0) return null;
+  return { annual: (gained / avg) * (365 / T), gained: r2(gained), days: T, from: a.d };
+}

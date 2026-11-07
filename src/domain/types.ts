@@ -30,6 +30,8 @@ export interface SavingsAccount {
   id: string; nome: string; prodotto?: string; logo?: string; ruolo?: "tasse"; ordine?: number; saldo: number; guadagno?: number;
   aggiornato?: string; tassoLordo?: number; costi?: number; bollo?: number; aliquota?: number;
   versamento?: { importo?: number; giorno?: number; nota?: string }; copreDal?: string; note?: string[]; fondo?: string;
+  /** One point per balance update: d = date, saldo = balance, guadagno = total gains shown by the provider. */
+  storico?: { d: string; saldo: number; guadagno: number }[];
 }
 export interface Holding { isin: string; ticker: string; nome: string; classe?: string; quote: number; costo: number; prezzoEur: number; valore?: number; valuta?: string; target: number; }
 export interface InvestmentAccount {
