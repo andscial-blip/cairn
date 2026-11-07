@@ -23,6 +23,8 @@ export interface LegacyEnv {
   v3Template: () => Promise<string | null>;
   /** Trading 212 read-only sync (server route); absent in tests. */
   t212?: (o?: { history?: boolean }) => Promise<{ status: number; body: any }>;
+  /** A private attachment (cairn-att:<path>) as a Blob, for "Scarica". */
+  attachmentBlob?: (url: string) => Promise<Blob | null>;
 }
 export function createLegacy(env: LegacyEnv): LegacyApp {
 const S = env.S;
@@ -1390,7 +1392,7 @@ function openDetail(id){
         <div class="sum-row"><span>${ico("send",14)} Inviata a ${esc((cfg().commercialista||{}).nome||"commercialista")}</span>${v.inviataCommercialista?`<small class="num">${dmyShort(v.inviataCommercialista)}</small>`:`<button class="btn small dark" id="dMail" type="button">${ico("mail",13)} Prepara email</button>`}</div>
         <div class="sum-row"><span>${ico("stamp",14)} Emessa allo SdI</span>${emessa(v)?`<small class="num">${v.emessaSdi?dmyShort(v.emessaSdi):"sì"}${v.numeroSdi?" · n. "+esc(v.numeroSdi):""}</small>`:`<span class="inline-pop"><input id="sdiDate" type="date" value="${todayISO()}" aria-label="Data emissione SdI"><input id="sdiNum" placeholder="n. SdI (opz.)" style="width:96px" aria-label="Numero SdI"><button class="btn small primary" id="sdiOk" type="button">Confermata</button></span>`}</div>
       </div>
-      <div class="sum-row" style="margin-top:6px"><span>${ico("file",14)} File della fattura elettronica</span>${v.pdf?`<a class="btn small" href="${esc(v.pdf.url||("/_blob/"+v.pdf.id))}" target="_blank" rel="noopener" title="${esc(v.pdf.nome||"")}">Apri</a>`:`<small class="muted">non caricato</small>`}</div>
+      <div class="sum-row" style="margin-top:6px"><span>${ico("file",14)} File della fattura elettronica</span>${v.pdf?`<span class="inline-pop"><a class="btn small" href="${esc(v.pdf.url||("/_blob/"+v.pdf.id))}" target="_blank" rel="noopener" title="${esc(v.pdf.nome||"")}">Apri</a>${env.attachmentBlob&&String(v.pdf.url||"").startsWith("cairn-att:")?`<button class="btn small ghost" id="pdfDl" type="button" title="Scarica ${esc(v.pdf.nome||"")}">${ico("down",13)} Scarica</button>`:""}</span>`:`<small class="muted">non caricato</small>`}</div>
       ${assetsCap?`<div class="inline-pop" style="margin-top:6px"><label class="btn small ${!v.pdf&&emessa(v)?"primary":"ghost"}" for="pdfUp" style="cursor:pointer">${ico("file",13)} ${v.pdf?"Sostituisci file":"Carica fattura elettronica"}</label><input id="pdfUp" type="file" accept=".pdf,.xml,.p7m,application/pdf,application/xml,text/xml,application/pkcs7-mime" style="display:none"><span class="muted" id="pdfMsg" style="font-size:12px"></span></div>`:""}
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
         ${v.incasso?`<div class="sum-row"><span>Incassata il</span><b class="num">${dmy(v.incasso)}</b></div><button class="btn small ghost" id="unpay" type="button">Annulla incasso</button>`
@@ -1407,6 +1409,10 @@ function openDetail(id){
   $("#editBtn").onclick=()=>openForm(v);
   $("#pfBtn").onclick=()=>openProforma(v);
   const dm=$("#dMail");if(dm)dm.onclick=()=>openMail(v);
+  // Download of the e-invoice file: fetched as soon as the detail opens, so the tap saves at once (on iPhone the share
+  // sheet must open right after the tap).
+  const dl=$("#pdfDl");if(dl&&v.pdf){const pending=navigator.onLine?env.attachmentBlob(v.pdf.url).catch(()=>null):Promise.resolve(null);
+    dl.onclick=async()=>{const b=await pending;if(!b){toast(navigator.onLine?"File non disponibile":"I file allegati si scaricano solo online");return}await save(v.pdf.nome||`Fattura_${v.n}_${v.anno}.pdf`,b)}}
   const pu=$("#pdfUp");if(pu)pu.onchange=async()=>{const f=pu.files&&pu.files[0];if(!f)return;$("#pdfMsg").textContent="Caricamento…";
     try{const r=await assetsCap.upload(f);if(await write(db=>db.doc("invoices/"+v.id).update({pdf:{id:r.id,url:r.url,nome:f.name}}),"Fattura elettronica caricata"))openDetail(v.id)}
     catch(e){$("#pdfMsg").textContent=e&&e.code==="too_large"?"File troppo grande (max 15 MB)":e&&e.code==="offline"?"Serve internet per caricare il file":e&&e.code==="type"?"Formato non supportato: carica il PDF o l'XML della fattura":"Caricamento non riuscito: riprova"}};
@@ -1585,7 +1591,7 @@ function openProforma(v){
   $("#cpBtn").onclick=()=>{const txt=(v.righe||[]).map((r,i)=>`${i+1}. ${r.desc} — ${String(r.qta).replace(".",",")} × ${eur(r.prezzo)} = ${eur(r.qta*r.prezzo)}`).join("\n")+(v.bollo?`\nImposta di bollo: ${eur(v.bollo)}`:"")+`\nTotale documento: ${eur(tot(v).documento)}`;
     const done=()=>toast("Descrizioni copiate");
     try{navigator.clipboard.writeText(txt).then(done,()=>fallbackCopy(txt))}catch(e){fallbackCopy(txt)}};
-  $("#pdfBtn").onclick=()=>pdfProforma(v);
+  $("#pdfBtn").onclick=()=>pdfProforma(v);preloadPdf();
 }
 function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;ta.style.cssText="position:fixed;left:0;top:0;width:90%;height:160px;z-index:70";document.body.appendChild(ta);ta.select();toast("Testo selezionato: copialo con Ctrl/⌘+C");setTimeout(()=>ta.remove(),8000)}
 function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`)){res();return}const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
@@ -1593,6 +1599,8 @@ async function save(filename,data){
   if(!downloads){toast("Download non disponibile in questa vista");return}
   try{await downloads.save({filename,data});return true}catch(e){if(e&&e.code!=="declined")toast("Download non riuscito");return false}
 }
+/** Loads the PDF generator ahead of the tap: generating then saves within the tap (needed for the iPhone share sheet). */
+function preloadPdf(){loadScript("/vendor/jspdf.umd.min.js").then(()=>loadScript("/vendor/jspdf.plugin.autotable.min.js")).catch(()=>{})}
 async function pdfProforma(v){
   try{
     await loadScript("/vendor/jspdf.umd.min.js");
@@ -1725,7 +1733,7 @@ function openMail(v){
    </div></section>`);
   document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{const el=$("#"+b.dataset.copy);const txt=el.value;
     try{navigator.clipboard.writeText(txt).then(()=>toast("Copiato"),()=>{el.removeAttribute("readonly");el.select();toast("Selezionato: copia con Ctrl/⌘+C")})}catch(e){el.select();toast("Selezionato: copia con Ctrl/⌘+C")}});
-  $("#mlPdf").onclick=()=>pdfProforma(v);
+  $("#mlPdf").onclick=()=>pdfProforma(v);preloadPdf();
   $("#mlSent").onclick=async()=>{if(!S.invoices.some(x=>x.id===v.id)){toast("Salva prima la fattura");return}
     if(await write(db=>db.doc("invoices/"+v.id).update({inviataCommercialista:todayISO()}),"Segnata come inviata"))closeSheet()};
 }

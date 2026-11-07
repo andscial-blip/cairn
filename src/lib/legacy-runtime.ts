@@ -126,6 +126,28 @@ async function loadHistory() {
   if (S.view === "set") renderLegacy();
 }
 
+const MIME: Record<string, string> = { pdf: "application/pdf", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", json: "application/json", xml: "application/xml", csv: "text/csv", ics: "text/calendar" };
+/**
+ * Saves a file the user asked for. On iPhone/iPad and in the installed app (standalone), a download link does nothing:
+ * there the share sheet opens instead («Salva su File», Mail, WhatsApp…). Elsewhere a normal download.
+ */
+export async function saveFile(filename: string, data: unknown): Promise<boolean> {
+  const type = MIME[(filename.split(".").pop() || "").toLowerCase()] ?? "application/octet-stream";
+  const blob = data instanceof Blob ? data : new Blob([typeof data === "string" ? data : data instanceof ArrayBuffer || ArrayBuffer.isView(data) ? (data as BlobPart) : JSON.stringify(data)], { type });
+  const file = new File([blob], filename, { type: blob.type || type });
+  const nav = navigator as Navigator & { standalone?: boolean };
+  const ios = /iP(hone|ad|od)/.test(nav.userAgent) || (nav.platform === "MacIntel" && nav.maxTouchPoints > 1);
+  const standalone = nav.standalone === true || (typeof matchMedia === "function" && matchMedia("(display-mode: standalone)").matches);
+  if ((ios || standalone) && typeof nav.canShare === "function" && nav.canShare({ files: [file] })) {
+    try { await nav.share({ files: [file], title: filename }); return true; }
+    catch (e) { if ((e as Error).name === "AbortError") return false; /* not allowed (e.g. activation lost): fall back below */ }
+  }
+  const url = URL.createObjectURL(file);
+  if (ios && standalone) { window.open(url, "_blank"); setTimeout(() => URL.revokeObjectURL(url), 60_000); return true; }
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000); return true;
+}
+
 function toast(m: string) { try { app?.toast(m); } catch { /* no toast root yet */ } }
 
 function ensureApp() {
@@ -147,11 +169,7 @@ function ensureApp() {
   app = createLegacy({
     S, engine: () => deps!.engine!, render: () => renderLegacy(), setView: (v) => deps?.navigate(v),
     downloads: {
-      save: async ({ filename, data }) => {
-        const blob = data instanceof Blob ? data : new Blob([typeof data === "string" ? data : data instanceof ArrayBuffer || ArrayBuffer.isView(data) ? (data as BlobPart) : JSON.stringify(data)]);
-        const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 10_000); return true;
-      },
+      save: async ({ filename, data }) => saveFile(filename, data),
     },
     assetsCap: {
       upload: async (f: File) => {
@@ -184,6 +202,11 @@ function ensureApp() {
       if (!token) return { status: 401, body: { code: "unauthorized" } };
       const r = await fetch("/api/t212", { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify(o ?? {}), cache: "no-store" });
       return { status: r.status, body: await r.json().catch(() => ({})) };
+    },
+    attachmentBlob: async (url: string) => {
+      const d = deps; if (!d || !url.startsWith("cairn-att:")) return null;
+      const { data, error } = await d.sb.storage.from("attachments").download(url.slice("cairn-att:".length));
+      return error ? null : data;
     },
     v3Template: async () => {
       const d = deps; if (!d?.ledgerId || !navigator.onLine) return null;
