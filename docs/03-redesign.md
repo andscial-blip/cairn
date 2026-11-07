@@ -48,3 +48,17 @@
 ## 5. Rollback
 - Branch `release/v1` = versione prima del redesign; su Vercel "Instant Rollback" al deployment precedente.
 - `tests/fixtures/legacy-original.ts` = viste pre-redesign congelate (base dei test di parità).
+
+## Panoramica v2 (hero + tre schede)
+
+Feedback: "forse meglio meno dati ma con grafici belli". La Panoramica passa da ~20 cifre in 12 riquadri a 4 blocchi:
+
+| Blocco | Contenuto | Domanda a cui risponde |
+|---|---|---|
+| Il tuo anno (hero) | Incassato, Netto, Da accantonare, Da incassare (solo se > 0); grafico mensile; barra soglia | Come sta andando l'anno? |
+| Da fare | 5 azioni più urgenti + "Mostra tutte" | Cosa devo fare oggi? |
+| Tasse | Prossimo F24 + copertura del conto tasse sugli F24 a 6 mesi | Sono coperto? |
+| Patrimonio | Totale, risparmi/investimenti, margine mensile, fondo emergenza | Come stanno le mie finanze? |
+
+Tolti dalla Panoramica (restano in Fisco, Analisi e Finanze): oneri, previsione e soglia come riquadri separati, mini-grafici dei riquadri, pannello Stato, barre clienti, accantonamento mensile. Nessuna cifra nuova: lo garantisce il test di parità.
+Il grafico ha una versione compatta per il telefono (etichette leggibili, nessuno scorrimento orizzontale).

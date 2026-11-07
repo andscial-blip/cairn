@@ -227,11 +227,6 @@ function vHome(FX){
   invTodos(T);rispTodos(T);
   const rank={warn:0,do:1,ok:2};
   todo.sort((a,b)=>(rank[a.lvl]-rank[b.lvl])||((a.date||"9999")<(b.date||"9999")?-1:1));
-  const stato3=[
-    {l:`Soglia ${eur0(s.s85)} · ${cy}`,v:eur0(s.s85-(fc.ric||0)),sub:`margine · previsione ${eur0(fc.ric||0)}`,tone:(fc.ric||0)>=s.allerta?"bad":"pos"},
-    {l:"Da accantonare",v:pct((fc.oneriPct||0)*(1+P(cy).margine),0),sub:`di ogni incasso ${cy}`,tone:""},
-    {l:`Da accantonare dal ${cy+1}`,v:pct(((FX[cy+1]||{}).oneriPct||0)*(1+P(cy+1).margine),0),sub:`imposta al ${pct(P(cy+1).imp,0)}`,tone:"neg"},
-    {l:"F24 prossimi 6 mesi",v:eur0(d6),sub:ctS&&ctS.saldo!=null?`conto tasse ${eur0(ctS.saldo)}`:"conto tasse non registrato",tone:""}];
   // year-aware KPI values
   const open=inYear.filter(v=>!v.incasso), late=open.filter(v=>stato(v)==="Scaduta");
   const projY=y>cy?PR.filter(x=>x.anno===y):[];
@@ -243,62 +238,83 @@ function vHome(FX){
   const mInc=Array(12).fill(0), mAtt=Array(12).fill(0), mPr=Array(12).fill(0);
   inYear.forEach(v=>{const m=+effDate(v).slice(5,7)-1;const t=tot(v).imponibile;if(v.incasso)mInc[m]+=t;else mAtt[m]+=t});
   PR.forEach(x=>{if(x.anno===y)mPr[+x.incasso.slice(5,7)-1]+=x.imponibile});
-  const chart=barChart(mInc,mAtt,mPr);
-  // clients
-  const byC={};inYear.forEach(v=>{const k=v.cliente;byC[k]=byC[k]||{inc:0,att:0};const t=tot(v).imponibile;if(v.incasso)byC[k].inc+=t;else byC[k].att+=t});
-  const totC=Object.values(byC).reduce((a,c)=>a+c.inc+c.att,0)||1;
-  const cRows=Object.entries(byC).sort((a,b)=>(b[1].inc+b[1].att)-(a[1].inc+a[1].att)).map(([k,c])=>{const q=(c.inc+c.att)/totC;const cl=clientById(k);
-    return `<div class="cbar"><div class="n">${esc(cl?cl.nome:k)}</div><div class="b" title="Incassato ${eur(c.inc)} · Atteso ${eur(c.att)}"><i style="width:${c.inc/totC*100}%;background:var(--slate)"></i><i style="width:${c.att/totC*100}%;background:var(--band)"></i></div><div class="p">${eur0(c.inc+c.att)} · <b class="${q>.6?"neg":""}">${pct(q,0)}</b></div></div>`}).join("")||`<div class="empty">Nessuna fattura nel ${y}.</div>`;
+  const curM=y===cy?new Date().getMonth():-1;
   const sogliaW=Math.min(100,(f.inc||0)/s.s85*100), sogliaF=Math.min(100-sogliaW,((f.att||0)+(f.contr||0)+(f.stima||0))/s.s85*100);
-  // mini grafici dei riquadri
-  const KV={};{const curM=y===cy?new Date().getMonth():11;const mn=i=>MESI_L[i].charAt(0)+MESI_L[i].slice(1).toLowerCase();
-   KV.inc=VZ.cols(mInc,[curM],"Incassato per mese\n"+mInc.map((v,i)=>v?mn(i)+": "+eur0(v):null).filter(Boolean).join("\n"),i=>i===curM&&y===cy?"var(--amber-soft)":"var(--slate)");
-   const op=f.oneriPct||0;KV.net=VZ.cols(mInc.map(v=>v*(1-op)),[],"Netto per mese (stima)\n"+mInc.map((v,i)=>v?mn(i)+": "+eur0(v*(1-op)):null).filter(Boolean).join("\n"),()=>"var(--green-soft)");
-   const ip=f.oneri?f.inps/f.oneri:0;if(oneri>0)KV.one=VZ.stack([{v:oneri*ip,c:"var(--c-mid)"},{v:oneri*(1-ip),c:"var(--amber-soft)"}],Math.max(1,oneri),[],`INPS: ${eur0(oneri*ip)}\nImposta: ${eur0(oneri*(1-ip))}`)+`<div class="vzl"><span>INPS ${eur0(oneri*ip)}</span><span>imposta ${eur0(oneri*(1-ip))}</span></div>`;
-   if(accant>0)KV.acc=VZ.stack([{v:oneri,c:"var(--c-mid)"},{v:Math.max(0,accant-oneri),c:"var(--amber-soft)"}],Math.max(1,accant),[],`Oneri stimati: ${eur0(oneri)}\nMargine di sicurezza: ${eur0(Math.max(0,accant-oneri))}`)+`<div class="vzl"><span>oneri</span><span>+ margine ${pct(P(y).margine,0)}</span></div>`;
-   const op2=y>cy?projY.map(x=>({v:x.imponibile,c:"var(--c-pale)",t:c2n(x.cliente)+" "+x.label})):open.map(v=>({v:tot(v).documento,c:stato(v)==="Scaduta"?"var(--tax)":"var(--slate)",t:v.num+" "+c2n(v.cliente)}));
-   KV.ape=op2.length?VZ.stack(op2,Math.max(1,op2.reduce((a,x)=>a+x.v,0)),[],op2.map(x=>x.t+": "+eur0(x.v)).join("\n")):"";
-   const max=Math.max(s.s85,f.ric||0)*1.02;const segs=[{v:f.inc||0,c:"var(--slate)"},{v:f.att||0,c:"var(--c-mid)"},{v:(f.contr||0)+(f.stima||0),c:"var(--c-pale)"}];const tp=`Incassato: ${eur0(f.inc||0)}\nFatture aperte: ${eur0(f.att||0)}\nDa contratti: ${eur0((f.contr||0)+(f.stima||0))}\nSoglia: ${eur0(s.s85)}`;
-   KV.prev=VZ.stack(segs,max,[{v:s.s85,c:"var(--tax)"}],tp);
-   KV.sog=VZ.stack([{v:f.ric||0,c:(f.ric||0)>=s.allerta?"var(--tax)":"var(--slate)"}],s.s85,[{v:s.allerta,c:"var(--gold-d)",dash:1}],`Previsione: ${eur0(f.ric||0)}\nAllerta: ${eur0(s.allerta)}\nSoglia: ${eur0(s.s85)}`);
-   if(y===cy){const fr=f24Rows(FX);const m12=[];const d=new Date();for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()+i,1);m12.push(x.getFullYear()+"-"+pad(x.getMonth()+1))}
-     const vv=m12.map(m=>fr.filter(r=>!r.versato&&r.data.slice(0,7)===m).reduce((a,r)=>a+r.importo,0));const hi=nx?[m12.indexOf(nx.data.slice(0,7))]:[];
-     KV.f24=VZ.cols(vv,hi,"F24 nei prossimi 12 mesi\n"+m12.map((m,i)=>vv[i]?MESI[+m.slice(5)-1]+" "+m.slice(2,4)+": "+eur0(vv[i]):null).filter(Boolean).join("\n"),i=>hi.includes(i)?"var(--cost)":"var(--c-soft)")}}
+  const PV=persVals(FX);
+  const TODO_MAX=5, todoShown=S.todoAll?todo:todo.slice(0,TODO_MAX);
+  const li=t=>{const ci=t.date?cdInfo(t.date):null;
+    return `<li class="${t.lvl}"><span class="dot ${t.lvl}">${DOTICON[t.ic]?ico(DOTICON[t.ic],13):t.ic}</span><div class="tm"><div class="tt">${t.title}</div>${t.sub?`<div class="ts">${t.sub}</div>`:""}</div><div class="tr">${t.big?`<b class="num">${t.big}${t.bigL?` <small>${t.bigL}</small>`:""}</b>`:""}${ci?`<span class="cdp ${ci.c}">${ci.t}</span>`:""}</div><div class="ta">${t.act||""}</div></li>`};
+  const accPct=pct((fc.oneriPct||0)*(1+P(cy).margine),0);
+  const hasCT=ctS&&ctS.saldo!=null, cov=hasCT?(d6>0?Math.max(0,Math.min(1,(+ctS.saldo)/d6)):1):null;
+  const nxi=nx?cdInfo(nx.data):null, soglAlert=(f.soglia||0)>=s.allerta/s.s85;
   return `
-  <div class="home"><section class="h-kpi">
-    <div class="eyebrow" style="margin-bottom:8px">Anno fiscale ${y} · per data di incasso${y>cy?" · anno futuro: valori da contratti":y<cy?" · anno chiuso":""}</div>
-    <div class="kpis">
-      <div class="kpi amber"><div class="l">Fatturato incassato</div><div class="v">${eur0(incassato)}</div>${KV.inc||""}<div class="s">${paid.length} fatture</div></div>
-      <div class="kpi green"><div class="l">Netto reale</div><div class="v">${eur0(netto)}</div>${KV.net||""}<div class="s">${eur0(netto/mesiTrasc)} / mese</div></div>
-      <div class="kpi"><div class="l">Oneri (INPS + imposta)</div><div class="v">${eur0(oneri)}</div>${KV.one||""}<div class="s">${pct(f.oneriPct||0)} dei ricavi</div></div>
-      <div class="kpi"><div class="l">Da accantonare</div><div class="v">${eur0(accant)}</div>${KV.acc||""}<div class="s">sugli incassi ${y}</div></div>
+  <div class="home v2"><div class="h-left">
+  <section class="panel hero h-hero">
+    <div class="hero-h"><div><h2>Il tuo ${y}</h2><span class="eyebrow">${y>cy?"anno futuro · valori da contratti":y<cy?"anno chiuso · per data di incasso":"per data di incasso"}</span></div>${late.length?`<button class="cdp late" data-go="inv-late" type="button">${late.length>1?late.length+" fatture scadute":"1 fattura scaduta"}</button>`:""}</div>
+    <div class="hero-nums">
+      <div class="hn-main"><span>Incassato</span><b class="num">${eur0(incassato)}</b><small>${paid.length} fatture</small></div>
+      <div><span>Netto reale</span><b class="num pos">${eur0(netto)}</b><small>${eur0(netto/mesiTrasc)} / mese</small></div>
+      <div><span>Da accantonare</span><b class="num">${eur0(accant)}</b><small>sugli incassi ${y}</small></div>
+      ${aperto?`<div><span>${y>cy?"Previsto da contratti":"Da incassare"}</span><b class="num ${late.length?"neg":""}">${eur0(aperto)}</b><small>${y>cy?projY.length+" fatture previste":open.length+" aperte"}</small></div>`:""}
     </div>
-    <div class="kpis kpis-2">
-      <div class="kpi ${late.length?"alert":""}"><div class="l">${y>cy?"Previsto da contratti":"Da incassare "+y}</div><div class="v">${aperto?eur0(aperto):"—"}</div>${KV.ape||""}<div class="s">${y>cy?projY.length+" fatture previste":open.length?open.length+" aperte"+(late.length?` · <b style="color:var(--pink-fg)">${late.length} scadute</b>`:""):"tutto incassato"}</div></div>
-      <div class="kpi"><div class="l">Previsione anno</div><div class="v">${y>cy?approx(f.ric):eur0(f.ric||0)}</div>${KV.prev||""}<div class="s">${FMIN[y]&&FMIN[y].ric<(f.ric||0)-1?"minimo garantito "+eur0(FMIN[y].ric):"incassi + aperte + contratti"}</div></div>
-      <div class="kpi ${(f.soglia||0)>=s.allerta/s.s85?"alert":""}"><div class="l">Soglia ${eur0(s.s85)}</div><div class="v">${pct(f.soglia||0)}</div>${KV.sog||""}<div class="s">usata (previsione)</div></div>
-      ${y===cy?`<div class="kpi ${nx&&daysBetween(todayISO(),nx.data)<=7?"alert":""}"><div class="l">Prossimo F24</div><div class="v">${nx?eur0(nx.importo):"—"}</div>${KV.f24||""}<div class="s">${nx?dmy(nx.data):"nessuno"}</div></div>`
-       :`<div class="kpi"><div class="l">F24 ${y>cy?"previsti":"versati"} nel ${y}</div><div class="v">${f24Ytot?eur0(f24Ytot):"—"}</div><div class="s">${f24Ytot?(y>cy?"stima":"registrati nell'app"):y<cy?"non registrati nell'app":"nessuno"}</div></div>`}
+    <div class="hero-chart chart"><div class="hc-d">${homeChart(mInc,mAtt,mPr,curM)}</div><div class="hc-m">${homeChart(mInc,mAtt,mPr,curM,380,true)}</div></div>
+    <div class="legend hero-legend"><span><i style="background:var(--slate)"></i>Incassato</span><span><i style="background:var(--green-soft)"></i>Fatture aperte</span><span><i style="background:var(--lilac)"></i>Previsto dai contratti</span></div>
+    <div class="hero-soglia">
+      <div class="hs-top"><span>Previsione ${y} <b class="num">${y>cy?approx(f.ric):eur0(f.ric||0)}</b></span><span class="${soglAlert?"neg":""}"><b class="num">${pct(f.soglia||0)}</b> della soglia ${eur0(s.s85)}</span></div>
+      <div class="meter" role="img" aria-label="Soglia usata ${pct(f.soglia||0)}"><i style="width:${sogliaW}%"></i><i class="f" style="left:${sogliaW}%;width:${sogliaF}%"></i><span class="mk" style="left:${Math.min(99.5,s.allerta/s.s85*100)}%"></span></div>
+      <div class="meter-legend"><span>incassato</span><span>+ previsto</span><span>allerta ${eur0(s.allerta)}</span></div>
     </div>
   </section>
-  <div class="h-pers">${personalPanel(FX)}</div>
-  <div class="grid h-main">
-    <section class="panel c7 h-todo"><div class="panel-h"><h2>Da fare ora</h2><span class="eyebrow tday" style="margin-left:4px">oggi ${dmy(todayISO())}</span><div class="spacer"></div><button class="btn small ghost" data-calsync="1" type="button" title="Aggiorna Google Calendar">${ico("sync",14)} Calendario</button></div>
-      <ul class="tlist">${todo.map(t=>{const ci=t.date?cdInfo(t.date):null;
-        return `<li class="${t.lvl}"><span class="dot ${t.lvl}">${DOTICON[t.ic]?ico(DOTICON[t.ic],13):t.ic}</span><div class="tm"><div class="tt">${t.title}</div>${t.sub?`<div class="ts">${t.sub}</div>`:""}</div><div class="tr">${t.big?`<b class="num">${t.big}${t.bigL?` <small>${t.bigL}</small>`:""}</b>`:""}${ci?`<span class="cdp ${ci.c}">${ci.t}</span>`:""}</div><div class="ta">${t.act||""}</div></li>`}).join("")}</ul>
-    </section>
-    <section class="panel c5"><div class="panel-h"><h2>Stato ${cy}</h2></div>
-      <div class="sstrip v">${stato3.map(k=>`<div><span>${k.l}</span><b class="num ${k.tone}">${k.v}</b><small>${k.sub}</small></div>`).join("")}</div>
-      <div class="panel-b" style="border-top:1px solid var(--line-2)"><div class="eyebrow" style="margin-bottom:8px">Soglia forfettario ${y}</div>
-      <div class="meter" role="img" aria-label="Soglia usata ${pct(f.soglia||0)}"><i style="width:${sogliaW}%"></i><i class="f" style="left:${sogliaW}%;width:${sogliaF}%"></i><span class="mk" style="left:${Math.min(99.5,s.allerta/s.s85*100)}%"></span></div>
-      <div class="meter-legend"><span>Incassato ${eur0(f.inc||0)}</span><span>+ previsto ${eur0((f.att||0)+(f.contr||0)+(f.stima||0))}</span><span>allerta ${eur0(s.allerta)}</span></div>
-      <div style="margin-top:16px" class="eyebrow">Clienti ${y}</div>
-      <div style="margin-top:4px">${cRows}</div>
+  <div class="h-duo">
+  <section class="panel h-card go" data-go-v="tasse">
+    <div class="panel-h"><h2>Tasse</h2><div class="spacer"></div><span class="eyebrow">accantona il ${accPct} di ogni incasso</span></div>
+    <div class="panel-b">
+      <div class="big-row"><div><span>Prossimo F24</span><b class="num">${nx?eur0(nx.importo):"—"}</b><small>${nx?dmy(nx.data):"nessuno in programma"}</small></div>${nxi?`<span class="cdp ${nxi.c}">${nxi.t}</span>`:""}</div>
+      ${hasCT?`<div class="cov"><div class="cov-l"><span>Conto tasse</span><span><b class="num">${eur0(ctS.saldo)}</b> su ${eur0(d6)} di F24 in 6 mesi</span></div><div class="hbar"><i style="width:${(cov*100).toFixed(1)}%;background:${cov>=1?"var(--green-soft)":cov>=.5?"var(--amber-soft)":"var(--tax)"}"></i></div></div>`
+        :`<div class="cov"><div class="cov-l"><span>F24 nei prossimi 6 mesi</span><b class="num">${eur0(d6)}</b></div><p class="muted">Registra il saldo del conto tasse per vedere se li copri.</p></div>`}
+    </div>
+  </section>
+  ${PV?`<section class="panel h-card go" data-go-v="invest">
+    <div class="panel-h"><h2>Patrimonio</h2><div class="spacer"></div><span class="eyebrow">oggi · esclusi conti correnti</span></div>
+    <div class="panel-b">
+      <div class="big-row"><div><b class="num">${eur0(PV.pat)}</b></div></div>
+      <div class="hbar split"><i style="width:${PV.pat?(PV.rt/PV.pat*100).toFixed(1):0}%;background:var(--sky)"></i><i style="width:${PV.pat?(PV.it/PV.pat*100).toFixed(1):0}%;background:var(--slate)"></i></div>
+      <div class="split-l"><span><i style="background:var(--sky)"></i>Risparmi <b class="num">${eur0(PV.rt)}</b></span><span><i style="background:var(--slate)"></i>Investimenti <b class="num">${eur0(PV.it)}</b></span></div>
+      <div class="mini2">
+        <div><span>Margine mensile</span><b class="num ${PV.marg<0?"neg":"pos"}">${PV.marg<0?"−":""}${eur0(Math.abs(PV.marg))}</b></div>
+        <div><span>Fondo emergenza</span><b class="num ${PV.mesi<3?"neg":""}">${PV.mesi.toLocaleString("it-IT",{maximumFractionDigits:1})} mesi</b><div class="hbar thin"><i style="width:${Math.min(100,PV.mesi/PV.emT*100).toFixed(1)}%;background:${PV.mesi>=3?"var(--green-soft)":"var(--amber-soft)"}"></i></div></div>
       </div>
-    </section>
-    <section class="panel c12"><div class="panel-h"><h2>Trend mensile ${y}</h2><div class="spacer"></div><div class="legend"><span><i style="background:var(--slate)"></i>Incassato</span><span><i style="background:var(--band);border:1px solid var(--line)"></i>Fatture aperte</span><span><i style="background:repeating-linear-gradient(135deg,var(--c-mid) 0 3px,transparent 3px 6px);border:1px solid var(--c-mid)"></i>Da contratto</span></div></div><div class="panel-b chart">${chart}</div></section>
+    </div>
+  </section>`:""}
+  </div></div>
+  <div class="h-side">
+  <section class="panel h-todo"><div class="panel-h"><h2>Da fare</h2><span class="eyebrow tday" style="margin-left:4px">oggi ${dmy(todayISO())}</span><div class="spacer"></div><button class="btn small ghost" data-calsync="1" type="button" title="Aggiorna Google Calendar">${ico("sync",14)}<span class="not-phone"> Calendario</span></button></div>
+    <ul class="tlist">${todoShown.map(li).join("")}</ul>
+    ${todo.length>TODO_MAX?`<div class="more"><button class="btn small ghost" type="button" data-todo-all="1">${S.todoAll?"Mostra solo le più urgenti":`Mostra tutte (altre ${todo.length-TODO_MAX})`}</button></div>`:""}
+  </section>
   </div></div>`;
 }
+/** v2 Panoramica: the personal-finance figures of personalPanel, as values (same formulas). */
+function persVals(FX){const R=rispCalc(),inv=invCalc((S.investimenti||[]).find(isMainInv)),st=speseStats();
+  if(!R&&!inv&&!st)return null;
+  const rt=R?R.tot:0,it=inv?inv.tot:0,pat=rt+it;
+  const {inTot,outTot}=cash12(FX);const netM=(inTot-outTot)/12,sp=st?st.avgRec:0,pac=inv?inv.pac:0,rm=R?R.mens:0,marg=netM-sp-pac-rm;
+  return {rt,it,pat,marg,mesi:R?R.mesi:0,emT:(cfg().emergenzaMesi||6)}}
+/** v2 Panoramica: monthly bars (collected · open invoices · forecast), rounded tops, compact labels without currency. */
+function homeChart(a,b,c,curM,W=720,compact=false){c=c||Array(12).fill(0);
+  const H=compact?210:240,L=compact?30:34,R=6,T=24,B=28,tot=a.map((v,i)=>v+b[i]+c[i]),max=Math.max(1000,...tot);
+  const step=niceStep(max/3), top=Math.ceil(max/step)*step, sx=(W-L-R)/12, bw=Math.min(34,sx*(compact?.64:.6)), y=v=>T+(H-T-B)*(1-v/top), hh=v=>(H-T-B)*v/top;
+  const k=v=>v>=1000?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":String(Math.round(v));
+  let g="";for(let t=step;t<=top+.1;t+=step)g+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line-2)" stroke-dasharray="2 4"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="var(--faint)">${k(t)}</text>`;
+  const seg=(x,y0,h,col,round)=>{if(h<=0)return"";const r=round?Math.min(6,h,bw/2):0;return r?`<path d="M${x} ${y0+h}V${y0+r}Q${x} ${y0} ${x+r} ${y0}H${x+bw-r}Q${x+bw} ${y0} ${x+bw} ${y0+r}V${y0+h}Z" fill="${col}"/>`:`<rect x="${x}" y="${y0}" width="${bw}" height="${h}" fill="${col}"/>`};
+  let bars="";a.forEach((v,i)=>{const x=L+sx*i+(sx-bw)/2,t=tot[i];
+    const tl=[MESI_L[i].charAt(0)+MESI_L[i].slice(1).toLowerCase()];if(v)tl.push("Incassato: "+eur0(v));if(b[i])tl.push("Fatture aperte: "+eur0(b[i]));if(c[i])tl.push("Da contratto: "+eur0(c[i]));if(tl.length>2)tl.push("Totale: "+eur0(t));if(tl.length===1)tl.push("Nessun incasso");
+    if(i===curM)bars+=`<rect x="${L+sx*i+2}" y="${T-18}" width="${sx-4}" height="${H-T-B+18+22}" rx="10" fill="var(--surface-2)"/>`;
+    bars+=seg(x,y(v),hh(v),"var(--slate)",!b[i]&&!c[i])+seg(x,y(v+b[i]),hh(b[i]),"var(--green-soft)",!c[i])+seg(x,y(t),hh(c[i]),"var(--lilac)",true);
+    if(t>0&&!compact)bars+=`<text x="${x+bw/2}" y="${y(t)-6}" text-anchor="middle" font-size="11" font-weight="600" fill="${!v&&!b[i]?"var(--lilac-ink)":"var(--muted)"}">${k(t)}</text>`;
+    bars+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" font-size="${compact?10.5:11.5}" font-weight="${i===curM?700:500}" fill="${i===curM?"var(--fg)":"var(--faint)"}">${MESI[i]}</text>`;
+    bars+=`<rect class="hov" x="${L+sx*i}" y="${T-18}" width="${sx}" height="${H-T-B+18}" data-tip="${esc(tl.join("\n"))}"></rect>`});
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ricavi per mese">${g}<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>${bars}</svg>`}
 function barChart(a,b,c){c=c||Array(12).fill(0);
   const W=720,H=250,L=56,R=10,T=14,B=28,max=Math.max(1000,...a.map((v,i)=>v+b[i]+c[i]));
   const step=niceStep(max/4), top=Math.ceil(max/step)*step, sx=(W-L-R)/12, bw=sx*.56, y=v=>T+(H-T-B)*(1-v/top);

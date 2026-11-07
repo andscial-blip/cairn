@@ -73,8 +73,9 @@ export function renderLegacy() {
     if (!el.dataset.tabs) {
       el.dataset.tabs = "1";
       el.addEventListener("click", (e) => {
-        const b = (e.target as Element).closest?.("[data-atab-go],[data-ttab-go],[data-prev-all],[data-f24-past]") as HTMLElement | null; if (!b) return;
-        if (b.dataset.prevAll) S.prevAll = !S.prevAll;
+        const b = (e.target as Element).closest?.("[data-atab-go],[data-ttab-go],[data-prev-all],[data-f24-past],[data-todo-all]") as HTMLElement | null; if (!b) return;
+        if (b.dataset.todoAll) S.todoAll = !S.todoAll;
+        else if (b.dataset.prevAll) S.prevAll = !S.prevAll;
         else if (b.dataset.f24Past) S.f24past = !S.f24past;
         else if (b.dataset.atabGo) S.atab = b.dataset.atabGo; else S.ttab = b.dataset.ttabGo;
         renderLegacy();
