@@ -1077,10 +1077,9 @@ function vTasse(FX){
    const mm=Array.from({length:12},(_,i)=>rows.filter(r=>r.versato&&r.data.startsWith(cy+"-"+pad(i+1))).reduce((a,r)=>a+r.importo,0));
    KT.vers=VZ.cols(mm,[],"Versato nel "+cy+"\n"+mm.map((v,i)=>v?MESI[i]+": "+eur0(v):null).filter(Boolean).join("\n"),()=>"var(--green-soft)")}
   return `${intro("Tutti i versamenti con F24: imposta sostitutiva, contributi INPS e bollo delle fatture elettroniche. Le scadenze compaiono anche in Scadenze, in Dashboard e nel tuo Google Calendar.")}
-  <div class="kpis">
+  <div class="kpis k3">
     <div class="kpi"><div class="l">Prossimo versamento</div><div class="v">${nx?eur0(nx.importo):"—"}</div>${KT.nx||""}<div class="s">${nx?dmy(nx.data)+` · <span class="cdp ${ci.c}">${ci.t}</span>`:"nessuno"}</div></div>
     <div class="kpi"><div class="l">Da versare entro il 31/12</div><div class="v">${eur0(resid)}</div>${KT.yr||""}<div class="s">${open.filter(r=>r.data.slice(0,4)===String(cy)).length} versamenti</div></div>
-    <div class="kpi"><div class="l">Prossimi 12 mesi</div><div class="v">${eur0(d12)}</div>${KT.d12||""}<div class="s">incluse le stime</div></div>
     <div class="kpi green"><div class="l">Versato nel ${cy}</div><div class="v">${eur0(vers)}</div>${KT.vers||""}<div class="s">registrato nell'app</div></div>
   </div>
   <section class="panel"><div class="panel-h"><h2>${ico("euro",18)} Versamenti F24</h2><div class="spacer"></div><button class="btn small" id="addF24" type="button">+ Aggiungi versamento</button></div>
@@ -1146,7 +1145,7 @@ function vFisco(FX){
   </tbody></table></div></section>`;
 }
 function vSet(){
-  const c=cfg(), ys=years();
+  const c=cfg(), ys=years(), fo=c.fornitore||{};
   return `<div class="grid">
   <section class="panel c6"><div class="panel-h"><h2>Clienti</h2><div class="spacer"></div><button class="btn small" id="addCli" type="button">+ Cliente</button></div>
    <div class="tw"><table><thead><tr><th>Cliente</th><th class="r">Compenso/mese</th><th class="r">€/gg trasf.</th><th class="r">Gg pagam.</th><th></th></tr></thead><tbody>
@@ -1159,12 +1158,12 @@ function vSet(){
    <div class="panel-b note">Valori in %. Coefficiente 67% (ATECO 94.99.40). Imposta 5% fino al 2026, 15% dal 2027. Aggiorna l'aliquota INPS a gennaio.</div></section>
   <section class="panel c12"><div class="panel-h"><h2>Dati in intestazione proforma</h2><div class="spacer"></div><button class="btn small dark" id="saveForn" type="button">Salva</button></div>
    <div class="panel-b"><div class="fields">
-    <div class="f"><label for="fo-nome">Nome</label><input id="fo-nome" value="${esc(c.fornitore.nome)}"></div>
-    <div class="f"><label for="fo-piva">P.IVA</label><input id="fo-piva" value="${esc(c.fornitore.piva)}"></div>
-    <div class="f"><label for="fo-cf">Codice fiscale</label><input id="fo-cf" value="${esc(c.fornitore.cf)}"></div>
-    <div class="f"><label for="fo-tel">Telefono</label><input id="fo-tel" value="${esc(c.fornitore.tel)}"></div>
-    <div class="f s6"><label for="fo-ind">Indirizzo</label><textarea id="fo-ind" rows="2">${esc(c.fornitore.indirizzo)}</textarea></div>
-    <div class="f"><label for="fo-email">E-mail</label><input id="fo-email" value="${esc(c.fornitore.email)}"></div>
+    <div class="f"><label for="fo-nome">Nome</label><input id="fo-nome" value="${esc(fo.nome)}"></div>
+    <div class="f"><label for="fo-piva">P.IVA</label><input id="fo-piva" value="${esc(fo.piva)}"></div>
+    <div class="f"><label for="fo-cf">Codice fiscale</label><input id="fo-cf" value="${esc(fo.cf)}"></div>
+    <div class="f"><label for="fo-tel">Telefono</label><input id="fo-tel" value="${esc(fo.tel)}"></div>
+    <div class="f s6"><label for="fo-ind">Indirizzo</label><textarea id="fo-ind" rows="2">${esc(fo.indirizzo)}</textarea></div>
+    <div class="f"><label for="fo-email">E-mail</label><input id="fo-email" value="${esc(fo.email)}"></div>
     <div class="f"><label for="pg-banca">Banca</label><input id="pg-banca" value="${esc(c.pagamento.banca)}"></div>
     <div class="f s4"><label for="pg-iban">IBAN</label><input id="pg-iban" value="${esc(c.pagamento.iban)}"></div>
     <div class="f s2"><label for="pg-bic">BIC/SWIFT</label><input id="pg-bic" value="${esc(c.pagamento.bic)}"></div>
@@ -1561,7 +1560,7 @@ ho ricevuto la conferma per l'emissione della fattura n. ${v.num} del ${dmy(v.da
 In allegato trovi il proforma con tutti i dettagli.
 
 Grazie,
-${k.fornitore.nome}`;
+${(k.fornitore||{}).nome||""}`;
   return {to:(k.commercialista||{}).email||"",subject,body};
 }
 function openMail(v){

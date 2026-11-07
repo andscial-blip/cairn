@@ -2,7 +2,8 @@
 # Runs only when both repository secrets exist (Settings → Secrets and variables → Actions):
 #   CAIRN_DB_URL         the Postgres connection string of the Supabase project (Session pooler URI)
 #   CAIRN_BACKUP_PASSPHRASE  a long passphrase; the dump is encrypted with it (AES-256) before it leaves the runner
-# The repository is public: the dump is never stored unencrypted. Attachments in Storage are not included.
+# Optional: CAIRN_SERVICE_KEY (Supabase secret key) also copies the attachments bucket (e-invoices, PDFs), encrypted the same way.
+# The repository is public: nothing is ever stored unencrypted.
 name: backup
 on:
   schedule: [{ cron: "17 3 * * 1" }]   # Mondays 03:17 UTC
@@ -29,7 +30,48 @@ jobs:
           gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$PW" -o "$f.gpg" "$f"
           shred -u "$f"
           echo "FILE=$f.gpg" >> "$GITHUB_ENV"
+      - name: Attachments (optional)
+        if: steps.chk.outputs.run == 'true'
+        env: { KEY: "${{ secrets.CAIRN_SERVICE_KEY }}", PW: "${{ secrets.CAIRN_BACKUP_PASSPHRASE }}", URL: "https://mgunyoipnyhujdgikjld.supabase.co" }
+        run: |
+          set -euo pipefail
+          if [ -z "$KEY" ]; then echo "CAIRN_SERVICE_KEY not set: attachments skipped."; exit 0; fi
+          mkdir -p att
+          node - <<'JS'
+          const { URL: base, KEY } = process.env; const fs = require("fs"); const path = require("path");
+          const h = { apikey: KEY, authorization: `Bearer ${KEY}`, "content-type": "application/json" };
+          async function list(prefix) {
+            const out = [];
+            for (let offset = 0; ; offset += 1000) {
+              const r = await fetch(`${base}/storage/v1/object/list/attachments`, { method: "POST", headers: h, body: JSON.stringify({ prefix, limit: 1000, offset }) });
+              if (!r.ok) throw new Error(`list ${prefix}: ${r.status}`);
+              const page = await r.json(); out.push(...page); if (page.length < 1000) break;
+            }
+            const files = [];
+            for (const e of out) { const p = prefix ? `${prefix}/${e.name}` : e.name; if (e.id) files.push(p); else files.push(...(await list(p))); }
+            return files;
+          }
+          (async () => {
+            const files = await list(""); let n = 0;
+            for (const f of files) {
+              const r = await fetch(`${base}/storage/v1/object/attachments/${f.split("/").map(encodeURIComponent).join("/")}`, { headers: h });
+              if (!r.ok) throw new Error(`get ${f}: ${r.status}`);
+              const dest = path.join("att", f); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, Buffer.from(await r.arrayBuffer())); n++;
+            }
+            console.log(`attachments: ${n} files`);
+          })().catch((e) => { console.error(e.message); process.exit(1); });
+          JS
+          a="cairn-att-$(date -u +%Y-%m-%d).tar.gz"
+          tar -czf "$a" att && rm -rf att
+          gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$PW" -o "$a.gpg" "$a" && shred -u "$a"
+          echo "FILE2=$a.gpg" >> "$GITHUB_ENV"
       - name: Keep 90 days
         if: steps.chk.outputs.run == 'true'
         uses: actions/upload-artifact@v4
-        with: { name: cairn-backup, path: "${{ env.FILE }}", retention-days: 90, if-no-files-found: error }
+        with:
+          name: cairn-backup
+          path: |
+            ${{ env.FILE }}
+            ${{ env.FILE2 }}
+          retention-days: 90
+          if-no-files-found: error

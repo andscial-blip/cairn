@@ -496,3 +496,8 @@ table.one-year{min-width:0!important;width:100%!important;table-layout:auto}
 table.one-year td:first-child,table.one-year th:first-child{min-width:0!important;width:60%}
 table.one-year input{width:100%;max-width:120px}
 [hidden]{display:none!important}
+/* Tasse: three tiles in one row (the 12-month F24 total lives in the tax-account box) */
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:760px){.kpis.k3{grid-template-columns:1fr 1fr}.kpis.k3>:last-child{grid-column:1/-1}}
+/* Calcolo annuale: section rows as light bands instead of dark bars */
+.fisco tr.sec td{background:var(--surface-2)!important;color:var(--fg)!important;font-weight:600;border-top:1px solid var(--line)!important;letter-spacing:.01em}

@@ -73,3 +73,9 @@ Il grafico ha una versione compatta per il telefono (etichette leggibili, nessun
 | `CAIRN_BACKUP_PASSPHRASE` | una frase lunga, da conservare nel gestore password |
 
 Ripristino: scarica l'artifact, `gpg -d cairn-AAAA-MM-GG.sql.gz.gpg | gunzip > dump.sql`, poi `psql` su un progetto Supabase vuoto. Gli allegati nello Storage non sono inclusi.
+
+## Librerie di export (novembre 2026)
+
+- **jsPDF 4.2.1 + jspdf-autotable 5.0.9** (da 2.5.1 / 3.8.2): risolte le vulnerabilità note (dompurify). Proforma e riepilogo dichiarazione verificati identici nel contenuto.
+- **SheetJS (xlsx) 0.18.5**: resta. Le versioni corrette (0.20.x) non sono pubblicate su npm e il CDN ufficiale non è raggiungibile dal build. Le vulnerabilità note (prototype pollution, ReDoS) riguardano la *lettura* di file Excel: Cairn usa la libreria solo per *scrivere* l'export «Solo dati», mai per aprire file esterni, quindi non sono sfruttabili. L'Excel v3 usa JSZip.
+- **Backup**: con il segreto opzionale `CAIRN_SERVICE_KEY` (chiave segreta di Supabase) il workflow copia anche gli allegati, cifrati allo stesso modo.
