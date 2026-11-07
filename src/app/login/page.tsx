@@ -13,7 +13,9 @@ export default function LoginPage() {
     setBusy(true); setMsg(null);
     const { error } = await supabaseBrowser().auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) setMsg("Email o password non corrette, oppure account sospeso.");
+    if (error) setMsg(/confirm/i.test(error.message)
+      ? "Email non ancora confermata: apri il link dell'invito oppure usa \"Password dimenticata\"."
+      : "Email o password non corrette.");
     else window.location.assign("/");
   }
 

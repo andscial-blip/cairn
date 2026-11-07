@@ -13,10 +13,12 @@ Legenda: ✅ verificato con test automatico · 🟡 implementato, verifica pende
 | Coda offline sopravvive alla chiusura | ✅ | unit "queue survives closing and reopening" (IndexedDB) |
 | Recupero da sync interrotta | ✅ | unit "interrupted sync" |
 | Log di audit funzionanti e non modificabili | ✅ | test "audit log cannot be altered", "audit entries carry…" |
-| Login funzionante | 🟡 | pagina `/login` pronta; test end-to-end dopo creazione progetto Supabase 👤 |
+| Login funzionante | ✅ | verificato dal proprietario su https://cairn-three-pi.vercel.app (7/11/2026); e2e automatico in Fase E |
 | Amministratore gestisce gli account | 🟡 | funzioni `admin_*` testate; interfaccia admin in Fase D |
 | Funzioni offline previste operative nell'interfaccia | ⬜ | Fase D |
 | Allegati trasferiti correttamente | ⬜ | Fase D (policy storage già testate) |
 | Backup configurati e verificati | ⬜ | Fase F 👤 (piano Supabase) |
+| Email di autenticazione affidabili | ⬜ | SMTP dedicato (es. Resend) in Fase F: l'SMTP integrato di Supabase ha limiti orari molto bassi |
+| App online | ✅ | Vercel (dub1) + Supabase eu-west-1, deploy automatico da `main` |
 | App utilizzabile da PC e smartphone | ⬜ | Fase E; test su iPhone/Android reali 👤 |
 | Documentazione aggiornata | 🟡 | `docs/` |
