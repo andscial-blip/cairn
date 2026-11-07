@@ -57,6 +57,8 @@ h1,h2,h3{font-family:var(--f-ui);margin:0;text-wrap:balance}
 .btn.primary:hover{filter:brightness(.96)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
 .btn.ghost:hover{color:var(--fg);background:var(--surface-2)}
+.top .btn.ghost{color:rgba(255,255,255,.78);border-color:rgba(255,255,255,.22)}
+.top .btn.ghost:hover{color:#fff;background:rgba(255,255,255,.12)}
 .btn.small{padding:5px 10px;font-size:13px}
 .btn.danger{color:var(--red);background:transparent;border-color:transparent}.btn.danger:hover{background:var(--pink)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -372,3 +374,11 @@ ul.chk{margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:9px;fo
 .ctl{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 14px;font-size:13px;align-items:baseline}.ctl>div{display:contents}.ctl .bad{font-weight:700}
 .kpi.go{cursor:pointer;transition:border-color .15s}.kpi.go:hover{border-color:var(--line)}
 @media (min-width:1000px) and (max-width:1400px){.nav .navl{display:none}}
+
+/* --- Cairn web app additions --- */
+.nav a.navlink{background:none;border:0;color:rgba(255,255,255,.72);padding:10px 14px 11px;font-family:var(--f-ui);font-size:14px;font-weight:600;letter-spacing:.02em;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+.nav a.navlink[aria-current="page"]{color:#fff;border-bottom-color:var(--amber-soft)}
+.nav a.navlink:hover{color:#fff}
+@media (min-width:1000px){.nav .wrap{justify-content:flex-start;gap:4px}}
+.top .cdp{font-size:12px}
+.progress{height:8px;border-radius:4px;background:var(--line-2);overflow:hidden}.progress>i{display:block;height:100%;background:var(--green-soft);transition:width .2s}

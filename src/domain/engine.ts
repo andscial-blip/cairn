@@ -215,6 +215,16 @@ export class Engine {
     return { oneri: o, netto: t - o, accantona: Math.ceil(o * (1 + p.margine)) };
   }
 
+  /** Dashboard figures for a year: collected invoices with their pro-rata charges (same as the artifact). */
+  yearSummary(y: number, FX: Fisco) {
+    const inYear = this.s.invoices.filter((v) => this.fy(v) === y), paid = inYear.filter((v) => v.incasso), open = inYear.filter((v) => !v.incasso);
+    let incassato = 0, netto = 0, oneri = 0, accant = 0;
+    paid.forEach((v) => { const t = tot(v).imponibile, o = this.oneriInv(v, FX); incassato += t; netto += o.netto; oneri += o.oneri; accant += o.accantona; });
+    const cy = +this.today.slice(0, 4), m = +this.today.slice(5, 7);
+    const mesiTrasc = y < cy ? 12 : y > cy ? 1 : m;
+    return { inYear, paid, open, incassato, netto, oneri, accant, mesiTrasc, daIncassare: open.reduce((a, v) => a + tot(v).imponibile, 0) };
+  }
+
   // ---------- F24 schedule (real + estimated + e-invoice stamp duty) ----------
   bolloRows(): F24Row[] {
     const q: Record<string, number> = {};

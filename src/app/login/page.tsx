@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -7,6 +7,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  useEffect(() => { const m = new URLSearchParams(window.location.search).get("m"); if (m) setMsg(m); }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
