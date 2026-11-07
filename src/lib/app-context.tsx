@@ -120,7 +120,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // 4) Service worker for offline loading of the app shell.
   useEffect(() => {
-    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    if (!("serviceWorker" in navigator) || process.env.NODE_ENV !== "production") return;
+    // Register, then ask the worker to refresh the saved copy of every section (all sections usable offline).
+    navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready)
+      .then((reg) => { if (navigator.onLine) reg.active?.postMessage("precache"); }).catch(() => undefined);
   }, []);
 
   useEffect(() => { try { const y = Number(localStorage.getItem("cairn-year")); if (y) setYearState(y); } catch { /* ignore */ } }, []);

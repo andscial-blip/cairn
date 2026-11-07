@@ -30,3 +30,14 @@ Legenda: ✅ verificato con test automatico · 🟡 implementato, verifica pende
 | 0600 domain_fit | cairn-3-aggiornamento.sql | ✅ applicata 07/11/2026 |
 
 Regola: ogni nuova migrazione → nuovo file numerato da incollare nel SQL Editor + `notify pgrst, 'reload schema'`.
+
+## Fase D — stato al 07/11/2026
+| Area | Stato | Verifica |
+|---|---|---|
+| 12 sezioni (lettura, grafici, tooltip, filtri) | ✅ | 16 viste × 4 date identiche all'originale (64 test golden) |
+| Modifiche (fatture, contratti, missioni, F24, promemoria, risparmi, investimenti, impostazioni) | ✅ codice originale + bridge sulla coda offline | 10 test bridge, round-trip lossless su dati reali (13 test), e2e browser offline→online |
+| PDF fatture | ✅ upload su Storage privato, apertura con URL firmato a 2 min | e2e |
+| Navigazione offline in tutte le sezioni | ✅ service worker v2 con precache | e2e |
+| Sync Google Calendar | ⏳ sostituita da feed ICS (da fare) | — |
+| Export "Excel v3" | ⏳ il modello contiene dati personali: va spostato in area privata | — |
+| Storico modifiche / ripristino | ⏳ da collegare ad audit_logs | — |

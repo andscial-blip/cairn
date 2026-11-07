@@ -102,6 +102,7 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
   const clientsById = new Map(live(R.clients).map((c) => [c.id, c]));
   const lines = new Map<string, Row[]>();
   live(R.invoice_lines).forEach((l) => { const k = String(l.invoice_id); (lines.get(k) ?? lines.set(k, []).get(k)!).push(l); });
+  const attachments = new Map(live((R as Record<string, Row[] | undefined>).attachments).map((a) => [a.id, a]));
   const holdings = new Map<string, Row[]>();
   live(R.holdings).forEach((h) => { const k = String(h.account_id); (holdings.get(k) ?? holdings.set(k, []).get(k)!).push(h); });
 
@@ -126,6 +127,8 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
     incasso: s(v.collected_on) ?? null, emessaSdi: s(v.sdi_sent_on) ?? null, inviataCommercialista: s(v.sent_to_accountant_on) ?? null, numeroSdi: s(v.sdi_number),
     statoTracking: !!v.status_tracking, bollo: num(v.stamp_duty), bolloAuto: v.stamp_auto !== false, mesiCoperti: (v.months_covered as string[]) ?? [],
     trasf: (v.travel as Invoice["trasf"]) ?? null, note: s(v.notes),
+    ...(v.attachment_id && attachments.get(String(v.attachment_id))
+      ? { pdf: { id: String(v.attachment_id), nome: String(attachments.get(String(v.attachment_id))!.original_name), url: `cairn-att:${attachments.get(String(v.attachment_id))!.storage_path}` } } : {}),
     righe: (lines.get(v.id) ?? []).sort((a, b) => num(a.position) - num(b.position))
       .map((l) => ({ tipo: String(l.kind), qta: num(l.quantity), prezzo: num(l.unit_price), desc: s(l.description) })),
   }));
@@ -148,4 +151,71 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
   const settings = (live(R.ledger_settings)[0]?.data ?? {}) as Partial<Config>;
   void clientsById;
   return { invoices, clients, f24, contratti, missioni, promemoria, redditi, spese, risparmi, investimenti, cfg: defaults(settings) };
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Live edits: the original app's documents (ids already UUIDs) → the main row of their table.
+ * Derived/identity columns that the document cannot carry are listed in PRESERVE and kept as stored.
+ * ---------------------------------------------------------------------------------------------- */
+export const COLL_TABLE = {
+  invoices: "invoices", clients: "clients", contratti: "contracts", missioni: "missions", promemoria: "reminders", f24: "f24_payments",
+  redditi: "other_income", risparmi: "savings_accounts", investimenti: "investment_accounts", spese: "monthly_expenses",
+} as const;
+export type LegacyColl = keyof typeof COLL_TABLE;
+/** Columns not representable in the document: kept from the stored row (or defaulted on insert). */
+export const PRESERVE: Partial<Record<string, string[]>> = {
+  clients: ["short_code"], contracts: ["title"], reminders: ["key"], investment_accounts: ["logo"],
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Doc = Record<string, any> & { id: string };
+export function docToRow(coll: LegacyColl, d: Doc): Row {
+  switch (coll) {
+    case "clients": return { id: d.id, name: d.nome, legal_name: d.ragione ?? "", vat_id: d.idFiscale ?? "", address: d.indirizzo ?? "", pec: d.pec ?? "",
+      country: d.paese ?? "IT", is_foreign: !!d.estero, sort: num(d.ordine), payment_days: d.gg === null || d.gg === undefined || d.gg === "" ? null : Number(d.gg),
+      payment_terms: d.termine ?? {}, default_fee: num(d.compenso), default_rate: num(d.tariffa), templates: { line: d.desc ?? "", travel: d.descTrasf ?? "" } };
+    case "contratti": return { id: d.id, client_id: d.cliente, start_date: monthStart(d.dal), end_date: lastDay(d.al), monthly_fee: num(d.importo) / Math.max(1, num(d.ogni, 1)),
+      is_signed: !d.ipotesi, is_active: d.attivo !== false, notes: d.note ?? "",
+      terms: { amount: num(d.importo), every: num(d.ogni, 1), offset: num(d.offset), rule: d.regola ?? {}, rate: num(d.tariffa) } };
+    case "missioni": { const q = d.tipo === "quota";
+      return { id: d.id, client_id: d.cliente, kind: q ? "quota" : "trip", start_date: q ? null : d.dal, end_date: q ? null : d.al, year: q ? num(d.anno) : null,
+        days: q ? num(d.giorni) : null, is_hypothesis: !!d.ipotesi, notes: d.note ?? "" }; }
+    case "invoices": return { id: d.id, client_id: d.cliente, year: num(d.anno), number: num(d.n), number_label: d.num ?? `${d.n}/${d.anno}`, issue_date: d.data,
+      collected_on: d.incasso ?? null, sdi_sent_on: d.emessaSdi ?? null, sent_to_accountant_on: d.inviataCommercialista ?? null, sdi_number: d.numeroSdi ?? null,
+      stamp_duty: num(d.bollo), stamp_auto: d.bolloAuto !== false, months_covered: d.mesiCoperti ?? [], travel: d.trasf ?? null, status_tracking: !!d.statoTracking,
+      notes: d.note ?? "" };
+    case "f24": return { id: d.id, due_date: d.data, paid_on: d.versato ? d.data : null, amount: num(d.importo), description: d.descrizione ?? "",
+      codes: splitCodes(d.tributi), notes: d.note ?? "" };
+    case "promemoria": return { id: d.id, due_date: d.data, title: d.titolo, notes: d.dettaglio ?? "", lead_days: num(d.preavviso, 14),
+      client_id: d.cliente || null, done_on: d.fatto ? d.data : null };
+    case "spese": return { id: d.id, month: monthStart(d.mese), categories: d.cat ?? {}, invested: num(d.investito),
+      sources: String(d.fonti ?? "").split(",").map((x) => x.trim()).filter(Boolean), notes: d.note ?? "" };
+    case "risparmi": return { id: d.id, name: d.nome, product: d.prodotto ?? "", logo: d.logo ?? null, role: d.ruolo === "tasse" ? "tax" : "savings",
+      balance: num(d.saldo), gains: num(d.guadagno), as_of: d.aggiornato ?? new Date().toISOString().slice(0, 10), gross_rate: num(d.tassoLordo),
+      cost_rate: num(d.costi), stamp_rate: num(d.bollo), tax_rate: num(d.aliquota, 26), contribution: d.versamento ?? {}, covers_from: d.copreDal || null,
+      sort: num(d.ordine, 9), notes: d.note ?? [], fund: d.fondo ?? "" };
+    case "investimenti": return { id: d.id, name: d.nome ?? "", as_of: d.aggiornato ?? new Date().toISOString().slice(0, 10), deposits: num(d.depositi),
+      withdrawals: num(d.prelievi), deposit_fees: num(d.commDeposito), fx_fees: num(d.commCambio), realized: d.realizzate ?? [], monthly: d.mensile ?? {}, pac: d.pac ?? {} };
+    case "redditi": return { id: d.id, received_on: d.data, kind: d.tipo, amount: num(d.importo), notes: d.note ?? "" };
+  }
+}
+/** Invoice lines in document order (ids assigned by the caller, reusing stored ids by position). */
+export const docLines = (d: Doc) => ((d.righe ?? []) as Doc[]).map((r, i) => ({ position: i, description: r.desc ?? "", quantity: num(r.qta, 1),
+  unit_price: num(r.prezzo), kind: ["compenso", "trasferta", "rimborso"].includes(String(r.tipo)) ? r.tipo : "altro" }));
+/** Holdings of an investment account (matched to stored rows by ISIN). */
+export const docHoldings = (d: Doc) => ((d.titoli ?? []) as Doc[]).map((t) => ({ isin: t.isin, ticker: t.ticker, name: t.nome, asset_class: t.classe ?? "",
+  units: num(t.quote), cost: num(t.costo), price_eur: num(t.prezzoEur), currency: t.valuta ?? "EUR", target_pct: num(t.target) }));
+
+/** Canonical JSON (sorted keys) for change detection. */
+export const canon = (v: unknown): string => JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x)
+  ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, (x as Record<string, unknown>)[k]])) : x));
+/** Fields of `next` whose value differs from `cur` (absent/undefined/null are treated alike). */
+export function changedFields(cur: Record<string, unknown> | undefined, next: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(next)) {
+    if (k === "id") continue;
+    const a = cur?.[k] ?? null, b = v ?? null;
+    if (typeof a === "number" || typeof b === "number" ? Number(a) !== Number(b) || (a === null) !== (b === null) : canon(a) !== canon(b)) out[k] = v ?? null;
+  }
+  return out;
 }

@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { Engine, mergeCfg } from "@/domain/engine";
-import { createViews } from "@/legacy/views";
+import { createLegacy } from "@/legacy/app";
 
 const FILE = "private/golden-views.json";
 const has = existsSync(FILE);
@@ -28,8 +28,9 @@ describe.skipIf(!has)("golden views: ported tabs = original app HTML", () => {
         const snap = { invoices: s.invoices, clients: s.clients, f24: s.f24, contratti: s.contratti, missioni: s.missioni, promemoria: s.promemoria,
           redditi: s.redditi, spese: s.spese, risparmi: s.risparmi, investimenti: s.investimenti, cfg: mergeCfg(s.cfgRaw) };
         const e = new Engine(structuredClone(snap), today);
-        const views = createViews({ ...structuredClone(snap), year: +today.slice(0, 4), filter: { stato: "tutti", cliente: "", q: "" }, calsync: [], storico: [] }, e);
-        const html = views[v](e.fisco());
+        const views = createLegacy({ S: { ...structuredClone(snap), year: +today.slice(0, 4), filter: { stato: "tutti", cliente: "", q: "" }, calsync: [], storico: [] },
+          engine: () => e, render: () => undefined, setView: () => undefined, downloads: null, assetsCap: null, unavailable: () => undefined });
+        const html = views[v](views._fisco());
         const want = R.views[v]!;
         if (html !== want) expect.fail(firstDiff(html, want));
       });
