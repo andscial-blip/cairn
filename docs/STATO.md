@@ -22,3 +22,11 @@ Legenda: ✅ verificato con test automatico · 🟡 implementato, verifica pende
 | App online | ✅ | Vercel (dub1) + Supabase eu-west-1, deploy automatico da `main` |
 | App utilizzabile da PC e smartphone | ⬜ | Fase E; test su iPhone/Android reali 👤 |
 | Documentazione aggiornata | 🟡 | `docs/` |
+
+## Migrazioni applicate in produzione (SQL Editor)
+| Migrazione | File consegnato | Stato |
+|---|---|---|
+| 0100–0500 | cairn-1-setup.sql | ✅ applicata |
+| 0600 domain_fit | cairn-3-aggiornamento.sql | ⏳ da applicare (errore "other_income schema cache") |
+
+Regola: ogni nuova migrazione → nuovo file numerato da incollare nel SQL Editor + `notify pgrst, 'reload schema'`.
