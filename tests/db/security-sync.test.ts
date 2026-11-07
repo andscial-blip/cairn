@@ -133,7 +133,7 @@ describe("authorization (RLS)", () => {
     expect(esc.rows[0].r).toEqual({ ok: false, error: "not authorized" });
     const sus = await as(c, operator, () => c.query("select public.admin_set_user_status($1,'suspended') as r", [owner]));
     expect(sus.rows[0].r.ok).toBe(false);
-    await expect(as(c, operator, () => c.query("insert into ledger_members (ledger_id,user_id,role) values ($1,$2,'admin')", [ledgerA, stranger]))).rejects.toThrow(/row-level security/);
+    await expect(as(c, operator, () => c.query("insert into ledger_members (ledger_id,user_id,role) values ($1,$2,'admin')", [ledgerA, stranger]))).rejects.toThrow(/row-level security|permission denied/);
     await expect(as(c, operator, () => c.query("update profiles set status='active' where id=$1", [operator]))).rejects.toThrow(/permission denied/);
     await expect(as(c, operator, () => c.query("select public.bootstrap_ledger($1,'mine')", [operator]))).rejects.toThrow(/permission denied/);
     const denied = await as(c, owner, () => c.query("select count(*)::int n from audit_logs where outcome='denied' and user_id=$1", [operator]));

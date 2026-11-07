@@ -19,10 +19,12 @@ export async function resetDatabase() {
   await c.connect();
   const run = async (file) => { await c.query(readFileSync(file, "utf8")); };
   await run("tests/db/supabase-stub.sql");
-  for (const f of readdirSync("supabase/migrations").filter((f) => f.endsWith(".sql")).sort()) {
-    await run(join("supabase/migrations", f));
-  }
+  const migrations = readdirSync("supabase/migrations").filter((f) => f.endsWith(".sql")).sort();
+  // Supabase grants broad table privileges by default; emulate that, then re-run the
+  // hardening migration so the effective privileges match production exactly.
+  for (const f of migrations) await run(join("supabase/migrations", f));
   await run("tests/db/grants.sql");
+  for (const f of migrations.filter((m) => m.includes("hardening"))) await run(join("supabase/migrations", f));
   await c.end();
 }
 
