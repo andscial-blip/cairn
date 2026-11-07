@@ -3,7 +3,7 @@
 //   on each online visit (the page sends "precache"), so offline navigation never hits an unsaved page.
 // - Navigations: network first, saved page as fallback. Build files (hashed names): cache first.
 // - Data is never cached here: offline data lives in IndexedDB; Supabase calls always go to the network.
-const CACHE = "cairn-shell-v5";
+const CACHE = "cairn-shell-v6"; // v6: larger app icons
 const ROUTES = ["/", "/entrate", "/spese", "/risparmi", "/investimenti", "/analisi", "/fatture", "/da-emettere", "/scadenze", "/tasse",
   "/contratti", "/impostazioni", "/importa", "/sincronizzazione", "/login", "/benvenuto"];
 const EXTRA = ["/manifest.webmanifest", "/icons/icon.svg", "/icons/icon-192.png", "/favicon.ico",

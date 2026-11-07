@@ -14,7 +14,7 @@ import { BRAND } from "@/lib/brand";
 export const metadata: Metadata = {
   title: "Cairn",
   description: "A. Scialabba · P.IVA, tasse e patrimonio",
-  icons: { icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }, { url: "/favicon.ico", sizes: "32x32" }], apple: "/icons/apple-touch-icon.png" },
+  icons: { icon: [{ url: "/icons/icon.svg?v=2", type: "image/svg+xml" }, { url: "/favicon.ico?v=2", sizes: "32x32" }], apple: "/icons/apple-touch-icon.png?v=2" },
   appleWebApp: { capable: true, title: "Cairn", statusBarStyle: "default" },
 };
 export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: dark)", color: "#10151C" }, { color: "#F3F5F8" }], width: "device-width", initialScale: 1, viewportFit: "cover" };

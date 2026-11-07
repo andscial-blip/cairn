@@ -10,16 +10,16 @@ const tile = (inner, r = 22, bg = "#FFFFFF") => `<svg xmlns="http://www.w3.org/2
 const small = B.markSmallSvg ?? B.markSvg;
 const OUT = "public/icons"; mkdirSync(OUT, { recursive: true });
 const svgFiles = {
-  "icon.svg": tile(`<g transform="translate(50 50) scale(.84) translate(-50 -50)">${small()}</g>`, 22),                                   // favicon / browser tab
+  "icon.svg": tile(B.scaled(small(), B.ICON_SCALE.favicon), 22),                                   // favicon / browser tab
   "mark.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${B.markSvg()}</svg>`,
 };
 for (const [f, s] of Object.entries(svgFiles)) writeFileSync(`${OUT}/${f}`, s);
 const png = [
   ["apple-touch-icon.png", 180, B.iconSvg(0)],
-  ["icon-192.png", 192, tile(`<g transform="translate(50 50) scale(.8) translate(-50 -50)">${B.markSvg()}</g>`, 22)],
-  ["icon-512.png", 512, tile(`<g transform="translate(50 50) scale(.8) translate(-50 -50)">${B.markSvg()}</g>`, 22)],
+  ["icon-192.png", 192, tile(B.scaled(B.markSvg(), B.ICON_SCALE.tile), 22)],
+  ["icon-512.png", 512, tile(B.scaled(B.markSvg(), B.ICON_SCALE.tile), 22)],
   ["maskable-512.png", 512, B.maskableIconSvg ? B.maskableIconSvg() : B.iconSvg(0)],
-  ["favicon-32.png", 32, tile(`<g transform="translate(50 50) scale(.9) translate(-50 -50)">${small()}</g>`, 22)],
+  ["favicon-32.png", 32, tile(B.scaled(small(), B.ICON_SCALE.favicon), 22)],
 ];
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--headless=new"] });
 const p = await b.newPage({ deviceScaleFactor: 1 });

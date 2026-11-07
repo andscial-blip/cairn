@@ -23,13 +23,16 @@ export function markSvg(opts: { dark?: boolean; mono?: string } = {}): string {
   const p = opts.mono ? { summit: opts.mono, layer: opts.mono, base: opts.mono } : opts.dark ? BRAND.dark : BRAND.light;
   return tri(15, 12, p.summit) + band(29, 25, 8.5, p.layer) + base(44, 36, 80, p.base);
 }
-const scaled = (inner: string, k: number) => `<g transform="translate(50 50) scale(${k}) translate(-50 -50)">${inner}</g>`;
+/** Scales the mark about its own centre (x 50, y 47.5) and puts that centre in the middle of the tile. */
+export const scaled = (inner: string, k: number) => `<g transform="translate(50 50) scale(${k}) translate(-50 -47.5)">${inner}</g>`;
+/** How much of the tile the mark fills. Raised in Nov 2026: at 0.8 it looked small on home screens and in the dock. */
+export const ICON_SCALE = { tile: 1.06, maskable: 0.8, favicon: 1.18 } as const;
 /** App icon (iOS/macOS full-bleed square: the OS applies its own corner mask). White tile, true colours. */
 export function iconSvg(radius = 0): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="${radius}" fill="#FFFFFF"/>${scaled(markSvg(), 0.8)}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="${radius}" fill="#FFFFFF"/>${scaled(markSvg(), ICON_SCALE.tile)}</svg>`;
 }
 /** Android/PWA maskable: mark inside the central 80% safe circle. */
 export function maskableIconSvg(): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#FFFFFF"/>${scaled(markSvg(), 0.62)}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#FFFFFF"/>${scaled(markSvg(), ICON_SCALE.maskable)}</svg>`;
 }
 export const markSmallSvg = (opts: { dark?: boolean; mono?: string } = {}) => markSvg(opts);
