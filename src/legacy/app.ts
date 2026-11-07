@@ -27,6 +27,10 @@ let downloads = env.downloads, assetsCap = env.assetsCap;
 const syncCalendar = async () => env.unavailable("calendar");
 const exportV3 = async () => env.unavailable("v3");
 const exportCairn = async () => env.unavailable("exportCairn");
+// The original looked up the PAC account by its old readable id; in Cairn ids are UUIDs: match the account marked t212.
+// Same for clients referenced by their old readable code.
+const isClientCode = (id, code) => id === code || ((S.clients || []).find((c) => c.id === id) || {}).codice === code;
+const isMainInv = (x, i, arr) => x.id === "trading212" || x.logo === "t212" || (i === 0 && !arr.some((y) => y.id === "trading212" || y.logo === "t212"));
 // The engine follows S: when the original code swaps S.contratti/S.missioni (scenarios, simulator) or a write
 // updates S optimistically, calculations run on a derived engine built from S.
 const COLLS = ["invoices","clients","f24","contratti","missioni","promemoria","redditi","spese","risparmi","investimenti"];
@@ -562,7 +566,7 @@ const IPAL=["var(--cost)","var(--sky)","var(--amber-soft)","var(--green-soft)","
 const INV_REV_SUM="📈 Rivedi le % del PAC Trading 212",INV_REV_DESC="Controlla la suddivisione degli ETF (attuale contro obiettivo) e l'orizzonte residuo del PAC. Nell'app: Cairn → Investimenti → Rivedi suddivisione.";
 const addMonthsD=(s,n)=>{const [y,m,d]=s.split("-").map(Number);const x=new Date(y,m-1+n,1);const last=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();return x.getFullYear()+"-"+pad(x.getMonth()+1)+"-"+pad(Math.min(d,last))};
 function invProj(c,r){const i=Math.pow(1+r,1/12)-1;const fv=k=>c.tot*Math.pow(1+i,k)+c.pac*(i?(Math.pow(1+i,k)-1)/i:k);return fv}
-function invTodos(T){const a=(S.investimenti||[]).find(x=>x.id==="trading212");const c=invCalc(a);if(!c)return;const today=todayISO();
+function invTodos(T){const a=(S.investimenti||[]).find(isMainInv);const c=invCalc(a);if(!c)return;const today=todayISO();
   const go=`<button class="btn small" data-go-v="invest" type="button">Investimenti</button>`;
   if(Math.abs(c.maxD.drift)>c.soglia)T({lvl:"warn",ic:"%",title:`PAC: ${esc(c.maxD.ticker)} fuori obiettivo di ${Math.abs(c.maxD.drift).toLocaleString("it-IT",{maximumFractionDigits:1})} punti`,sub:`Peso ${pct(c.maxD.peso)} contro obiettivo ${c.maxD.target}%. Ribilancia con i prossimi versamenti o rivedi le percentuali.`,act:go});
   const dd=daysBetween(today,c.rev);if(dd<=21)T({lvl:dd<0?"warn":"do",ic:"%",title:"Rivedi la suddivisione del PAC",sub:`Revisione ogni ${c.p.revisioneMesi||6} mesi · ultima il ${dmy(c.p.ultimaRevisione)} · mancano ${c.anniRes.toLocaleString("it-IT",{maximumFractionDigits:1})} anni alla fine del PAC.`,date:c.rev,act:go});
@@ -570,7 +574,7 @@ function invTodos(T){const a=(S.investimenti||[]).find(x=>x.id==="trading212");c
 function donut(T,tot){const R=74,W=26,C=2*Math.PI*R;let acc=0;
   const seg=T.map((t,i)=>{const f=t.valore/tot;const s=`<circle cx="100" cy="100" r="${R}" fill="none" stroke="${IPAL[i%IPAL.length]}" stroke-width="${W}" stroke-dasharray="${Math.max(0,f*C-1.5).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc*C).toFixed(2)}" transform="rotate(-90 100 100)" data-tip="${esc(`${t.ticker} · ${t.nome}\nValore: ${eur(t.valore)}\nPeso: ${pct(t.peso)} (obiettivo ${t.target}%)`)}"></circle>`;acc+=f;return s}).join("");
   return `<svg class="donut" viewBox="0 0 200 200" role="img" aria-label="Allocazione ETF">${seg}<text x="100" y="94" text-anchor="middle" font-size="11" fill="var(--muted)">Valore</text><text x="100" y="114" text-anchor="middle" font-size="19" font-weight="700" fill="var(--navy)">${eur0(tot)}</text></svg>`}
-function vInvest(FX){const a=(S.investimenti||[]).find(x=>x.id==="trading212");
+function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
   const head=intro("I tuoi investimenti e risparmi. Per ora c'è Trading 212 (PAC in ETF); seguiranno il salvadanaio remunerato Satispay e i risparmi Revolut. I valori vengono dall'export CSV di Trading 212: per aggiornarli carica in chat il nuovo file, oppure inserisci a mano i prezzi con Aggiorna prezzi. La proiezione è illustrativa: i rendimenti non sono garantiti.");
   const c=invCalc(a);if(!c)return head+`<section class="panel empty">Nessun investimento registrato.</section>`;
   const today=todayISO(),cy=new Date().getFullYear();
@@ -622,7 +626,7 @@ function vInvest(FX){const a=(S.investimenti||[]).find(x=>x.id==="trading212");
       <li><b>IVAFE e quadro RW</b>: conto estero, 2‰ sul valore al 31/12, circa <b>${eur0(ivafe)}</b> per il ${cy}. Si versa con l'F24 di giugno insieme al saldo.</li>
     </ul></div></section>
   </div>`}
-function openInvRev(){const a=(S.investimenti||[]).find(x=>x.id==="trading212");const c=invCalc(a);if(!c)return;
+function openInvRev(){const a=(S.investimenti||[]).find(isMainInv);const c=invCalc(a);if(!c)return;
   sheet("Rivedi suddivisione PAC",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Imposta le percentuali obiettivo (totale 100%), come nella pie di Trading 212. Salvando, la revisione risulta fatta oggi e la prossima scade tra i mesi indicati.</p><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Peso attuale</th><th class="r">Obiettivo %</th></tr></thead><tbody>${c.T.map(t=>`<tr><td><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.classe||"")}</span></td><td class="r num">${pct(t.peso)}</td><td class="r"><input class="in num" style="max-width:90px" data-tg="${esc(t.isin)}" inputmode="decimal" value="${t.target}"></td></tr>`).join("")}</tbody><tfoot><tr><td><b>Totale</b></td><td></td><td class="r num"><b id="tgSum"></b></td></tr></tfoot></table></div>
    <div class="fields" style="margin-top:14px"><div class="f s2"><label for="ip-imp">PAC € / mese</label><input id="ip-imp" class="in num" inputmode="decimal" value="${c.pac}"></div><div class="f s2"><label for="ip-g">Giorno del mese</label><input id="ip-g" class="in num" inputmode="numeric" value="${c.p.giorno||1}"></div><div class="f s2"><label for="ip-m">Revisione ogni (mesi)</label><input id="ip-m" class="in num" inputmode="numeric" value="${c.p.revisioneMesi||6}"></div><div class="f s2"><label for="ip-s">Allerta scostamento (punti)</label><input id="ip-s" class="in num" inputmode="decimal" value="${c.soglia}"></div></div></div></section>`,`<button class="btn primary" id="ipSave" type="button">Salva revisione</button>`);
   const upd=()=>{const s=[...document.querySelectorAll("[data-tg]")].reduce((a,i)=>a+readNum(i.value),0);const el=$("#tgSum");el.textContent=s.toLocaleString("it-IT",{maximumFractionDigits:1})+"%";el.className=Math.abs(s-100)>.05?"bad":"pos";return s};upd();
@@ -631,7 +635,7 @@ function openInvRev(){const a=(S.investimenti||[]).find(x=>x.id==="trading212");
     const tg=Object.fromEntries([...document.querySelectorAll("[data-tg]")].map(i=>[i.dataset.tg,readNum(i.value)]));
     const titoli=a.titoli.map(t=>({...t,target:tg[t.isin]??t.target}));const pac={...a.pac,importo:readNum($("#ip-imp").value)||c.pac,giorno:Math.min(28,Math.max(1,parseInt($("#ip-g").value)||1)),revisioneMesi:Math.max(1,parseInt($("#ip-m").value)||6),soglia:readNum($("#ip-s").value)||5,ultimaRevisione:todayISO()};
     if(await write(db=>db.doc("investimenti/trading212").update({titoli,pac}),"Revisione salvata"))closeSheet()}}
-function openInvPrices(){const a=(S.investimenti||[]).find(x=>x.id==="trading212");if(!a)return;
+function openInvPrices(){const a=(S.investimenti||[]).find(isMainInv);if(!a)return;
   sheet("Aggiorna prezzi Trading 212",`<section class="panel"><div class="panel-b"><p class="muted" style="margin:0 0 12px;font-size:13px">Inserisci il prezzo in euro di ogni ETF (lo trovi nell'app Trading 212). Le quote restano quelle dell'ultimo export: dopo nuovi acquisti carica in chat il CSV aggiornato.</p><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Quote</th><th class="r">Prezzo €</th></tr></thead><tbody>${a.titoli.map(t=>`<tr><td><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.nome)}</span></td><td class="r num">${(+t.quote).toLocaleString("it-IT",{maximumFractionDigits:3})}</td><td class="r"><input class="in num" style="max-width:110px" data-px="${esc(t.isin)}" inputmode="decimal" value="${String(t.prezzoEur).replace(".",",")}"></td></tr>`).join("")}</tbody></table></div>
    <div class="fields" style="margin-top:14px"><div class="f s2"><label for="px-d">Prezzi al</label><input id="px-d" type="date" value="${todayISO()}"></div></div></div></section>`,`<button class="btn primary" id="pxSave" type="button">Salva</button>`);
   $("#pxSave").onclick=async()=>{const px=Object.fromEntries([...document.querySelectorAll("[data-px]")].map(i=>[i.dataset.px,readNum(i.value)]));if(Object.values(px).some(v=>!(v>0))){toast("Inserisci tutti i prezzi");return}
@@ -644,7 +648,7 @@ function rispTodos(T){(S.risparmi||[]).forEach(c=>{if(c.aggiornato&&daysBetween(
 function vRisp(FX){const head=intro("La liquidità messa da parte: salvadanai e conti remunerati, separati dagli investimenti di lungo periodo. Il fondo emergenza è misurato in mesi di spese ricorrenti (dalla scheda Spese). Per aggiornare un conto usa Aggiorna, oppure carica in chat estratti o screenshot.");
   const R=rispCalc();if(!R)return head+`<section class="panel empty">Nessun conto di risparmio registrato.</section>`;
   const today=todayISO(),cfgE=cfg().emergenzaMesi||6,target=R.avg*cfgE;
-  const inv=invCalc((S.investimenti||[]).find(x=>x.id==="trading212"));const pat=R.tot+(inv?inv.tot:0);
+  const inv=invCalc((S.investimenti||[]).find(isMainInv));const pat=R.tot+(inv?inv.tot:0);
   const plan=ctPlan(FX);
   const fv=m=>R.L.reduce((s,c)=>s+rispFV(+c.saldo||0,+((c.versamento||{}).importo)||0,c.netto-(+c.bollo||0),m),0);
   const toTarget=(()=>{if(R.tot>=target)return 0;for(let m=1;m<=600;m++)if(fv(m)>=target)return m;return null})();
@@ -689,7 +693,7 @@ function openRisp(id){const c=(S.risparmi||[]).find(x=>x.id===id);if(!c)return;c
   sheet("Aggiorna "+c.nome,`<section class="panel"><div class="panel-b"><div class="fields">${f("saldo","Saldo €",c.saldo)}${f("gain","Guadagno totale €",c.guadagno)}<div class="f s2"><label for="rs-d">Dati al</label><input id="rs-d" type="date" value="${todayISO()}"></div>${f("tl","Rendimento lordo %",c.tassoLordo)}${f("co","Costi annui %",c.costi)}${f("vi","Versamento € / mese",v.importo)}</div></div></section>`,`<button class="btn primary" id="rsSave" type="button">Salva</button>`);
   $("#rsSave").onclick=async()=>{const d={saldo:readNum($("#rs-saldo").value),guadagno:readNum($("#rs-gain").value),aggiornato:$("#rs-d").value||todayISO(),tassoLordo:readNum($("#rs-tl").value),costi:readNum($("#rs-co").value),versamento:{...v,importo:readNum($("#rs-vi").value)}};
     if(await write(db=>db.doc("risparmi/"+id).update(d),"Conto aggiornato"))closeSheet()}}
-function personalAnal(FX){const R=rispCalc(),inv=invCalc((S.investimenti||[]).find(x=>x.id==="trading212")),st=speseStats();if(!R&&!inv&&!st)return "";
+function personalAnal(FX){const R=rispCalc(),inv=invCalc((S.investimenti||[]).find(isMainInv)),st=speseStats();if(!R&&!inv&&!st)return "";
   const {inTot,outTot}=cash12(FX);const netM=(inTot-outTot)/12;const rt=R?R.tot:0,it=inv?inv.tot:0,pat=rt+it;const pac=inv?inv.pac:0,rm=R?R.mens:0,sp=st?st.avgRec:0;
   const f2=v=>pct(v,0);
   // 1. entrate vs uscite mese per mese
@@ -748,7 +752,7 @@ function vEntrate(FX){const head=intro("Le tue entrate per data di incasso: quel
       <li>${pct(1-firmQ,0)} delle entrate future viene da rinnovi non ancora firmati: se un contratto salta, la tabella cambia di conseguenza.</li>
       <li>Le spese sono la media dei mesi caricati, senza lavori di casa.</li></ul></div></section>
   </div>`}
-function personalPanel(FX){const R=rispCalc(),inv=invCalc((S.investimenti||[]).find(x=>x.id==="trading212")),st=speseStats(),P=ctPlan(FX);
+function personalPanel(FX){const R=rispCalc(),inv=invCalc((S.investimenti||[]).find(isMainInv)),st=speseStats(),P=ctPlan(FX);
   if(!R&&!inv&&!st)return "";const cy=new Date().getFullYear(),f=FX[cy]||{};
   const rt=R?R.tot:0,it=inv?inv.tot:0,pat=rt+it;
   const {inTot,outTot}=cash12(FX);const netM=(inTot-outTot)/12,sp=st?st.avgRec:0,pac=inv?inv.pac:0,rm=R?R.mens:0,marg=netM-sp-pac-rm;
@@ -807,7 +811,7 @@ function simPanel(){
   if(!ids.length)return "";
   const inp=(id,k,v,lab)=>`<input class="in num" data-sim="${id}:${k}" inputmode="decimal" value="${v}" aria-label="${lab}">`;
   const rows=ids.map(id=>{const c=S.contratti.find(x=>x.id===id)||{};const r=sim.rows[id];
-    return `<tr><td class="cli">${esc(c2n(c.cliente))}${c.cliente==="yousud"?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap"><button class="btn small ghost" data-simp="${id}:2000:0:0" type="button">Opz. A</button><button class="btn small ghost" data-simp="${id}:0:0:0" type="button">Opz. B</button></div>`:""}</td>
+    return `<tr><td class="cli">${esc(c2n(c.cliente))}${isClientCode(c.cliente,"yousud")?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap"><button class="btn small ghost" data-simp="${id}:2000:0:0" type="button">Opz. A</button><button class="btn small ghost" data-simp="${id}:0:0:0" type="button">Opz. B</button></div>`:""}</td>
       <td>${inp(id,"mese",r.mese,"Compenso al mese")}</td><td>${inp(id,"tariffa",r.tariffa,"Indennità al giorno")}</td><td>${inp(id,"gg",r.gg,"Giorni di missione all'anno")}</td></tr>`}).join("");
   return `<section class="panel c12"><div class="panel-h"><h2>${ico("calc",18)} Simulatore rinnovi ${sim.Y}</h2><div class="spacer"></div><button class="btn small ghost" id="simReset" type="button">Ripristina</button><button class="btn small dark" id="simSave" type="button">Usa come ipotesi</button></div>
    <div class="grid" style="gap:0">
@@ -1556,7 +1560,7 @@ function calItems(FX){
   reminders().filter(r=>!r.fatto&&r.data>=today&&r.data<=lim).forEach(r=>items.push({key:"pm-"+r.id,date:r.data,summary:"⏰ "+r.titolo,desc:r.dettaglio||"",rem:[900,Math.min(40320,Math.max(1440,(+r.preavviso||7)*1440))]}));
   projections().filter(x=>x.data>=today&&x.data<=lim).forEach(x=>items.push({key:"em-"+x.contratto+"-"+x.months[0],date:x.data,summary:`🧾 Emettere fattura ${cn(x.cliente)} – ${x.label}`,desc:`Compenso ${eur(x.comp)}${x.ind?` + indennità ${x.gg} gg ${eur(x.ind)}`:""}. Dall'app: Da fare ora → Crea fattura, poi Email a ${(cfg().commercialista||{}).nome||"commercialista"}.`,rem:[900]}));
   f24Rows(FX).filter(r=>!r.versato&&r.data>=today&&r.data<=addDays(today,250)).forEach(r=>items.push({key:"f24-"+r.id,date:r.data,summary:`💶 F24 ${eur0(r.importo)} – ${r.descrizione}`,desc:`Tributi: ${r.tributi||""}${r.stima?" · importo stimato":""}`,rem:[900,10080]}));
-  {const c=invCalc((S.investimenti||[]).find(x=>x.id==="trading212"));if(c&&c.rev>=today)items.push({key:"inv-rev-"+c.rev,date:c.rev,summary:INV_REV_SUM,desc:INV_REV_DESC,rem:[900,10080]})}
+  {const c=invCalc((S.investimenti||[]).find(isMainInv));if(c&&c.rev>=today)items.push({key:"inv-rev-"+c.rev,date:c.rev,summary:INV_REV_SUM,desc:INV_REV_DESC,rem:[900,10080]})}
   return items.map(i=>({...i,hash:[i.date,i.summary,i.desc].join("|")}));
 }
 function openClient(id){

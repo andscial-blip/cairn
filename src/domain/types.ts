@@ -9,6 +9,7 @@ export interface Invoice {
   trasf?: { dal: string; al: string; tariffa: number } | null; note?: string; pdf?: { id: string; nome?: string; url?: string } | null;
 }
 export interface Client {
+  codice?: string;
   id: string; nome: string; ragione?: string; idFiscale?: string; indirizzo?: string; pec?: string; ordine?: number;
   estero?: boolean; paese?: string; gg?: number | string | null; termine?: { giornoMese?: number; fineMese?: boolean; giorni?: number };
   compenso?: number; tariffa?: number; desc?: string; descTrasf?: string;
@@ -32,6 +33,7 @@ export interface SavingsAccount {
 }
 export interface Holding { isin: string; ticker: string; nome: string; classe?: string; quote: number; costo: number; prezzoEur: number; valore?: number; valuta?: string; target: number; }
 export interface InvestmentAccount {
+  logo?: string;
   id: string; nome?: string; aggiornato?: string; titoli: Holding[]; depositi?: number; prelievi?: number;
   commDeposito?: number; commCambio?: number; realizzate?: { data: string; isin: string; importo: number }[];
   mensile?: Record<string, number>;

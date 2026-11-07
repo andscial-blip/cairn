@@ -328,7 +328,7 @@ export class Engine {
     return { T, tot: totV, costo, pl: totV - costo, netDep, fine, n, mesiTot, trasc, rev, maxD, anniRes: n / 12, pac: +(p.importo ?? 0) || 0, soglia: +(p.soglia ?? 5) || 5, p };
   }
   static invProj(c: { tot: number; pac: number }, r: number) { const i = Math.pow(1 + r, 1 / 12) - 1; return (k: number) => c.tot * Math.pow(1 + i, k) + c.pac * (i ? (Math.pow(1 + i, k) - 1) / i : k); }
-  mainInvestment() { return this.invCalc(this.s.investimenti.find((x) => x.id === "trading212") ?? this.s.investimenti[0]); }
+  mainInvestment() { return this.invCalc(this.s.investimenti.find((x) => x.id === "trading212" || x.logo === "t212") ?? this.s.investimenti[0]); }
 
   ctInfo() {
     const r = this.s.risparmi.find((x) => x.ruolo === "tasse");

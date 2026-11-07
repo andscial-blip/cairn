@@ -109,7 +109,7 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
   const clients: Client[] = live(R.clients).map((c) => {
     const t = (c.templates ?? {}) as { line?: string; travel?: string };
     const terms = (c.payment_terms ?? {}) as Client["termine"];
-    return { id: c.id, nome: String(c.name), ragione: s(c.legal_name), idFiscale: s(c.vat_id), indirizzo: s(c.address), pec: s(c.pec), ordine: num(c.sort),
+    return { id: c.id, nome: String(c.name), ...(c.short_code ? { codice: String(c.short_code) } : {}), ragione: s(c.legal_name), idFiscale: s(c.vat_id), indirizzo: s(c.address), pec: s(c.pec), ordine: num(c.sort),
       estero: !!c.is_foreign, paese: s(c.country), gg: c.payment_days === null || c.payment_days === undefined ? null : Number(c.payment_days),
       termine: terms && Object.keys(terms).length ? terms : undefined, compenso: num(c.default_fee), tariffa: num(c.default_rate), desc: t.line, descTrasf: t.travel };
   });
@@ -142,7 +142,7 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
     ...(a.role === "tax" ? { ruolo: "tasse" as const } : {}), ordine: num(a.sort, 9), saldo: num(a.balance), guadagno: num(a.gains), aggiornato: s(a.as_of),
     tassoLordo: num(a.gross_rate), costi: num(a.cost_rate), bollo: num(a.stamp_rate), aliquota: num(a.tax_rate, 26),
     versamento: (a.contribution as SavingsAccount["versamento"]) ?? {}, copreDal: s(a.covers_from), note: (a.notes as string[]) ?? [], fondo: s(a.fund) }));
-  const investimenti: InvestmentAccount[] = live(R.investment_accounts).map((a) => ({ id: a.id, nome: s(a.name), aggiornato: s(a.as_of),
+  const investimenti: InvestmentAccount[] = live(R.investment_accounts).map((a) => ({ id: a.id, nome: s(a.name), ...(a.logo ? { logo: String(a.logo) } : {}), aggiornato: s(a.as_of),
     depositi: num(a.deposits), prelievi: num(a.withdrawals), commDeposito: num(a.deposit_fees), commCambio: num(a.fx_fees),
     realizzate: (a.realized as InvestmentAccount["realizzate"]) ?? [], mensile: (a.monthly as Record<string, number>) ?? {}, pac: (a.pac as InvestmentAccount["pac"]) ?? {},
     titoli: (holdings.get(a.id) ?? []).map((h) => ({ isin: String(h.isin), ticker: String(h.ticker), nome: String(h.name), classe: s(h.asset_class),
