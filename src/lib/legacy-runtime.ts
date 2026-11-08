@@ -153,7 +153,7 @@ async function loadHistory() {
   const d = deps; if (!d?.ledgerId || !navigator.onLine || Date.now() - historyAt < 20_000) return;
   historyAt = Date.now();
   const { data, error } = await d.sb.from("audit_logs").select("id, at, action, entity, record_id, details").eq("ledger_id", d.ledgerId)
-    .in("entity", HISTORY_TABLES).in("action", ["create", "update", "delete"]).order("id", { ascending: false }).limit(60);
+    .in("entity", HISTORY_TABLES).in("action", ["create", "update", "delete"]).order("id", { ascending: false }).limit(150);
   if (error || !data) return;
   const key = data.map((x) => x.id).join(",");
   if (key === historyKey) return;
