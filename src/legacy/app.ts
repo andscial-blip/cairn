@@ -327,26 +327,28 @@ function homeFlow(FX,y,cy){const F=flowYear(FX,y),st=speseStats();if(!F.tin&&!st
     <div class="panel-b">
       <div class="h3n"><div><span>Entrate</span><b class="num">${eur0(F.tin)}</b><small>F24 ${eur0(F.tf24)}</small></div><div><span>Spese</span><b class="num">${eur0(F.tsp)}</b><small>${eur0(F.tsp/12)} al mese</small></div><div><span>Risparmio</span><b class="num ${sav<0?"neg":"pos"}">${sav<0?"−":""}${eur0(Math.abs(sav))}</b><small>${pct(Math.max(0,rate),0)} del netto</small></div></div>
       <div class="hflow chart">${flowMini(F.rows,cm)}</div>
-      <div class="legend"><span><i style="background:var(--vz-real)"></i>Entrate</span><span><i style="background:var(--tax)"></i>F24</span><span><i style="background:var(--amber-soft)"></i>Spese</span></div>
+      <div class="legend"><span><i style="background:var(--vz-real)"></i>Entrate</span><span><i style="background:var(--vz-plan)"></i>previste</span><span><i style="background:var(--c-mid)"></i>F24</span><span><i style="background:var(--c-pale)"></i>Spese</span></div>
     </div></section>`;
   let spe="";
-  if(st){const all=Object.entries(st.tot).sort((a,b)=>b[1]-a[1]).map(([k])=>k),col=k=>{const i=all.indexOf(k);return i>=0&&i<7?SPAL[i%SPAL.length]:"var(--c-pale)"};
-    const rec=all.filter(k=>!STRAORD.has(k)),top=rec.slice(0,5),rest=rec.slice(5),avg=k=>st.tot[k]/st.n,restV=rest.reduce((a,k)=>a+avg(k),0),mx=Math.max(1,...top.map(avg),restV);
-    const row=(n,v,c)=>`<li><span class="hc-n">${n}</span><b class="num">${eur0(v)}</b><span class="hc-b"><i style="width:${(v/mx*100).toFixed(1)}%;background:${c}"></i></span></li>`;
+  if(st){const rec=Object.entries(st.tot).filter(([k])=>!STRAORD.has(k)).sort((a,b)=>b[1]-a[1]).map(([k])=>k),top=rec.slice(0,5),rest=rec.slice(5),avg=k=>st.tot[k]/st.n;
+    const parts=[...top.map(k=>[esc(k),avg(k)]),...(rest.length?[[`Altre ${rest.length} categorie`,rest.reduce((a,k)=>a+avg(k),0)]]:[])],tot=parts.reduce((a,p)=>a+p[1],0)||1;
+    const R=52,C=2*Math.PI*R;let acc=0;
+    const seg=parts.map(([n,v],i)=>{const f=v/tot,o=`<circle cx="70" cy="70" r="${R}" fill="none" stroke="var(--dn${i+1})" stroke-width="20" stroke-dasharray="${Math.max(0,f*C-2).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc*C).toFixed(2)}" transform="rotate(-90 70 70)" data-tip="${n}: ${eur0(v)} al mese (${pct(f,0)})"></circle>`;acc+=f;return o}).join("");
     const ml=m=>MESI[+m.slice(5,7)-1]+" "+m.slice(2,4);
     spe=`<section class="panel h-card go" data-go-v="spese">
     <div class="panel-h"><h2>Dove vanno le spese</h2><div class="spacer"></div><span class="eyebrow">media al mese · ${ml(st.L[0].mese)}–${ml(st.L[st.L.length-1].mese)}</span></div>
-    <div class="panel-b"><ul class="hcat">${top.map(k=>row(esc(k),avg(k),col(k))).join("")}${rest.length?row(`Altre ${rest.length} categorie`,restV,"var(--c-pale)"):""}</ul>
+    <div class="panel-b"><div class="hdon"><svg class="donut" viewBox="0 0 140 140" role="img" aria-label="Spese ricorrenti per categoria, ${eur0(st.avgRec)} al mese">${seg}<text x="70" y="64" text-anchor="middle" font-size="11" fill="var(--muted)">al mese</text><text x="70" y="84" text-anchor="middle" font-size="17" font-weight="600" fill="var(--fg)">${eur0(st.avgRec)}</text></svg>
+      <ul class="hcat">${parts.map(([n,v],i)=>`<li><i style="background:var(--dn${i+1})"></i><span class="hc-n">${n}</span><b class="num">${eur0(v)}</b></li>`).join("")}</ul></div>
       <div class="hcat-f"><span>Ricorrenti <b class="num">${eur0(st.avgRec)}</b> al mese</span>${st.straTot?`<span>Lavori casa a parte <b class="num">${eur0(st.straTot)}</b></span>`:""}</div></div></section>`}
   else spe=`<section class="panel h-card go" data-go-v="spese"><div class="panel-h"><h2>Dove vanno le spese</h2></div><div class="panel-b muted">Importa gli estratti conto in Finanze › Spese: qui vedrai le categorie principali.</div></section>`;
   return `<div class="h-duo h-flow">${flow}${spe}</div>`}
 /** Dashboard: twelve months as pairs of bars, money in (actual navy, forecast blue) and money out (F24 + expenses, stacked). */
 function flowMini(rows,cm,W=320,H=180){const L=4,R=4,T=8,B=22,n=rows.length,sx=(W-L-R)/n,bw=Math.min(9,sx*.32);
   const max=Math.max(1000,...rows.map(r=>Math.max(r.in,r.f24+r.sp))),y=v=>T+(H-T-B)*(1-v/max),hh=v=>(H-T-B)*v/max;let o=`<line x1="${L}" x2="${W-R}" y1="${H-B+.5}" y2="${H-B+.5}" stroke="var(--line)"/>`;
-  rows.forEach((r,i)=>{const x=L+sx*i+sx/2,fut=!r.past,a=fut?' opacity=".55"':"";
+  rows.forEach((r,i)=>{const x=L+sx*i+sx/2,fut=!r.past;
     if(r.in>0)o+=`<rect x="${x-bw-1}" y="${y(r.in)}" width="${bw}" height="${hh(r.in)}" rx="2" fill="${fut?"var(--vz-plan)":"var(--vz-real)"}"/>`;
-    if(r.sp>0)o+=`<rect x="${x+1}" y="${y(r.sp)}" width="${bw}" height="${hh(r.sp)}" rx="2" fill="var(--amber-soft)"${a}/>`;
-    if(r.f24>0)o+=`<rect x="${x+1}" y="${y(r.sp+r.f24)}" width="${bw}" height="${hh(r.f24)}" rx="2" fill="var(--tax)"${a}/>`;
+    if(r.sp>0)o+=`<rect x="${x+1}" y="${y(r.sp)}" width="${bw}" height="${hh(r.sp)}" rx="2" fill="var(--c-pale)"/>`;
+    if(r.f24>0)o+=`<rect x="${x+1}" y="${y(r.sp+r.f24)}" width="${bw}" height="${hh(r.f24)}" rx="2" fill="var(--c-mid)"/>`;
     o+=`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="11" fill="${i===cm?"var(--fg)":"var(--muted)"}"${i===cm?' font-weight="600"':""}>${MESI[i].slice(0,1)}</text>`;
     o+=`<rect class="hov" x="${L+sx*i}" y="${T}" width="${sx}" height="${H-T-B}" data-tip="${esc(`${MESI_L[i][0]+MESI_L[i].slice(1).toLowerCase()}${fut?" (previsione)":""}\nEntrate: ${eur0(r.in)}\nF24: ${eur0(r.f24)}\nSpese: ${eur0(r.sp)}${r.past&&!r.spReal?" (media)":""}\nSaldo: ${eur0(r.in-r.f24-r.sp)}`)}"></rect>`});
   const tin=rows.reduce((a,r)=>a+r.in,0),tout=rows.reduce((a,r)=>a+r.f24+r.sp,0);

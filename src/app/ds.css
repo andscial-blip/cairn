@@ -345,7 +345,10 @@ tr.u-ok td b,tr.u-ok td .neg{color:var(--muted)}
 .home.v2 .h-left{display:flex;flex-direction:column;gap:var(--s5);min-width:0}
 .h-duo{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5);align-items:stretch}
 .h-duo .h-card{display:flex;flex-direction:column}
-/* Dashboard: entrate e uscite + dove vanno le spese */
+/* Dashboard: entrate e uscite + dove vanno le spese (tonalità blu della ciambella, chiaro e scuro) */
+:root{--dn1:#2E3D52;--dn2:#4A5D78;--dn3:#6B7F9C;--dn4:#8497B0;--dn5:#ADB9CA;--dn6:#C9D6EA}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--dn1:#C9D6E8;--dn2:#A7B7CC;--dn3:#8497B0;--dn4:#6A7D97;--dn5:#52637A;--dn6:#3F4E63}}
+:root[data-theme="dark"]{--dn1:#C9D6E8;--dn2:#A7B7CC;--dn3:#8497B0;--dn4:#6A7D97;--dn5:#52637A;--dn6:#3F4E63}
 .h3n{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .h3n>div{display:flex;flex-direction:column;gap:1px;min-width:0}
 .h3n span{font-size:13px;color:var(--muted)}
@@ -354,6 +357,13 @@ tr.u-ok td b,tr.u-ok td .neg{color:var(--muted)}
 .hflow{margin:14px -2px 2px}
 .hflow svg{display:block;width:100%;height:auto}
 .h-flow .legend{justify-content:flex-start;margin-top:4px}
+.hdon{display:grid;grid-template-columns:118px minmax(0,1fr);gap:14px;align-items:center}
+.hdon svg{display:block;width:100%;height:auto}
+.hdon .hcat{gap:8px}
+.hdon .hcat li{grid-template-columns:auto minmax(0,1fr) auto;column-gap:8px;align-items:center}
+.hdon .hcat li>i{width:10px;height:10px;border-radius:3px}
+.hdon .hcat .hc-n{white-space:normal;line-height:1.25;font-size:13.5px}
+@media (max-width:760px){.hdon{grid-template-columns:128px minmax(0,1fr)}}
 .hcat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
 .hcat li{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:5px;align-items:baseline}
 .hcat .hc-n{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
