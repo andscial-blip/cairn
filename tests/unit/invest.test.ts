@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { addSnapshot, snapshotOf, dietz, xirr, pacFlows, splitContribution, idleCash, thin } from "@/lib/invest";
+import { addSnapshot, snapshotOf, dietz, xirr, pacFlows, splitContribution, idleCash, thin, rebalanceCheck } from "@/lib/invest";
 
 describe("snapshots", () => {
   it("replaces today's snapshot and keeps dates sorted", () => {
@@ -96,5 +96,30 @@ describe("savings history", () => {
     const y = savingsYield([{ d: "2025-11-05", saldo: 1000, guadagno: 0 }, { d: "2026-11-05", saldo: 1000, guadagno: 25 }])!;
     expect(y.annual).toBeCloseTo(0.025, 6); expect(y.days).toBe(365);
     expect(savingsYield([{ d: "2026-11-01", saldo: 1000, guadagno: 0 }, { d: "2026-11-05", saldo: 1000, guadagno: 1 }])).toBeNull();
+  });
+});
+
+describe("rebalanceCheck", () => {
+  const H = (a: number, b: number) => [{ isin: "A", ticker: "AAA", valore: a, target: 70, costo: a * 0.8 }, { isin: "B", ticker: "BBB", valore: b, target: 30, costo: b }];
+  it("in band: nothing to do", () => {
+    expect(rebalanceCheck(H(7200, 2800), 350).action).toBe("none");
+  });
+  it("small drift that the next contributions fix: no sale", () => {
+    const r = rebalanceCheck(H(7700, 2300), 350); // B at 23% vs 30%: out (7 pt)
+    expect(r.action).toBe("contributions");
+    expect(r.months).toBeLessThanOrEqual(3);
+    expect(r.plan.every((p) => p.isin === "B")).toBe(true);
+  });
+  it("large drift: time to rebalance, with trades that sum to zero and tax on the gains sold", () => {
+    const r = rebalanceCheck(H(85000, 15000), 350); // B at 15% vs 30%
+    expect(r.action).toBe("sell");
+    expect(r.trades.find((t) => t.isin === "A")!.amount).toBe(-15000);
+    expect(r.trades.find((t) => t.isin === "B")!.amount).toBe(15000);
+    expect(r.tax).toBe(Math.round(15000 * 0.2 * 0.26));
+  });
+  it("relative rule: a small target off by more than 25% is out of band", () => {
+    const r = rebalanceCheck([{ isin: "A", ticker: "A", valore: 9300, target: 90 }, { isin: "B", ticker: "B", valore: 700, target: 10 }], 0);
+    expect(r.out.map((x) => x.isin)).toContain("B");
+    expect(r.action).toBe("sell");
   });
 });

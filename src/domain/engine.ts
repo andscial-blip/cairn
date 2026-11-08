@@ -388,6 +388,42 @@ export class Engine {
     const T = (k: "in" | "firm" | "ipo" | "f24" | "saldo") => rows.reduce((a, r) => a + r[k], 0);
     return { rows, sp, pac, rm, tin: T("in"), tfirm: T("firm"), tipo: T("ipo"), tf24: T("f24"), tsal: T("saldo") };
   }
+  /**
+   * Cash flow of a calendar year, January to December. Months before the current one are actual figures
+   * (invoices cashed, F24 recorded, expenses from the statements when loaded); the current month and the following
+   * ones are the forecast used by flow12.
+   */
+  flowYear(FX: Fisco, Y: number) {
+    const cur = this.today.slice(0, 7);
+    const PRa = this.projections(), fr = this.f24Rows(FX), st = this.speseStats(), R = this.rispCalc(), inv = this.mainInvestment();
+    const sp = st ? st.avgRec : 0, pac = inv ? inv.pac : 0, rm = R ? R.mens : 0;
+    const spM = new Map<string, number>(st ? st.L.map((m, i) => [String(m.mese).slice(0, 7), st.rec[i]!] as [string, number]) : []);
+    const rows = Array.from({ length: 12 }, (_, i) => `${Y}-${pad(i + 1)}`).map((m) => {
+      const past = m < cur;
+      const src: Record<string, number> = {};
+      if (past) {
+        const got = this.s.invoices.filter((v) => v.incasso && v.incasso.slice(0, 7) === m);
+        got.forEach((v) => { src[v.cliente] = (src[v.cliente] ?? 0) + tot(v).documento; });
+        const done = got.reduce((a, v) => a + tot(v).documento, 0);
+        const f24 = this.s.f24.filter((r) => r.data && r.data.slice(0, 7) === m).reduce((a, r) => a + (+r.importo || 0), 0);
+        const spm = spM.get(m) ?? sp;
+        return { m, past, firm: done, ipo: 0, done, in: done, f24, sp: spm, spReal: spM.has(m), pac, rm, src, saldo: done - f24 - spm - pac - rm, cum: 0 };
+      }
+      const opn = this.s.invoices.filter((v) => this.invInM(v, m)), pr = PRa.filter((x) => x.incasso.slice(0, 7) === m);
+      const firm = opn.reduce((a, v) => a + tot(v).documento, 0) + pr.filter((x) => !x.ipotesi).reduce((a, x) => a + x.imponibile, 0);
+      const ipo = pr.filter((x) => x.ipotesi).reduce((a, x) => a + x.imponibile, 0);
+      const f24 = fr.filter((r) => this.f24InM(r, m)).reduce((a, r) => a + r.importo, 0);
+      const done = opn.filter((v) => v.incasso).reduce((a, v) => a + tot(v).documento, 0);
+      opn.forEach((v) => { src[v.cliente] = (src[v.cliente] ?? 0) + tot(v).documento; });
+      pr.forEach((x) => { src[x.cliente] = (src[x.cliente] ?? 0) + x.imponibile; });
+      return { m, past, firm, ipo, done, in: firm + ipo, f24, sp, spReal: false, pac, rm, src, saldo: firm + ipo - f24 - sp - pac - rm, cum: 0 };
+    });
+    let c = 0; rows.forEach((r) => { c += r.saldo; r.cum = c; });
+    const T = (k: "in" | "firm" | "ipo" | "f24" | "saldo" | "done" | "sp") => rows.reduce((a, r) => a + r[k], 0);
+    return { Y, rows, sp, pac, rm, tin: T("in"), tfirm: T("firm"), tipo: T("ipo"), tf24: T("f24"), tsal: T("saldo"), tdone: T("done"), tsp: T("sp") };
+  }
+  /** Income and F24 of the current calendar year (actual to date + forecast to December). */
+  cashYear(FX: Fisco, Y = +this.today.slice(0, 4)) { const F = this.flowYear(FX, Y); return { inTot: F.tin, outTot: F.tf24, spTot: F.tsp, Y }; }
 }
 
 export { isHoliday };

@@ -108,6 +108,24 @@ describe("projections and F24 schedule", () => {
     const e3 = new Engine({ ...s, f24: [{ id: "b", data: "2027-11-30", descrizione: "Bollo", tributi: "2521, 2522, 2523", importo: 6, versato: false }] }, "2026-11-07");
     expect(e3.f24Rows(e3.fisco()).some((r) => r.id === "est-2027-11-30")).toBe(true);
   });
+  it("calendar-year cash flow: actual months before today, forecast after, January to December", () => {
+    const s = base({ invoices: [inv({ id: "a", incasso: "2026-03-20" }), inv({ id: "b", n: 2, data: "2026-11-02", righe: [{ tipo: "compenso", qta: 1, prezzo: 2000 }] })],
+      f24: [{ id: "x", data: "2026-06-30", descrizione: "Saldo", importo: 300, versato: true }],
+      spese: [{ id: "s", mese: "2026-03", cat: { Casa: 500 } }, { id: "t", mese: "2026-04", cat: { Casa: 700 } }] });
+    const e = new Engine(s, "2026-11-07");
+    const F = e.flowYear(e.fisco(), 2026);
+    expect(F.rows.map((r) => r.m)).toEqual(Array.from({ length: 12 }, (_, i) => `2026-${String(i + 1).padStart(2, "0")}`));
+    const mar = F.rows[2]!, jun = F.rows[5]!, may = F.rows[4]!, nov = F.rows[10]!;
+    expect(mar).toMatchObject({ past: true, done: 1002, in: 1002, sp: 500, spReal: true });
+    expect(jun).toMatchObject({ past: true, f24: 300 });
+    expect(may).toMatchObject({ past: true, sp: 600, spReal: false }); // no statement that month: average
+    expect(nov.past).toBe(false);
+    expect(F.tdone).toBe(1002);
+    expect(F.rows[11]!.cum).toBeCloseTo(F.tsal, 6);
+    const N = e.flowYear(e.fisco(), 2027);
+    expect(N.rows.every((r) => !r.past)).toBe(true);
+    expect(e.cashYear(e.fisco()).Y).toBe(2026);
+  });
   it("e-invoice stamp duty: Q1–Q3 grouped in November when under 5,000 €", () => {
     const e = new Engine(base({ invoices: [inv({ id: "a", data: "2026-02-10", incasso: "2026-03-01" }), inv({ id: "b", n: 2, data: "2026-08-10", incasso: "2026-09-01" })] }), "2026-06-01");
     const b = e.bolloRows();

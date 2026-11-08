@@ -132,3 +132,46 @@ export function savingsYield(list: { d: string; saldo: number; guadagno: number 
   if (!(avg > 0) || gained < 0) return null;
   return { annual: (gained / avg) * (365 / T), gained: r2(gained), days: T, from: a.d };
 }
+
+/**
+ * Rebalancing check, run at every sync. An ETF is out of band when it drifts more than `abs` percentage points from
+ * its target, or more than `rel` of its target (at least 2 points): the common 5/25 rule. When something is out of
+ * band, the next contributions are simulated month by month, all directed to the underweight ETFs: if they bring
+ * every weight back within half the band in `months` months, no sale is needed. Otherwise it is time to rebalance:
+ * the trades that restore the targets are returned, with the tax on the gains sold (26%).
+ */
+export interface RebalanceHolding { isin: string; ticker: string; valore: number; target: number; costo?: number }
+export interface RebalanceResult {
+  action: "none" | "contributions" | "sell";
+  out: { isin: string; ticker: string; peso: number; target: number; drift: number }[];
+  maxDrift: number;
+  months: number | null;
+  plan: { isin: string; ticker: string; add: number }[];
+  trades: { isin: string; ticker: string; amount: number }[];
+  tax: number;
+}
+export function rebalanceCheck(holdings: RebalanceHolding[], pac: number, opt: { abs?: number; rel?: number; months?: number } = {}): RebalanceResult {
+  const abs = opt.abs ?? 5, rel = opt.rel ?? 0.25, horizon = opt.months ?? 3;
+  const H = holdings.filter((h) => (+h.target || 0) > 0 || h.valore > 0);
+  const tw = H.reduce((s, h) => s + (+h.target || 0), 0) || 100;
+  const drifts = (vals: number[]) => { const V = vals.reduce((s, v) => s + v, 0) || 1; return H.map((h, i) => ({ peso: vals[i]! / V, d: (vals[i]! / V) * 100 - ((+h.target || 0) / tw) * 100, t: ((+h.target || 0) / tw) * 100 })); };
+  const isOut = (x: { d: number; t: number }, k = 1) => Math.abs(x.d) > abs * k || (x.t > 0 && Math.abs(x.d) >= 2 * k && Math.abs(x.d) / x.t > rel * k);
+  const vals = H.map((h) => Math.max(0, h.valore));
+  const D = drifts(vals);
+  const out = H.map((h, i) => ({ isin: h.isin, ticker: h.ticker, peso: D[i]!.peso, target: D[i]!.t, drift: D[i]!.d })).filter((_, i) => isOut(D[i]!));
+  const maxDrift = D.reduce((m, x) => Math.max(m, Math.abs(x.d)), 0);
+  const base = { out, maxDrift, plan: [], trades: [], tax: 0 };
+  if (!out.length) return { action: "none", months: 0, ...base };
+  // Contributions only: simulate up to 12 months.
+  const v = [...vals]; const added = H.map(() => 0); let months: number | null = null;
+  if (pac > 0) for (let k = 1; k <= 12; k++) {
+    splitContribution(H.map((h, i) => ({ isin: h.isin, valore: v[i]!, target: +h.target || 0 })), pac).forEach((x, i) => { v[i] = v[i]! + x.add; added[i] = added[i]! + x.add; });
+    if (!drifts(v).some((x) => isOut(x, 0.5))) { months = k; break; }
+  }
+  if (months !== null && months <= horizon)
+    return { action: "contributions", months, ...base, plan: H.map((h, i) => ({ isin: h.isin, ticker: h.ticker, add: added[i]! })).filter((x) => x.add > 0) };
+  const V = vals.reduce((s, x) => s + x, 0);
+  const trades = H.map((h, i) => ({ isin: h.isin, ticker: h.ticker, amount: Math.round(((((+h.target || 0) / tw) * V - vals[i]!) / 10)) * 10 })).filter((t) => Math.abs(t.amount) >= 10);
+  const tax = trades.filter((t) => t.amount < 0).reduce((s, t) => { const h = H.find((x) => x.isin === t.isin)!; const gainShare = h.valore > 0 && h.costo != null ? Math.max(0, 1 - h.costo / h.valore) : 0; return s + -t.amount * gainShare * 0.26; }, 0);
+  return { action: "sell", months, ...base, trades, tax: Math.round(tax) };
+}

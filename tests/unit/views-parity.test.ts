@@ -35,7 +35,8 @@ describe.skipIf(!has)("redesign keeps every figure identical", () => {
         for (const m of MOVED[v] ?? []) for (const x of figures(O[m](O._fisco()))) before.add(x);
         const invented = [...after].filter((x) => !before.has(x));
         expect(invented, `figures not in the original ${v}`).toEqual([]);
-        if (before.size) expect(after.size).toBeGreaterThan(0);
+        // The view must still show figures (a view entirely redefined, like Entrate by calendar year, counts its marked ones).
+        if (before.size) expect(after.size + figures(N[v](N._fisco()).replace(/<!--\/?feat-->/g, "")).size).toBeGreaterThan(0);
       });
     });
   }
