@@ -438,3 +438,12 @@ td.nw{white-space:nowrap}
 .yrtot>.muted{flex-basis:100%}
 @media (min-width:621px){.yrtot>.muted{flex-basis:auto}}
 @media (max-width:620px){.fields .f>.switch[style]{margin-top:2px!important}}
+/* Client logos (uploaded by the owner) or initials, before the client name: same box for all, so names line up. */
+.clg{display:inline-block;width:40px;height:24px;border-radius:6px;object-fit:contain;background:#fff;box-shadow:0 0 0 1px var(--line-2);padding:2px 3px;vertical-align:-7px;margin-right:8px;flex:none}
+.clg.big{width:52px;height:30px;vertical-align:-9px;border-radius:8px;padding:3px 4px}
+.clg.mono{display:inline-flex;align-items:center;justify-content:center;padding:0;background:var(--surface-2);color:var(--muted);font:600 10px/1 var(--f-ui);letter-spacing:.02em}
+.clg.mono.big{font-size:12px}
+.alrow>.clg{margin-right:0}
+.alrow:has(>.clg){grid-template-columns:40px 1fr auto;align-items:center}
+.logo-ed{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo-ed .clg.big{width:96px;height:56px;border-radius:10px;padding:6px;vertical-align:middle;margin:0}

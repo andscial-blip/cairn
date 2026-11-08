@@ -133,6 +133,11 @@ const DOTICON={"!":"alert","€":"euro","↧":"inbox","⇩":"down","✓":"check"
 const years=()=>Object.keys(cfg().params).map(Number).sort((a,b)=>a-b);
 const P=y=>cfg().params[String(y)]||cfg().params[String(years().slice(-1)[0])];
 const clientById=id=>S.clients.find(c=>c.id===id);
+/** Client mark before its name: the logo uploaded in Impostazioni → Clienti, or the initials. */
+const clg=(id,big)=>{const c=typeof id==="object"?id:clientById(id);const n=c?c.nome:String(id||"");
+  if(c&&c.logo&&/^data:image\/(png|webp|jpeg);base64,/.test(c.logo))return `<img class="clg${big?" big":""}" src="${c.logo}" alt="" aria-hidden="true">`;
+  const ini=n.replace(/[^A-Za-zÀ-ÿ ]/g," ").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
+  return `<span class="clg mono${big?" big":""}" aria-hidden="true">${esc(ini)}</span>`};
 const ym=d=>d.slice(0,7);
 const addMonths=(m,n)=>{const [y,mm]=m.split("-").map(Number);const d=new Date(y,mm-1+n,1);return d.getFullYear()+"-"+pad(d.getMonth()+1)};
 const mLabel=m=>{const [y,mm]=m.split("-").map(Number);return MESI[mm-1].toLowerCase()+" "+y};
@@ -349,10 +354,10 @@ function vInv(FX){
   const yCount={};list.forEach(v=>{const k=(v.data||"").slice(0,4);yCount[k]=(yCount[k]||0)+1});let lastY="",lastYc="";
   const yHead=(v,cols)=>{const k=(v.data||"").slice(0,4);if(k===lastY)return "";lastY=k;return `<tr class="grp"><td colspan="${cols}">${k} · ${yCount[k]} ${yCount[k]>1?"fatture":"fattura"}</td></tr>`};
   const rows=list.map(v=>{const t=tot(v),o=oneriInv(v,FX),c=clientById(v.cliente);
-    return yHead(v,12)+`<tr class="click" data-open="${v.id}"><td class="num">${dmyShort(v.data)}</td><td class="num"><b>${esc(v.num)}</b>${v.inviataCommercialista?' <span title="Inviata alla commercialista" style="color:var(--green)">✉</span>':""}${v.pdf?` <span title="Fattura elettronica caricata" class="att-ok">${ico("file",13)}</span>`:""}</td><td class="cli">${esc(c?c.nome:v.cliente)}</td>
+    return yHead(v,12)+`<tr class="click" data-open="${v.id}"><td class="num">${dmyShort(v.data)}</td><td class="num"><b>${esc(v.num)}</b>${v.inviataCommercialista?' <span title="Inviata alla commercialista" style="color:var(--green)">✉</span>':""}${v.pdf?` <span title="Fattura elettronica caricata" class="att-ok">${ico("file",13)}</span>`:""}</td><td class="cli">${clg(v.cliente)}${esc(c?c.nome:v.cliente)}</td>
       <td class="r num money-in">${eur(t.comp)}</td><td class="r num">${t.ind?eur(t.ind):"—"}</td><td class="r num">${t.rimb?eur(t.rimb):"—"}</td><td class="r num"><b>${eur(t.documento)}</b></td>
       <td class="r num neg">${eur(o.oneri)}</td><td class="r num pos"><b>${eur(o.netto)}</b></td><td class="c">${pillFor(v)}</td><td class="num">${v.incasso?dmyShort(v.incasso):`<span class="muted">att. ${dmyShort(scadenza(v))}</span>`}</td><td class="c num">${fy(v)||""}</td></tr>`}).join("");
-  const cards=list.map(v=>{const t=tot(v),c=clientById(v.cliente);const k=(v.data||"").slice(0,4);const hd=k!==lastYc?(lastYc=k,`<div class="igrp">${k} · ${yCount[k]} ${yCount[k]>1?"fatture":"fattura"}</div>`):"";return hd+`<div class="icard" data-open="${v.id}"><div class="t">${esc(v.num)} · <span class="cli">${esc(c?c.nome:v.cliente)}</span></div><div class="a num">${eur(t.documento)}</div><div class="m">${dmy(v.data)} · ${v.incasso?"incassata "+dmy(v.incasso):"attesa "+dmy(scadenza(v))}</div><div style="text-align:right">${pillFor(v)}</div></div>`}).join("");
+  const cards=list.map(v=>{const t=tot(v),c=clientById(v.cliente);const k=(v.data||"").slice(0,4);const hd=k!==lastYc?(lastYc=k,`<div class="igrp">${k} · ${yCount[k]} ${yCount[k]>1?"fatture":"fattura"}</div>`):"";return hd+`<div class="icard" data-open="${v.id}"><div class="t">${esc(v.num)} · <span class="cli">${clg(v.cliente)}${esc(c?c.nome:v.cliente)}</span></div><div class="a num">${eur(t.documento)}</div><div class="m">${dmy(v.data)} · ${v.incasso?"incassata "+dmy(v.incasso):"attesa "+dmy(scadenza(v))}</div><div style="text-align:right">${pillFor(v)}</div></div>`}).join("");
   return `<section class="panel">
     <div class="panel-h" style="flex-wrap:wrap"><h2>Registro fatture</h2><div class="spacer"></div>
       <div class="filters">
@@ -372,7 +377,7 @@ function vPrev(FX){
   const PR=projections(), today=todayISO();
   const now=PR.filter(x=>x.data<=addDays(today,10)), later=PR.filter(x=>x.data>addDays(today,10));
   const byYear={};PR.forEach(x=>{byYear[x.anno]=(byYear[x.anno]||0)+x.imponibile});
-  const card=x=>`<div class="pcard"><div class="pc-top"><span class="cli">${esc(c2n(x.cliente))}</span>${x.data<today?'<span class="pill late">'+ico("alert",12)+'in ritardo</span>':'<span class="pill open">'+ico("clock",12)+dayName(x.data)+' '+dmyShort(x.data)+'</span>'}</div>
+  const card=x=>`<div class="pcard"><div class="pc-top"><span class="cli">${clg(x.cliente)}${esc(c2n(x.cliente))}</span>${x.data<today?'<span class="pill late">'+ico("alert",12)+'in ritardo</span>':'<span class="pill open">'+ico("clock",12)+dayName(x.data)+' '+dmyShort(x.data)+'</span>'}</div>
     <div class="pc-per">${x.label}${x.ipotesi?' <span class="pill est">ipotesi</span>':""}</div>
     <div class="pc-amt num">${eur(x.comp+x.ind+x.bollo)}</div>
     <div class="muted" style="font-size:13px">${eur(x.comp)} compenso${x.ind?` + ${x.gg} gg trasferta (${eur(x.ind)})`:""} + bollo</div>
@@ -380,7 +385,7 @@ function vPrev(FX){
   // v2: show the next 6 months; the rest on request (the list used to span ~2 years, 48 rows).
   const lim=addDays(today,183), shown=S.prevAll?later:later.filter(x=>x.data<=lim), hiddenN=later.length-shown.length;
   let lastM="";const rows=shown.map(x=>{const m=x.data.slice(0,7);const head=m!==lastM?`<tr class="mhead"><td colspan="6">${MESI_L[+m.slice(5)-1].toLowerCase()} ${m.slice(0,4)}</td></tr>`:"";lastM=m;
-    return head+`<tr><td class="num">${dayName(x.data).slice(0,3)} ${dmyShort(x.data)}</td><td class="cli">${esc(c2n(x.cliente))}</td><td>${x.label}${x.ipotesi?' <span class="pill est">ipotesi</span>':""}</td><td class="r num">${x.ind?`<span class="muted">${x.gg} gg · </span>`+eur(x.ind):"—"}</td><td class="r num"><b>${eur(x.comp+x.ind+x.bollo)}</b></td><td class="r"><button class="btn small ghost" data-proj="${esc(x.contratto)}|${x.months[0]}" type="button">Crea</button></td></tr>`}).join("");
+    return head+`<tr><td class="num">${dayName(x.data).slice(0,3)} ${dmyShort(x.data)}</td><td class="cli">${clg(x.cliente)}${esc(c2n(x.cliente))}</td><td>${x.label}${x.ipotesi?' <span class="pill est">ipotesi</span>':""}</td><td class="r num">${x.ind?`<span class="muted">${x.gg} gg · </span>`+eur(x.ind):"—"}</td><td class="r num"><b>${eur(x.comp+x.ind+x.bollo)}</b></td><td class="r"><button class="btn small ghost" data-proj="${esc(x.contratto)}|${x.months[0]}" type="button">Crea</button></td></tr>`}).join("");
   return `${intro("Le fatture che dovrai emettere, calcolate dai <b>contratti</b> (importi e date) e dalle <b>missioni</b> (indennità). Quando crei una fattura, sparisce da qui e passa nel registro.")}
   <section class="panel"><div class="panel-h"><h2>${ico("pen",18)} Da emettere ora</h2></div><div class="panel-b">${now.length?`<div class="pgrid">${now.map(card).join("")}</div>`:`<div class="empty" style="padding:12px">Nessuna fattura da emettere nei prossimi 10 giorni.${PR[0]?` La prossima: <b>${esc(c2n(PR[0].cliente))}</b> il ${dmy(PR[0].data)}.`:""}</div>`}</div></section>
   <section class="panel"><div class="panel-h"><h2>${ico("cal",18)} In arrivo</h2></div>
@@ -395,7 +400,7 @@ function vContr(FX){
   const groups=[["In corso",c=>c.attivo!==false&&!c.ipotesi&&c.al>=nowM],["Ipotesi di rinnovo",c=>c.attivo!==false&&c.ipotesi],["Conclusi o esclusi",c=>c.attivo===false||(!c.ipotesi&&c.al<nowM)]];
   const card=c=>{let months=0;for(let m=c.dal;m<=c.al;m=addMonths(m,1))months++;let el=0;for(let m=c.dal;m<=c.al&&m<=nowM;m=addMonths(m,1))el++;
     const perMese=(+c.importo||0)/(+c.ogni||1);
-    return `<div class="ccard"><div class="pc-top"><span class="cli" style="font-size:16px">${esc(c2n(c.cliente))}</span>${c.ipotesi?'<span class="pill open">ipotesi</span>':c.al<nowM?'<span class="pill ok">concluso</span>':'<span class="pill ok">'+ico("check",12)+'in corso</span>'}</div>
+    return `<div class="ccard"><div class="pc-top"><span class="cli" style="font-size:16px">${clg(c.cliente,1)}${esc(c2n(c.cliente))}</span>${c.ipotesi?'<span class="pill open">ipotesi</span>':c.al<nowM?'<span class="pill ok">concluso</span>':'<span class="pill ok">'+ico("check",12)+'in corso</span>'}</div>
       <div class="cc-amt num">${eur0(perMese)}<small> / mese</small></div>
       <div class="cc-grid"><span>Fattura</span><b>${eur0(c.importo)} ${c.ogni>1?"ogni "+c.ogni+" mesi":"al mese"}</b><span>Trasferta</span><b>${c.tariffa?eur0(c.tariffa)+" al giorno":"—"}</b><span>Emissione</span><b>${regolaTxt(c)}</b><span>Durata</span><b>${mLabel(c.dal)} → ${mLabel(c.al)}</b></div>
       <div class="meter" style="height:8px;margin-top:10px" title="${el} di ${months} mesi"><i style="width:${months?Math.min(100,el/months*100):0}%"></i></div>
@@ -412,12 +417,12 @@ function vMis(FX){
   const fatt=(cl,Y)=>S.invoices.filter(v=>v.cliente===cl&&(v.data||"").startsWith(String(Y))).reduce((a,v)=>a+(v.righe||[]).filter(r=>r.tipo==="trasferta").reduce((b,r)=>b+(+r.qta||0),0),0);
   const datedIn=(cl,Y)=>dated.filter(x=>x.cliente===cl&&x.dal.startsWith(String(Y))).reduce((a,x)=>a+daysBetween(x.dal,x.al)+1,0);
   const qcard=q=>{const f=fatt(q.cliente,q.anno),d=datedIn(q.cliente,q.anno),rest=Math.max(0,q.giorni-f-d),pf=Math.min(100,f/q.giorni*100),pd=Math.min(100-pf,d/q.giorni*100);
-    return `<div class="ccard"><div class="pc-top"><span class="cli">${esc(c2n(q.cliente))}</span><span class="pill est">stima ${q.anno}</span></div>
+    return `<div class="ccard"><div class="pc-top"><span class="cli">${clg(q.cliente)}${esc(c2n(q.cliente))}</span><span class="pill est">stima ${q.anno}</span></div>
      <div class="cc-amt num">${q.giorni}<small> giorni previsti</small></div>
      <div class="meter" style="height:10px;margin-top:6px"><i style="width:${pf}%"></i><i class="f" style="left:${pf}%;width:${pd}%"></i></div>
      <div class="meter-legend"><span>${f} fatturati</span><span>${d} con date</span><span><b>${rest}</b> da distribuire</span></div>
      <button class="btn small ghost" data-mis="${q.id}" type="button" style="margin-top:8px;align-self:flex-start">${ico("pen",13)} Modifica</button></div>`};
-  const row=x=>{const n=daysBetween(x.dal,x.al)+1;return `<tr><td class="cli">${esc(c2n(x.cliente))}</td><td class="num">${dmyShort(x.dal)} → ${dmyShort(x.al)}</td><td class="r num">${n}</td><td class="c">${x.ipotesi?'<span class="pill open">ipotesi</span>':x.al<today?'<span class="pill ok">svolta</span>':x.dal<=today?'<span class="pill open">'+ico("clock",12)+'in corso</span>':'<span class="pill ok">confermata</span>'}</td><td class="muted">${esc(x.note||"")}</td><td class="r"><button class="btn small ghost" data-mis="${x.id}" type="button">Modifica</button></td></tr>`};
+  const row=x=>{const n=daysBetween(x.dal,x.al)+1;return `<tr><td class="cli">${clg(x.cliente)}${esc(c2n(x.cliente))}</td><td class="num">${dmyShort(x.dal)} → ${dmyShort(x.al)}</td><td class="r num">${n}</td><td class="c">${x.ipotesi?'<span class="pill open">ipotesi</span>':x.al<today?'<span class="pill ok">svolta</span>':x.dal<=today?'<span class="pill open">'+ico("clock",12)+'in corso</span>':'<span class="pill ok">confermata</span>'}</td><td class="muted">${esc(x.note||"")}</td><td class="r"><button class="btn small ghost" data-mis="${x.id}" type="button">Modifica</button></td></tr>`};
   return `${intro("I giorni in Madagascar che generano l'indennità di trasferta. Se sai solo <b>quanti giorni</b> farai in un anno, usa la stima annua; quando conosci le date, aggiungi la missione: la stima si riduce da sola.")}
   <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><button class="btn" data-quota="new" type="button">+ Stima annua</button><button class="btn dark" data-mis="new" type="button">+ Missione con date</button></div>
   <section><div class="eyebrow" style="margin:6px 0 8px">Stime annue</div>${quotas.length?`<div class="pgrid">${quotas.map(qcard).join("")}</div>`:`<div class="panel empty">Nessuna stima annua.</div>`}</section>
@@ -940,12 +945,12 @@ function vEntrate(FX){const cy=new Date().getFullYear();const Y=S.entY===cy+1?cy
   const cats=F.rows.map(r=>MESI[+r.m.slice(5)-1]);
   const chart=svgBars(cats,[{name:"Incassato",color:"var(--cost)",vals:F.rows.map(r=>r.done)},{name:"Previsto (firmato)",color:"var(--c-blue)",vals:F.rows.map(r=>r.firm-r.done)},{name:"Previsto (ipotesi)",color:"var(--c-mid)",vals:F.rows.map(r=>r.ipo),dashed:cats.map(()=>true)}],{stacked:1,w:1000,h:300,refs:[{v:fixedM,color:"var(--gold-d)",label:"spese + PAC + risparmi "+eur0(fixedM)}],label:`Entrate ${Y}`});
   const byC={};F.rows.forEach(r=>Object.entries(r.src).forEach(([k,v])=>byC[k]=(byC[k]||0)+v));const cr=Object.entries(byC).sort((a,b)=>b[1]-a[1]);
-  const cRows=cr.map(([k,v],i)=>`<div class="alrow"><i style="background:${["var(--c-ink)","var(--c-mid)","var(--c-soft)","var(--c-pale)"][i%4]}"></i><div class="an"><b>${esc(cl(k))}</b></div><div class="ap num">${eur0(v)}</div><div class="at num muted">${pct(v/Math.max(1,F.tin),0)} delle entrate · ${eur0(v/12)} al mese</div></div>`).join("")||`<div class="muted">Nessuna entrata nel ${Y}.</div>`;
+  const cRows=cr.map(([k,v],i)=>`<div class="alrow">${clg(k)}<div class="an"><b>${esc(cl(k))}</b></div><div class="ap num">${eur0(v)}</div><div class="at num muted">${pct(v/Math.max(1,F.tin),0)} delle entrate · ${eur0(v/12)} al mese</div></div>`).join("")||`<div class="muted">Nessuna entrata nel ${Y}.</div>`;
   const neg=v=>v<0?"bad":"pos";
-  const tRows=F.rows.map(r=>`<tr class="${r.past?"is-past":""}"><td class="num">${ml(r.m)}${r.past?`<div class="muted" style="font-size:12px">reale</div>`:""}</td><td class="r num">${eur0(r.in)}${!r.past&&r.done?`<div class="muted" style="font-size:12px">incassati ${eur0(r.done)}</div>`:""}${r.ipo?`<div class="muted" style="font-size:12px">ipotesi ${eur0(r.ipo)}</div>`:""}</td><td class="r num">${r.f24?"−"+eur0(r.f24):"—"}</td><td class="r num">−${eur0(r.sp)}${r.past&&!r.spReal?`<div class="muted" style="font-size:12px">media</div>`:""}</td><td class="r num">−${eur0(r.pac+r.rm)}</td><td class="r num ${neg(r.saldo)}"><b>${r.saldo<0?"−":"+"}${eur0(Math.abs(r.saldo))}</b></td><td class="r num ${neg(r.cum)}">${eur0(r.cum)}</td></tr>`).join("");
+  const tRows=F.rows.map(r=>`<tr class="${r.past?"is-past":""}"><td class="num">${ml(r.m)}</td><td class="r num">${eur0(r.in)}${!r.past&&r.done?`<div class="muted" style="font-size:12px">incassati ${eur0(r.done)}</div>`:""}${r.ipo?`<div class="muted" style="font-size:12px">ipotesi ${eur0(r.ipo)}</div>`:""}</td><td class="r num">${r.f24?"−"+eur0(r.f24):"—"}</td><td class="r num">−${eur0(r.sp)}${r.past&&!r.spReal?`<div class="muted" style="font-size:12px">media</div>`:""}</td><td class="r num">−${eur0(r.pac+r.rm)}</td><td class="r num ${neg(r.saldo)}"><b>${r.saldo<0?"−":"+"}${eur0(Math.abs(r.saldo))}</b></td><td class="r num ${neg(r.cum)}">${eur0(r.cum)}</td></tr>`).join("");
   const RR=fut.length?fut:F.rows,minC=Math.min(...RR.map(r=>r.cum)),minR=RR.find(r=>r.cum===minC);
   return head+tabs+`<!--feat--><div class="kpis">
-    <div class="kpi"><div class="l">${nowY?`Entrate ${Y}, reali + previste`:`Entrate previste ${Y}`}</div><div class="v">${eur0(F.tin)}</div>${K.tot}<div class="s">${eur0(F.tin/12)} al mese in media</div></div>
+    <div class="kpi"><div class="l">${nowY?`Entrate ${Y}`:`Entrate previste ${Y}`}</div><div class="v">${eur0(F.tin)}</div>${K.tot}<div class="s">${eur0(F.tin/12)} al mese in media</div></div>
     ${k2}
     <div class="kpi green"><div class="l">Netto dopo F24</div><div class="v">${eur0(netM)}<small style="font-size:14px;font-weight:600"> / mese</small></div>${K.net}<div class="s">uscite fisse ${eur0(fixedM)} al mese</div></div>
     <div class="kpi ${firmQ<.5?"alert":""}"><div class="l">Entrate già firmate</div><div class="v">${pct(firmQ,0)}</div>${K.firm}<div class="s">il resto dipende dai rinnovi</div></div>
@@ -1017,7 +1022,7 @@ function simPanel(){
   if(!ids.length)return "";
   const inp=(id,k,v,lab)=>`<input class="in num" data-sim="${id}:${k}" inputmode="decimal" value="${v}" aria-label="${lab}">`;
   const rows=ids.map(id=>{const c=S.contratti.find(x=>x.id===id)||{};const r=sim.rows[id];
-    return `<tr><td class="cli">${esc(c2n(c.cliente))}</td>
+    return `<tr><td class="cli">${clg(c.cliente)}${esc(c2n(c.cliente))}</td>
       <td>${inp(id,"mese",r.mese,"Compenso al mese")}</td><td>${inp(id,"tariffa",r.tariffa,"Indennità al giorno")}</td><td>${inp(id,"gg",r.gg,"Giorni di missione all'anno")}</td></tr>`}).join("");
   return `<section class="panel c12 simp"><div class="panel-h"><h2>${ico("calc",18)} E se i rinnovi ${sim.Y} fossero diversi?</h2><div class="spacer"></div><button class="btn small ghost" id="simReset" type="button">Ripristina</button><button class="btn small dark" id="simSave" type="button">Salva come ipotesi</button></div>
    <div class="grid" style="gap:0">
@@ -1204,7 +1209,7 @@ function vAnal(FX){
    <section class="panel c6"><div class="panel-h"><h2>Ricavi per cliente</h2><div class="spacer"></div>${lg(cSer.map(x=>[x.name,x.color]))}</div><div class="panel-b chart">${cliChart}</div></section>
    <section class="panel c6"><div class="panel-h"><h2>Composizione del fatturato</h2><div class="spacer"></div>${lg([["Compenso","var(--c-ink)"],["Indennità","var(--sky)"],["Rimborsi","var(--green-soft)"]])}</div><div class="panel-b chart">${compChart}</div></section>
    <section class="panel c12"><div class="panel-h"><h2>Clienti a confronto</h2></div><div class="tw"><table><thead><tr><th>Cliente</th><th class="r">Ricavi totali</th><th class="r">Netto stimato</th><th class="r">Quota ${sel}</th><th class="c">Fatture</th><th class="r">Gg incasso medi</th><th class="r">min–max</th><th class="r">Gg trasferta</th><th class="r">Da incassare</th></tr></thead><tbody>
-     ${cliRows.map(r=>`<tr><td class="cli">${esc(r.c.nome)}</td><td class="r num">${eur0(r.ric)}</td><td class="r num pos">${eur0(r.net)}</td><td class="r num ${r.ricSel/totSel>.6?"neg":""}">${pct(r.ricSel/totSel,0)}</td><td class="c num">${r.n}</td><td class="r num">${r.avg==null?"—":Math.round(r.avg)}</td><td class="r num muted">${r.min==null?"":r.min+"–"+r.max}</td><td class="r num">${r.gg||"—"}</td><td class="r num">${r.open?eur0(r.open):"—"}</td></tr>`).join("")}
+     ${cliRows.map(r=>`<tr><td class="cli">${clg(r.c)}${esc(r.c.nome)}</td><td class="r num">${eur0(r.ric)}</td><td class="r num pos">${eur0(r.net)}</td><td class="r num ${r.ricSel/totSel>.6?"neg":""}">${pct(r.ricSel/totSel,0)}</td><td class="c num">${r.n}</td><td class="r num">${r.avg==null?"—":Math.round(r.avg)}</td><td class="r num muted">${r.min==null?"":r.min+"–"+r.max}</td><td class="r num">${r.gg||"—"}</td><td class="r num">${r.open?eur0(r.open):"—"}</td></tr>`).join("")}
    </tbody></table></div></section>
    <section class="panel c12"><div class="panel-h"><h2>Trasferte ${sel}</h2></div><div class="panel-b"><div class="mini">
       <div><span>Giorni fatturati</span><b>${tr.gg||0}</b></div>
@@ -1326,7 +1331,7 @@ function vSet(){
   return `<div class="grid">
   <section class="panel c6"><div class="panel-h"><h2>Clienti</h2><div class="spacer"></div><button class="btn small" id="addCli" type="button">+ Cliente</button></div>
    <div class="tw"><table><thead><tr><th>Cliente</th><th class="r">Compenso/mese</th><th class="r">€/gg trasf.</th><th class="r">Gg pagam.</th><th></th></tr></thead><tbody>
-   ${S.clients.map(k=>`<tr><td class="cli">${esc(k.nome)}</td><td class="r num">${k.compenso?eur(k.compenso):"—"}</td><td class="r num">${k.tariffa?eur(k.tariffa):"—"}</td><td class="r num">${k.gg??"—"}</td><td class="r"><button class="btn small ghost" data-cli="${k.id}">Modifica</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">Nessun cliente.</td></tr>`}
+   ${S.clients.map(k=>`<tr><td class="cli">${clg(k)}${esc(k.nome)}</td><td class="r num">${k.compenso?eur(k.compenso):"—"}</td><td class="r num">${k.tariffa?eur(k.tariffa):"—"}</td><td class="r num">${k.gg??"—"}</td><td class="r"><button class="btn small ghost" data-cli="${k.id}">Modifica</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">Nessun cliente.</td></tr>`}
    </tbody></table></div></section>
   <section class="panel c6"><div class="panel-h"><h2>Parametri fiscali per anno</h2></div>
    <div class="tw"><table><thead><tr><th>Anno</th><th class="r">Coeff.</th><th class="r">INPS</th><th class="r">Imposta</th><th class="r">Margine</th></tr></thead><tbody>
@@ -1856,7 +1861,9 @@ async function exportV3_orig(FX){
 }
 function openClient(id){
   const k=id?clientById(id):{nome:"",ragione:"",idFiscale:"",indirizzo:"",pec:"",compenso:"",tariffa:"",gg:30,desc:"Compenso professionale - {MESE}",descTrasf:"Indennità di trasferta estero (Madagascar) - dal {DAL} al {AL}"};
+  let logo=k.logo||null;
   sheet(id?`Cliente · ${k.nome}`:"Nuovo cliente",`<section class="panel"><div class="panel-b"><div class="fields">
+   <div class="f s6"><label>Logo</label><div class="logo-ed"><span id="c-lgv">${clg({...k,logo},1)}</span><label class="btn small" for="c-lgf" style="cursor:pointer">${logo?"Cambia logo":"Carica logo"}</label><input id="c-lgf" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none"><button class="btn small ghost" id="c-lgx" type="button" ${logo?"":"hidden"}>Togli</button><span class="help">PNG o JPG, meglio quadrato o con sfondo trasparente. Resta nei tuoi dati, ridotto a 256 px.</span></div></div>
    <div class="f"><label for="c-nome">Nome breve</label><input id="c-nome" value="${esc(k.nome)}"></div>
    <div class="f"><label for="c-rag">Ragione sociale (proforma)</label><input id="c-rag" value="${esc(k.ragione||"")}"></div>
    <div class="f"><label for="c-id">P.IVA / CF (come in fattura)</label><input id="c-id" value="${esc(k.idFiscale||"")}" placeholder="P.IVA: 01234567890"></div>
@@ -1868,11 +1875,24 @@ function openClient(id){
    <div class="f s6"><label for="c-desc">Descrizione compenso</label><input id="c-desc" value="${esc(k.desc||"")}"><span class="help">{MESE} diventa il mese, es. SETTEMBRE 2026.</span></div>
    <div class="f s6"><label for="c-dtr">Descrizione trasferta</label><input id="c-dtr" value="${esc(k.descTrasf||"")}"><span class="help">{DAL} e {AL} diventano le date.</span></div>
   </div></div></section>`,`<button class="btn primary" id="cSave" type="button">Salva cliente</button>`);
+  const showLogo=()=>{$("#c-lgv").innerHTML=clg({...k,nome:$("#c-nome").value||k.nome,logo},1);$("#c-lgx").hidden=!logo};
+  $("#c-lgf").onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;try{logo=await logoDataUrl(f);showLogo()}catch(err){toast("Immagine non leggibile")}};
+  $("#c-lgx").onclick=()=>{logo=null;showLogo()};
   $("#cSave").onclick=async()=>{const g=s=>$(s).value.trim();const nome=g("#c-nome");if(!nome){toast("Inserisci il nome");return}
     const cid=id||nome.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40)||uid();
-    const doc={nome,ragione:g("#c-rag"),idFiscale:g("#c-id"),pec:g("#c-pec"),indirizzo:$("#c-ind").value,compenso:readNum(g("#c-comp"))||0,tariffa:readNum(g("#c-tar"))||0,gg:parseInt(g("#c-gg"))||30,desc:g("#c-desc"),descTrasf:g("#c-dtr"),ordine:k.ordine??(S.clients.length+1)};
+    const {id:_i,...keep}=id?k:{};const doc={...keep,logo,nome,ragione:g("#c-rag"),idFiscale:g("#c-id"),pec:g("#c-pec"),indirizzo:$("#c-ind").value,compenso:readNum(g("#c-comp"))||0,tariffa:readNum(g("#c-tar"))||0,gg:parseInt(g("#c-gg"))||30,desc:g("#c-desc"),descTrasf:g("#c-dtr"),ordine:k.ordine??(S.clients.length+1)};
     if(await write(db=>db.doc("clients/"+cid).set(doc),"Cliente salvato"))closeSheet()};
 }
+/** Uploaded logo → square-ish PNG of at most 256 px, transparent margins trimmed. */
+async function logoDataUrl(file){
+  const url=URL.createObjectURL(file);try{const img=await new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ko;i.src=url});
+    const w0=img.naturalWidth||256,h0=img.naturalHeight||256,c=document.createElement("canvas");c.width=w0;c.height=h0;const x=c.getContext("2d");x.drawImage(img,0,0);
+    let d;try{d=x.getImageData(0,0,w0,h0).data}catch(e){d=null}
+    let L=0,T=0,R=w0-1,B=h0-1;if(d){const bg=(i)=>d[i+3]<16||(d[i]>245&&d[i+1]>245&&d[i+2]>245);L=w0;T=h0;R=-1;B=-1;
+      for(let y=0;y<h0;y++)for(let xx=0;xx<w0;xx++){if(!bg((y*w0+xx)*4)){if(xx<L)L=xx;if(xx>R)R=xx;if(y<T)T=y;if(y>B)B=y}}if(R<0){L=0;T=0;R=w0-1;B=h0-1}}
+    const cw=R-L+1,ch=B-T+1,k=Math.min(1,256/Math.max(cw,ch)),o=document.createElement("canvas");o.width=Math.max(1,Math.round(cw*k));o.height=Math.max(1,Math.round(ch*k));
+    const ox=o.getContext("2d");ox.imageSmoothingQuality="high";ox.drawImage(c,L,T,cw,ch,0,0,o.width,o.height);return o.toDataURL("image/png")}
+  finally{URL.revokeObjectURL(url)}}
 function openF24(id,pre){
   const r=id?S.f24.find(x=>x.id===id):pre||{data:todayISO(),descrizione:"",tributi:"",importo:"",versato:false};
   sheet(id?"Modifica versamento":pre?"Modifica la stima":"Nuovo versamento F24",`<section class="panel">${pre?`<div class="panel-b note" style="margin:0">Importo calcolato da Cairn: correggilo con quello dell'F24 che ti ha mandato ${esc((cfg().commercialista||{}).nome||"la commercialista")}. Salvato, prende il posto della stima.</div>`:""}<div class="panel-b"><div class="fields">

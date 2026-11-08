@@ -8,7 +8,7 @@ import { Icon } from "./icon";
 import { legacyApp } from "@/lib/legacy-runtime";
 import { SECTIONS, sectionOf } from "@/lib/views-nav";
 
-const MAIN = ["home", "fatture", "fisco"];
+const MAIN = ["home", "fatture", "finanze"];
 export function BottomNav() {
   const path = usePathname(); const { signOut, auth } = useApp();
   const [more, setMore] = useState(false);
@@ -25,7 +25,7 @@ export function BottomNav() {
         {auth.kind === "ready" && auth.role !== "read_only"
           ? <button type="button" className="bplus" aria-label="Nuova fattura" onClick={() => legacyApp().openForm()}><Icon name="plus" size={22} /></button>
           : <span />}
-        {tab("fisco")}
+        {tab("finanze")}
         <button type="button" aria-current={others.some((s) => s.id === active) ? "page" : undefined} aria-expanded={more} onClick={() => setMore(true)}><Icon name="more" size={20} /><span>Altro</span></button>
       </nav>
       {more && (

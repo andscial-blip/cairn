@@ -11,12 +11,12 @@ export const SECTIONS: Section[] = [
   { id: "home", label: "Panoramica", ic: "home", hint: "Situazione e cose da fare oggi", subs: [{ v: "home", href: "/", label: "Panoramica" }] },
   { id: "fatture", label: "Fatture", ic: "file", hint: "Registro e prossime emissioni", subs: [
     { v: "inv", href: "/fatture", label: "Registro" }, { v: "prev", href: "/da-emettere", label: "Da emettere" }] },
-  { id: "fisco", label: "Fisco", ic: "euro", hint: "Scadenze, F24, tasse e controlli", subs: [
-    { v: "f24", href: "/scadenze", label: "Scadenze" }, { v: "tasse", href: "/tasse", label: "Tasse e F24" }] },
   { id: "finanze", label: "Finanze", ic: "piggy", hint: "Entrate, spese, risparmi e investimenti", subs: [
     { v: "entr", href: "/entrate", label: "Entrate" }, { v: "spese", href: "/spese", label: "Spese" },
     { v: "risp", href: "/risparmi", label: "Risparmi" }, { v: "invest", href: "/investimenti", label: "Investimenti" }] },
-  { id: "analisi", label: "Analisi", ic: "chart", hint: "Andamenti, proiezioni e scenari", subs: [{ v: "anal", href: "/analisi", label: "Analisi" }] },
+  { id: "fisco", label: "Fisco", ic: "euro", hint: "Scadenze, F24, tasse e controlli", subs: [
+    { v: "f24", href: "/scadenze", label: "Scadenze" }, { v: "tasse", href: "/tasse", label: "Tasse e F24" }] },
+  { id: "analisi", label: "Analisi", ic: "chart", hint: "Andamenti, cassa, clienti e proiezioni", subs: [{ v: "anal", href: "/analisi", label: "Analisi" }] },
   { id: "contratti", label: "Contratti", ic: "brief", hint: "Contratti, rinnovi e missioni", subs: [{ v: "contr", href: "/contratti", label: "Contratti" }] },
   { id: "set", label: "Impostazioni", ic: "gear", hint: "Clienti, parametri, dati e sicurezza", subs: [{ v: "set", href: "/impostazioni", label: "Impostazioni" }] },
 ];

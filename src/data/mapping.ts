@@ -41,7 +41,7 @@ export async function legacyToRows(L: LegacyExport): Promise<{ rows: RowsByTable
     id: await id("client", c.id), name: c.nome, short_code: c.id, legal_name: c.ragione ?? "", vat_id: c.idFiscale ?? "",
     address: c.indirizzo ?? "", pec: c.pec ?? "", country: c.paese ?? "IT", is_foreign: !!c.estero, sort: num(c.ordine),
     payment_days: c.gg === null || c.gg === undefined || c.gg === "" ? null : Number(c.gg), payment_terms: c.termine ?? {},
-    default_fee: num(c.compenso), default_rate: num(c.tariffa), templates: { line: c.desc ?? "", travel: c.descTrasf ?? "" }, notes: "",
+    default_fee: num(c.compenso), default_rate: num(c.tariffa), templates: { line: c.desc ?? "", travel: c.descTrasf ?? "" }, notes: "", logo: c.logo ?? null,
   });
   for (const k of L.contratti) rows.contracts.push({
     id: await id("contract", k.id), client_id: await id("client", k.cliente), title: k.id, start_date: monthStart(k.dal), end_date: lastDay(k.al),
@@ -111,7 +111,7 @@ export function rowsToSnapshot(R: Partial<Record<keyof RowsByTable, Row[]>>, def
     const terms = (c.payment_terms ?? {}) as Client["termine"];
     return { id: c.id, nome: String(c.name), ...(c.short_code ? { codice: String(c.short_code) } : {}), ragione: s(c.legal_name), idFiscale: s(c.vat_id), indirizzo: s(c.address), pec: s(c.pec), ordine: num(c.sort),
       estero: !!c.is_foreign, paese: s(c.country), gg: c.payment_days === null || c.payment_days === undefined ? null : Number(c.payment_days),
-      termine: terms && Object.keys(terms).length ? terms : undefined, compenso: num(c.default_fee), tariffa: num(c.default_rate), desc: t.line, descTrasf: t.travel };
+      termine: terms && Object.keys(terms).length ? terms : undefined, compenso: num(c.default_fee), tariffa: num(c.default_rate), desc: t.line, descTrasf: t.travel, ...(c.logo ? { logo: String(c.logo) } : {}) };
   });
   const contratti: Contract[] = live(R.contracts).map((k) => {
     const t = (k.terms ?? {}) as { amount?: number; every?: number; offset?: number; rule?: { n?: number }; rate?: number };
@@ -173,7 +173,7 @@ export function docToRow(coll: LegacyColl, d: Doc): Row {
   switch (coll) {
     case "clients": return { id: d.id, name: d.nome, legal_name: d.ragione ?? "", vat_id: d.idFiscale ?? "", address: d.indirizzo ?? "", pec: d.pec ?? "",
       country: d.paese ?? "IT", is_foreign: !!d.estero, sort: num(d.ordine), payment_days: d.gg === null || d.gg === undefined || d.gg === "" ? null : Number(d.gg),
-      payment_terms: d.termine ?? {}, default_fee: num(d.compenso), default_rate: num(d.tariffa), templates: { line: d.desc ?? "", travel: d.descTrasf ?? "" } };
+      payment_terms: d.termine ?? {}, default_fee: num(d.compenso), default_rate: num(d.tariffa), templates: { line: d.desc ?? "", travel: d.descTrasf ?? "" }, logo: d.logo ?? null };
     case "contratti": return { id: d.id, client_id: d.cliente, start_date: monthStart(d.dal), end_date: lastDay(d.al), monthly_fee: num(d.importo) / Math.max(1, num(d.ogni, 1)),
       is_signed: !d.ipotesi, is_active: d.attivo !== false, notes: d.note ?? "",
       terms: { amount: num(d.importo), every: num(d.ogni, 1), offset: num(d.offset), rule: d.regola ?? {}, rate: num(d.tariffa) } };

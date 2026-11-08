@@ -13,6 +13,8 @@ export interface Client {
   id: string; nome: string; ragione?: string; idFiscale?: string; indirizzo?: string; pec?: string; ordine?: number;
   estero?: boolean; paese?: string; gg?: number | string | null; termine?: { giornoMese?: number; fineMese?: boolean; giorni?: number };
   compenso?: number; tariffa?: number; desc?: string; descTrasf?: string;
+  /** Small image as a data URL, uploaded by the owner. */
+  logo?: string;
 }
 export interface F24 { id: string; data: string; descrizione: string; tributi?: string; importo: number; versato?: boolean; note?: string; }
 export interface Contract {
