@@ -165,7 +165,7 @@ export function mobileFolds(root: ParentNode) {
   });
 }
 
-/** Panoramica on a wide screen: show more to-do items while the list is shorter than the left column. */
+/** Dashboard on a wide screen: show more to-do items while the list is shorter than the left column. */
 export function fitTodo(root: ParentNode) {
   const side = root.querySelector<HTMLElement>(".h-side"), left = root.querySelector<HTMLElement>(".h-left");
   const more = [...root.querySelectorAll<HTMLElement>(".tlist li.t-more")];
@@ -253,20 +253,20 @@ export function yearColumns(root: ParentNode, year: number) {
   });
 }
 
-/** Panoramica: show or hide the cards (Da fare, Tasse, Patrimonio). Saved on this device, so phone and computer can differ. */
+/** Dashboard: show or hide the cards (Da fare, Entrate e uscite, Spese, Tasse, Patrimonio). Saved on this device, so phone and computer can differ. */
 const HOME_KEY = "cairn-home-cards";
-const HOME_CARDS: [string, string][] = [[".h-todo", "Da fare"], [".h-card[data-go-v='tasse']", "Tasse"], [".h-card[data-go-v='invest']", "Patrimonio"]];
+const HOME_CARDS: [string, string][] = [[".h-todo", "Da fare"], [".h-card[data-go-v='entr']", "Entrate e uscite"], [".h-card[data-go-v='spese']", "Spese"], [".h-card[data-go-v='tasse']", "Tasse"], [".h-card[data-go-v='invest']", "Patrimonio"]];
 function homePrefs(): Record<string, boolean> { try { return JSON.parse(localStorage.getItem(HOME_KEY) || "{}"); } catch { return {}; } }
 export function homeCustomize(root: HTMLElement) {
   const home = root.querySelector<HTMLElement>(".home.v2"); if (!home) return;
   const prefs = homePrefs();
   const apply = () => { for (const [sel, label] of HOME_CARDS) { const el = home.querySelector<HTMLElement>(sel); if (el) el.hidden = prefs[label] === false; }
-    const duo = home.querySelector<HTMLElement>(".h-duo"); if (duo) duo.hidden = [...duo.children].every((c) => (c as HTMLElement).hidden); };
+    home.querySelectorAll<HTMLElement>(".h-duo").forEach((duo) => { duo.hidden = [...duo.children].every((c) => (c as HTMLElement).hidden); }); };
   apply();
   const hero = home.querySelector(".hero-h"); if (!hero || hero.querySelector(".hcust")) return;
   const wrap = document.createElement("div"); wrap.className = "hcust";
   const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn small ghost"; btn.textContent = "Personalizza"; btn.setAttribute("aria-expanded", "false");
-  const pop = document.createElement("div"); pop.className = "hcust-pop"; pop.hidden = true; pop.setAttribute("role", "group"); pop.setAttribute("aria-label", "Schede della panoramica");
+  const pop = document.createElement("div"); pop.className = "hcust-pop"; pop.hidden = true; pop.setAttribute("role", "group"); pop.setAttribute("aria-label", "Schede della dashboard");
   pop.innerHTML = `<b>Schede visibili</b>` + HOME_CARDS.map(([, l], i) => `<label><input type="checkbox" id="hc-${i}" ${prefs[l] === false ? "" : "checked"}> ${l}</label>`).join("") + `<small>Salvato su questo dispositivo</small>`;
   pop.querySelectorAll<HTMLInputElement>("input").forEach((inp, i) => inp.addEventListener("change", () => { prefs[HOME_CARDS[i]![1]] = inp.checked; try { localStorage.setItem(HOME_KEY, JSON.stringify(prefs)); } catch { /* private mode */ } apply(); }));
   btn.addEventListener("click", () => { pop.hidden = !pop.hidden; btn.setAttribute("aria-expanded", String(!pop.hidden)); });

@@ -8,7 +8,7 @@ export interface Section { id: string; label: string; ic: string; subs: SubView[
 export type ViewKey = "home" | "entr" | "spese" | "risp" | "invest" | "anal" | "inv" | "prev" | "f24" | "tasse" | "contr" | "set";
 
 export const SECTIONS: Section[] = [
-  { id: "home", label: "Panoramica", ic: "home", hint: "Situazione e cose da fare oggi", subs: [{ v: "home", href: "/", label: "Panoramica" }] },
+  { id: "home", label: "Dashboard", ic: "home", hint: "Situazione e cose da fare oggi", subs: [{ v: "home", href: "/", label: "Dashboard" }] },
   { id: "fatture", label: "Fatture", ic: "file", hint: "Registro e prossime emissioni", subs: [
     { v: "inv", href: "/fatture", label: "Registro" }, { v: "prev", href: "/da-emettere", label: "Da emettere" }] },
   { id: "finanze", label: "Finanze", ic: "piggy", hint: "Entrate, spese, risparmi e investimenti", subs: [

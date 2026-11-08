@@ -345,10 +345,27 @@ tr.u-ok td b,tr.u-ok td .neg{color:var(--muted)}
 .home.v2 .h-left{display:flex;flex-direction:column;gap:var(--s5);min-width:0}
 .h-duo{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5);align-items:stretch}
 .h-duo .h-card{display:flex;flex-direction:column}
+/* Dashboard: entrate e uscite + dove vanno le spese */
+.h3n{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.h3n>div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.h3n span{font-size:13px;color:var(--muted)}
+.h3n b{font-size:20px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.h3n small{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hflow{margin:14px -2px 2px}
+.hflow svg{display:block;width:100%;height:auto}
+.h-flow .legend{justify-content:flex-start;margin-top:4px}
+.hcat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+.hcat li{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:5px;align-items:baseline}
+.hcat .hc-n{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hcat b{font-size:14px;font-weight:600}
+.hcat .hc-b{grid-column:1/-1;height:8px;border-radius:5px;background:var(--surface-2);overflow:hidden}
+.hcat .hc-b i{display:block;height:100%;border-radius:5px}
+.hcat-f{display:flex;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:16px;padding-top:12px;border-top:1px solid var(--line-2)}
+.hcat-f b{color:var(--fg);font-weight:600}
 @media (max-width:1099px){
   .home.v2{display:flex;flex-direction:column;gap:var(--s5);align-items:stretch}
   .home.v2 .h-left{display:contents}
-  .home.v2 .h-hero{order:0}.home.v2 .h-side{order:1}.home.v2 .h-duo{order:2}
+  .home.v2 .h-hero{order:0}.home.v2 .h-side{order:1}.home.v2 .h-duo.h-flow{order:2}.home.v2 .h-duo{order:3}
 }
 @media (max-width:760px){
   .home.v2{gap:var(--s4)}
