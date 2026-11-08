@@ -482,6 +482,6 @@ table.stack tr.grp td{text-align:left}
 @media (max-width:760px){.ph-only{display:block}.ph-hide{display:none!important}}
 .heat-t{width:100%}
 /* Page icon beside the title (computer and tablet) */
-.picon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--slate);box-shadow:var(--sh-1);color:#F2B93B;flex:none;margin-right:-4px;align-self:center}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .picon{background:#3A4B63;color:#F4C04E}}
-:root[data-theme="dark"] .picon{background:#3A4B63;color:#F4C04E}
+.picon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--slate);box-shadow:var(--sh-1);color:#FFFFFF;flex:none;margin-right:-4px;align-self:center}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .picon{background:#3A4B63;color:#FFFFFF}}
+:root[data-theme="dark"] .picon{background:#3A4B63;color:#FFFFFF}
