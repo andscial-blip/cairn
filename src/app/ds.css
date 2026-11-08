@@ -490,6 +490,7 @@ td.acts{white-space:nowrap}
 table.one-year td,table.one-year th{white-space:normal}
 table.one-year td:not(:first-child),table.one-year th:not(:first-child){text-align:right;width:40%}
 .settabs{margin-bottom:0}
+#main:not(:has(.settabs)) .set-extra{display:none}
 .main>.panel{margin-top:var(--s5)!important}
 .main>.panel[hidden]{display:none!important}
 /* Panoramica: customise visible cards */

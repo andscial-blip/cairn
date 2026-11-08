@@ -8,6 +8,8 @@ import { SecurityPanel } from "@/components/security-panel";
 export default function Page() {
   return (<>
     <LegacyView view="set" />
+    {/* Hidden until the legacy view has rendered and grouped the panels into tabs: avoids a large layout shift. */}
+    <div className="set-extra">
     <SecurityPanel />
     <CalendarPanel />
     <GmailInboxPanel />
@@ -19,5 +21,6 @@ export default function Page() {
         <Link className="btn" href="/sincronizzazione">Stato sincronizzazione e conflitti</Link>
       </div>
     </section>
+    </div>
   </>);
 }
