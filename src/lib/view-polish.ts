@@ -45,6 +45,14 @@ export function polishCharts(root: ParentNode) {
       const hit = kept.some((k) => b.x < k.x + k.width + pad && b.x + b.width + pad > k.x && b.y < k.y + k.height && b.y + b.height > k.y);
       if (hit) t.style.visibility = "hidden"; else kept.push(b);
     }
+    // Value labels over bars (.vl): hidden when they run into another bar (grouped bars on a narrow chart).
+    const vls = boxes.filter(({ t }) => t.classList.contains("vl") && t.style.visibility !== "hidden");
+    if (vls.length) {
+      const bars: DOMRect[] = [];
+      svg.querySelectorAll<SVGRectElement>("rect:not(.hov)").forEach((r) => { try { const b = r.getBBox() as DOMRect; if (b.width && b.height) bars.push(b); } catch { /* not rendered */ } });
+      for (const { t, b } of vls)
+        if (bars.some((k) => b.x < k.x + k.width && b.x + b.width > k.x && b.y < k.y + k.height && b.y + b.height > k.y)) t.style.visibility = "hidden";
+    }
   });
 }
 
@@ -99,19 +107,42 @@ export function settingsIndex(root: HTMLElement) {
   show();
 }
 
-/** Half-width chart panels: the legend goes under the chart, so charts side by side start at the same height. */
+/**
+ * Chart legends go under the chart, left-aligned, when the panel is half-width (charts side by side then start at
+ * the same height), when the panel is narrow, or when the legend would wrap in the header.
+ */
 export function legendsUnderCharts(root: ParentNode) {
-  root.querySelectorAll<HTMLElement>(".grid > .panel:is(.c4,.c5,.c6,.c7,.c8)").forEach((p) => {
+  root.querySelectorAll<HTMLElement>(".panel").forEach((p) => {
     const lgd = p.querySelector<HTMLElement>(":scope > .panel-h > .legend"); const body = p.querySelector<HTMLElement>(":scope > .panel-b.chart");
     if (!lgd || !body) return;
+    const half = p.matches(".grid > .panel:is(.c4,.c5,.c6,.c7,.c8)");
+    const h2 = p.querySelector<HTMLElement>(":scope > .panel-h h2");
+    const wraps = lgd.getBoundingClientRect().height > 30 || (!!h2 && Math.abs(lgd.getBoundingClientRect().top - h2.getBoundingClientRect().top) > 12);
+    if (!half && p.clientWidth >= 640 && !wraps) return;
     const svg = body.querySelector(":scope > svg, :scope > .chart-scroll, :scope > div > svg");
     lgd.classList.add("under");
     if (svg && svg.parentElement === body) svg.after(lgd); else body.prepend(lgd), body.appendChild(lgd);
   });
 }
 
+/** KPI tiles in one row: labels take the same height, so the values line up when one label wraps to two lines. */
+export function alignKpis(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>(".kpis").forEach((g) => {
+    const ls = [...g.querySelectorAll<HTMLElement>(":scope > .kpi > .l")];
+    ls.forEach((l) => { l.style.minHeight = ""; });
+    const rows = new Map<number, HTMLElement[]>();
+    for (const l of ls) { const top = Math.round((l.parentElement as HTMLElement).offsetTop); rows.set(top, [...(rows.get(top) ?? []), l]); }
+    for (const r of rows.values()) {
+      if (r.length < 2) continue;
+      const h = Math.max(...r.map((l) => l.getBoundingClientRect().height));
+      if (r.some((l) => l.getBoundingClientRect().height < h - 1)) r.forEach((l) => { l.style.minHeight = h + "px"; });
+    }
+  });
+}
+
 export function polish(root: HTMLElement, view: string, year = new Date().getFullYear()) {
   legendsUnderCharts(root);
+  alignKpis(root);
   yearColumns(root, year);
   polishTables(root);
   polishCharts(root);
@@ -124,7 +155,7 @@ let bound = false;
 export function bindPolish(getRoot: () => HTMLElement | null) {
   if (bound || typeof window === "undefined") return; bound = true;
   let raf = 0;
-  window.addEventListener("resize", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const r = getRoot(); if (r) { yearColumns(r, new Date().getFullYear()); polishTables(r); polishCharts(r); } }); });
+  window.addEventListener("resize", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const r = getRoot(); if (r) { yearColumns(r, new Date().getFullYear()); alignKpis(r); polishTables(r); polishCharts(r); } }); });
   document.addEventListener("click", (e) => { const d = (e.target as Element).closest?.(".rem-d"); if (d) d.classList.toggle("open"); });
   document.addEventListener("toggle", (e) => { const r = getRoot(); if (r && (e.target as Element).closest?.(".fold")) polishCharts(r); }, true);
 }

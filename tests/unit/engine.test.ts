@@ -104,6 +104,9 @@ describe("projections and F24 schedule", () => {
     expect(rows.some((r) => r.id === "est-2027-06-30")).toBe(true);
     const e2 = new Engine({ ...s, f24: [{ id: "real", data: "2027-06-30", descrizione: "Saldo", importo: 1, versato: false }] }, "2026-11-07");
     expect(e2.f24Rows(e2.fisco()).some((r) => r.id === "est-2027-06-30")).toBe(false);
+    // A stamp-duty-only payment in the same month does not replace the tax estimate.
+    const e3 = new Engine({ ...s, f24: [{ id: "b", data: "2027-11-30", descrizione: "Bollo", tributi: "2521, 2522, 2523", importo: 6, versato: false }] }, "2026-11-07");
+    expect(e3.f24Rows(e3.fisco()).some((r) => r.id === "est-2027-11-30")).toBe(true);
   });
   it("e-invoice stamp duty: Q1–Q3 grouped in November when under 5,000 €", () => {
     const e = new Engine(base({ invoices: [inv({ id: "a", data: "2026-02-10", incasso: "2026-03-01" }), inv({ id: "b", n: 2, data: "2026-08-10", incasso: "2026-09-01" })] }), "2026-06-01");

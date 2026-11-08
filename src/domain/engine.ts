@@ -254,7 +254,9 @@ export class Engine {
       const f = FX[y]; if (!f) return;
       ([[`${y + 1}-06-30`, `Saldo ${y} + I acconto ${y + 1}`, f.giugno], [`${y + 1}-11-30`, `II acconto ${y + 1}`, f.novembre]] as const).forEach(([d, desc, imp]) => {
         if (d < this.today) return;
-        const real = this.s.f24.some((r) => r.data && r.data.slice(0, 7) === d.slice(0, 7));
+        // A real payment of the same month replaces the estimate; a payment of the stamp duty only (2521–2524) does not.
+        const bolloOnly = (t: string) => { const c = (t || "").match(/\b\d{4}\b|[A-Z]{4}\b/g) ?? []; return c.length > 0 && c.every((x) => /^252[1-4]$/.test(x)); };
+        const real = this.s.f24.some((r) => r.data && r.data.slice(0, 7) === d.slice(0, 7) && !bolloOnly(r.tributi || ""));
         if (!real && imp > 1 && f.ric > 0) rows.push({ id: `est-${d}`, data: d, descrizione: `${desc} (stima)`, tributi: d.slice(5, 7) === "06" ? "1792, 1790, PXXR" : "1790, PXXR", importo: r2(imp), versato: false, stima: true });
       });
     });

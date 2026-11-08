@@ -467,6 +467,7 @@ td.acts{white-space:nowrap}
   .sheet-foot small{font-size:12px;color:var(--muted)} .sheet-foot b{font-size:20px;font-weight:600}
   .sheet-foot .btn{min-height:44px;padding:0 22px}
   .sheet .sheet-h #fmSave{display:none}
+  .sheet .sheet-h .sheet-acts:has(> #fmSave:only-child){display:none}
 }
 .ycols{margin:0 16px 10px}
 table.one-year td,table.one-year th{white-space:normal}

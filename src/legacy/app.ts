@@ -358,7 +358,7 @@ function vInv(FX){
         <select id="fStato" aria-label="Filtra per stato"><option value="tutti">Tutte</option><option value="anno">Anno fiscale ${S.year}</option><option value="aperte">Da incassare</option><option value="scadute">Scadute</option></select>
         <select id="fCli" aria-label="Filtra per cliente"><option value="">Tutti i clienti</option>${S.clients.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join("")}</select>
         <input id="fQ" type="search" placeholder="Cerca n. o cliente" value="${esc(f.q)}" aria-label="Cerca">
-        <button class="btn small" id="exportV3" type="button">${ico("down",14)} Excel v3</button><button class="btn small ghost" id="exportX" type="button">Solo dati</button>
+        <button class="btn small" id="exportV3" type="button">${ico("down",14)} Excel v3</button><button class="btn small" id="exportX" type="button">Solo dati</button>
       </div></div>
     ${list.length?`<div class="tw itable"><table><thead><tr><th>Data</th><th>N.</th><th>Cliente</th><th class="r">Compenso</th><th class="r">Indennità</th><th class="r">Rimborsi</th><th class="r">Totale doc.</th><th class="r">Oneri</th><th class="r">Netto</th><th class="c">Stato</th><th>Incasso</th><th class="c">Anno fisc.</th></tr></thead><tbody>${rows}</tbody>
       <tfoot><tr><td colspan="6" style="font-family:var(--f-ui);font-weight:700">Totale (${list.length})</td><td class="r num"><b>${eur(sum.doc)}</b></td><td class="r num neg"><b>${eur(sum.on)}</b></td><td class="r num pos"><b>${eur(sum.net)}</b></td><td colspan="3"></td></tr></tfoot></table></div>
@@ -382,10 +382,11 @@ function vPrev(FX){
     return head+`<tr><td class="num">${dayName(x.data).slice(0,3)} ${dmyShort(x.data)}</td><td class="cli">${esc(c2n(x.cliente))}</td><td>${x.label}${x.ipotesi?' <span class="pill est">ipotesi</span>':""}</td><td class="r num">${x.ind?`<span class="muted">${x.gg} gg · </span>`+eur(x.ind):"—"}</td><td class="r num"><b>${eur(x.comp+x.ind+x.bollo)}</b></td><td class="r"><button class="btn small ghost" data-proj="${esc(x.contratto)}|${x.months[0]}" type="button">Crea</button></td></tr>`}).join("");
   return `${intro("Le fatture che dovrai emettere, calcolate dai <b>contratti</b> (importi e date) e dalle <b>missioni</b> (indennità). Quando crei una fattura, sparisce da qui e passa nel registro.")}
   <section class="panel"><div class="panel-h"><h2>${ico("pen",18)} Da emettere ora</h2></div><div class="panel-b">${now.length?`<div class="pgrid">${now.map(card).join("")}</div>`:`<div class="empty" style="padding:12px">Nessuna fattura da emettere nei prossimi 10 giorni.${PR[0]?` La prossima: <b>${esc(c2n(PR[0].cliente))}</b> il ${dmy(PR[0].data)}.`:""}</div>`}</div></section>
-  <section class="panel"><div class="panel-h"><h2>${ico("cal",18)} In arrivo</h2><div class="spacer"></div>${Object.entries(byYear).map(([y,v])=>`<span class="pill est">${y}: ${eur0(v)}</span>`).join(" ")}</div>
+  <section class="panel"><div class="panel-h"><h2>${ico("cal",18)} In arrivo</h2></div>
    <div class="tw"><table class="tl"><thead><tr><th>Emissione</th><th>Cliente</th><th>Periodo</th><th class="r">Trasferta</th><th class="r">Totale</th><th></th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="empty">Nessuna altra fattura prevista.</td></tr>`}</tbody></table></div>
    ${hiddenN>0||S.prevAll?`<div class="panel-b" style="text-align:center;padding:10px"><button class="btn small ghost" type="button" data-prev-all="1">${S.prevAll?"Mostra solo i prossimi 6 mesi":`Mostra tutte (altre ${hiddenN})`}</button></div>`:""}
-   <div class="panel-b note" style="margin:0">"Ipotesi" = da un rinnovo non ancora firmato o da giorni di missione stimati. I totali per anno sono per data di incasso.</div></section>`;
+   ${Object.keys(byYear).length?`<div class="panel-b yrtot"><span class="muted">Previsto per anno di incasso</span>${Object.entries(byYear).map(([y,v])=>`<span><b>${y}</b> <span class="num">${eur0(v)}</span></span>`).join("")}</div>`:""}
+   <div class="panel-b note" style="margin:0">"Ipotesi" = da un rinnovo non ancora firmato o da giorni di missione stimati.</div></section>`;
 }
 function vContr(FX){
   const today=todayISO(), nowM=ym(today);
@@ -401,7 +402,7 @@ function vContr(FX){
       <button class="btn small ghost" data-ctr="${c.id}" type="button" style="margin-top:8px;align-self:flex-start">${ico("pen",13)} Modifica</button></div>`};
   return `${intro("Le condizioni economiche di ogni incarico. Da qui l'app calcola le <b>prossime fatture</b> e le previsioni fiscali. Quando firmi un rinnovo, togli la spunta \"ipotesi\".")}
    <div style="display:flex;justify-content:flex-end"><button class="btn dark" data-ctr="new" type="button">+ Nuovo contratto</button></div>
-   ${groups.map(([t,f])=>{const l=ctr.filter(f);return l.length?`<section><div class="eyebrow" style="margin:6px 0 8px">${t}</div><div class="pgrid">${l.map(card).join("")}</div></section>`:""}).join("")||`<div class="panel empty">Nessun contratto.</div>`}`;
+   ${groups.map(([t,f])=>{const l=ctr.filter(f);return l.length?`<section><div class="eyebrow" style="margin:6px 0 8px">${t}</div><div class="pgrid">${l.map(card).join("")}</div></section>${t==="Ipotesi di rinnovo"?`<div class="grid">${simPanel()}</div>`:""}`:""}).join("")||`<div class="panel empty">Nessun contratto.</div>`}`;
 }
 function vMis(FX){
   const today=todayISO();
@@ -550,11 +551,12 @@ function openReddito(id){const r=id?S.redditi.find(x=>x.id===id)||{}:{data:today
 function logLabel(e){const [c,id]=(e.path||"").split("/");const p=e.prima||{};const cur=(S[{invoices:"invoices",clients:"clients",f24:"f24",contratti:"contratti",missioni:"missioni",promemoria:"promemoria",redditi:"redditi"}[c]]||[]).find(x=>x.id===id)||{};
   const n={invoices:"Fattura "+(p.num||cur.num||id),clients:"Cliente "+(p.nome||cur.nome||id),f24:"F24 "+(p.descrizione||cur.descrizione||id),contratti:"Contratto "+c2n(cur.cliente||p.cliente||"")+" "+(cur.dal||p.dal||""),missioni:"Missione "+c2n(cur.cliente||p.cliente||"")+" "+(cur.dal||p.dal||cur.anno||p.anno||""),promemoria:"Promemoria: "+(p.titolo||cur.titolo||id),redditi:"Reddito "+(p.fonte||cur.fonte||id),config:"Impostazioni"}[c];return n||e.path}
 function historyPanel(){const L=[...(S.storico||[])].sort((a,b)=>(b.ts||"").localeCompare(a.ts||"")).slice(0,40);
-  return `<section class="panel c12"><div class="panel-h"><h2>${ico("clock",18)} Cronologia modifiche</h2><div class="spacer"></div><span class="eyebrow">ultime ${L.length}</span></div>
+  // Collapsed by default: it is long and mostly needed only to undo a change.
+  return `<details class="panel c12 fold"><summary class="panel-h"><h2>${ico("clock",18)} Cronologia modifiche</h2><span class="spacer"></span><span class="eyebrow">ultime ${L.length} · mostra</span></summary>
    <details class="help panel-b"><summary>${ico("info",14)} Come funziona</summary><p>Ogni modifica salva com'era il dato prima. "Ripristina" lo riporta a quello stato; anche il ripristino finisce in cronologia, quindi si può annullare.</p></details>
    <div class="tw"><table class="stack"><thead><tr><th>Quando</th><th>Azione</th><th>Elemento</th><th></th></tr></thead><tbody>
    ${L.map(e=>`<tr><td class="num">${dmy((e.ts||"").slice(0,10))} ${(e.ts||"").slice(11,16)}</td><td>${esc(e.azione||"")}</td><td>${esc(logLabel(e))}</td><td class="r">${(e.path||"").startsWith("config")?"":`<button class="btn small ghost" data-restore="${e.id}" type="button">Ripristina</button>`}</td></tr>`).join("")||`<tr><td colspan="4" class="empty">Nessuna modifica registrata finora.</td></tr>`}
-   </tbody></table></div></section>`}
+   </tbody></table></div></details>`}
 async function restoreLog(id){const e=S.storico.find(x=>x.id===id);if(!e)return;
   await write(db=>e.prima?db.doc(e.path).set(e.prima):db.doc(e.path).delete(),"Ripristinato")}
 const approx=v=>"≈ "+eur0(Math.round((v||0)/500)*500);
@@ -578,7 +580,7 @@ function spesePanel(inTot,outTot,opt={}){const st=speseStats();
      <div><span>Cassa libera netta 12 mesi</span><b class="num ${netto>=0?"pos":"bad"}">${eur0(netto)}</b></div>
    </div>`}<div class="tw" style="${opt.noMini?"":"margin-top:12px"}"><table><thead><tr><th>Categoria</th><th class="r">/ mese</th><th class="r">Totale</th></tr></thead><tbody>${rows}</tbody></table></div></div></section>`}
 function vSpese(FX){const st=speseStats();const {inTot,outTot}=cash12(FX);
-  const head=intro("Le tue spese personali, ricavate dagli estratti conto: solo totali mensili per categoria, nessun movimento singolo né IBAN. Sono esclusi i giroconti tra i tuoi conti, gli F24 (stanno in F24 e tasse) e gli investimenti. I lavori di casa sono tenuti a parte perché straordinari. Per aggiornarle usa Importa movimenti con gli estratti UniCredit e Revolut: i file restano sul dispositivo.")+`<div class="fonti"><span>Fonti:</span><span>${logoImg("unicredit","UniCredit").replace('class="lgo"','class="lgo s"')}UniCredit · conto corrente</span><span>${logoImg("revolut","Revolut").replace('class="lgo"','class="lgo s"')}Revolut · conto corrente</span><span class="spacer"></span>${S.writable?`<button class="btn small primary" id="speseImp" type="button">${ico("plus",14)} Importa movimenti</button>`:""}</div>`;
+  const head=intro("Le tue spese personali, ricavate dagli estratti conto: solo totali mensili per categoria, nessun movimento singolo né IBAN. Sono esclusi i giroconti tra i tuoi conti, gli F24 (stanno in F24 e tasse) e gli investimenti. I lavori di casa sono tenuti a parte perché straordinari. Per aggiornarle usa Importa movimenti con gli estratti UniCredit e Revolut: i file restano sul dispositivo.")+`<div class="fonti srcbar"><span class="src-l">Fonti</span><span class="src">${logoImg("unicredit","UniCredit").replace('class="lgo"','class="lgo s"')}UniCredit · conto corrente</span><span class="src">${logoImg("revolut","Revolut").replace('class="lgo"','class="lgo s"')}Revolut · conto corrente</span>${S.writable?`<button class="btn small primary" id="speseImp" type="button">${ico("plus",14)} Importa movimenti</button>`:""}</div>`;
   if(!st)return head+`<section class="panel empty">Nessuna spesa registrata.</section>`;
   const net=inTot-outTot-st.avgRec*12;const last=st.L[st.L.length-1];
   const ml=st.L.map(m=>MESI[+m.mese.slice(5)-1]+" "+m.mese.slice(2,4));const sp=st.avgRec*12;
@@ -634,7 +636,7 @@ function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
   const glide=c.anniRes<=7?`Mancano meno di 7 anni: valuta di spostare gradualmente quota azionaria verso obbligazioni (es. +5 punti l'anno) per ridurre il rischio vicino alla scadenza.`:`Orizzonte lungo (oltre ${Math.floor(c.anniRes)} anni): l'azionario al ${c.T.filter(t=>!/obblig/i.test(t.classe||"")).reduce((s,t)=>s+(+t.target||0),0)}% è coerente. Dal ${endY-7} conviene aumentare gradualmente le obbligazioni.`;
   const ivafe=c.tot*0.002;const govG=(a.realizzate||[]).filter(x=>/obblig/i.test((c.T.find(t=>t.isin===x.isin)||{}).classe||"")).reduce((s,x)=>s+(+x.importo||0),0);const taxR=(real-govG)*0.26+govG*0.125;
   const revDays=daysBetween(today,c.rev);
-  return head+`<div class="acct">${logoImg("t212","Trading 212")}<div><b>Trading 212</b><span>Conto Invest · PAC in ETF · dati al ${dmy(a.aggiornato)}</span></div><div class="spacer"></div>${env.t212?`<button class="btn small primary" id="invSync" type="button">${ico("sync",14)} Sincronizza</button>`:""}<button class="btn small ghost" id="invPrices" type="button">${ico("pen",14)} Prezzi a mano</button><button class="btn small dark" id="invRev" type="button">${ico("pct",14)} Rivedi suddivisione</button></div>
+  return head+`<div class="acct">${logoImg("t212","Trading 212")}<div><b>Trading 212</b><span>Conto Invest · PAC in ETF · dati al ${dmy(a.aggiornato)}</span></div><div class="spacer"></div>${env.t212?`<button class="btn small primary" id="invSync" type="button">${ico("sync",14)} Sincronizza</button>`:""}<button class="btn small ghost" id="invPrices" type="button">${ico("pen",14)} Prezzi a mano</button><button class="btn small" id="invRev" type="button">${ico("pct",14)} Rivedi suddivisione</button></div>
   <div class="kpis">
     <div class="kpi"><div class="l">Valore portafoglio</div><div class="v">${eur0(c.tot)}</div>${K.val}<div class="s">prezzi al ${dmy(a.aggiornato)}</div></div>
     <div class="kpi"><div class="l">Versato netto</div><div class="v">${eur0(c.netDep)}</div>${K.dep}<div class="s">da ${MESI[+a.pac.inizio.slice(5,7)-1].toLowerCase()} ${a.pac.inizio.slice(0,4)} · ${mm.length} mesi</div></div>
@@ -677,7 +679,7 @@ function perfPanels(a,c,today){const st=a.storico||[],last=st[st.length-1],cash=
   const s3=cash!=null?`<div><span>Liquidità sul conto</span><b class="num">${eur(cash)}</b><small>non investita · al ${dmy(last.d)}</small></div>`:`<div><span>Liquidità sul conto</span><b class="num">—</b><small>arriva con la sincronizzazione</small></div>`;
   const sp=splitContribution(c.T.map(t=>({isin:t.isin,valore:t.valore,target:+t.target||0})),c.pac);const by=Object.fromEntries(sp.map(x=>[x.isin,x]));
   const maxAfter=Math.max(...c.T.map(t=>Math.abs(by[t.isin].after*100-(+t.target||0))));
-  const pr=c.T.map((t,i)=>{const x=by[t.isin];return `<tr><td><span class="sw" style="background:${IPAL[i%IPAL.length]}"></span><b>${esc(t.ticker)}</b></td><td class="r num">${t.target}%</td><td class="r num">${pct(t.peso)}</td><td class="r num"><b>${x.add?eur0(x.add):"—"}</b></td><td class="r num">${pct(x.after)}</td></tr>`}).join("");
+  const pr=c.T.map((t,i)=>{const x=by[t.isin];return `<tr><td class="nw"><span class="sw" style="background:${IPAL[i%IPAL.length]}"></span><b>${esc(t.ticker)}</b></td><td class="r num">${t.target}%</td><td class="r num">${pct(t.peso)}</td><td class="r num"><b>${x.add?eur0(x.add):"—"}</b></td><td class="r num">${pct(x.after)}</td></tr>`}).join("");
   return `<!--feat--><section class="panel c7"><div class="panel-h"><h2>Andamento reale</h2><div class="spacer"></div>${pts.length>=2?lg([["Valore ETF","var(--c-ink)"],["Costo di carico","var(--gold-d)",0]]):`<span class="eyebrow">dai dati di Trading 212</span>`}</div>
       <div class="sstrip sv">${s1}${s2}${s3}</div>
       <div class="panel-b chart">${chart}</div>
@@ -1003,18 +1005,18 @@ function simPanel(){
   if(!ids.length)return "";
   const inp=(id,k,v,lab)=>`<input class="in num" data-sim="${id}:${k}" inputmode="decimal" value="${v}" aria-label="${lab}">`;
   const rows=ids.map(id=>{const c=S.contratti.find(x=>x.id===id)||{};const r=sim.rows[id];
-    return `<tr><td class="cli">${esc(c2n(c.cliente))}${isClientCode(c.cliente,"yousud")?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap"><button class="btn small ghost" data-simp="${id}:2000:0:0" type="button">Opz. A</button><button class="btn small ghost" data-simp="${id}:0:0:0" type="button">Opz. B</button></div>`:""}</td>
+    return `<tr><td class="cli">${esc(c2n(c.cliente))}</td>
       <td>${inp(id,"mese",r.mese,"Compenso al mese")}</td><td>${inp(id,"tariffa",r.tariffa,"Indennità al giorno")}</td><td>${inp(id,"gg",r.gg,"Giorni di missione all'anno")}</td></tr>`}).join("");
-  return `<section class="panel c12"><div class="panel-h"><h2>${ico("calc",18)} Simulatore rinnovi ${sim.Y}</h2><div class="spacer"></div><button class="btn small ghost" id="simReset" type="button">Ripristina</button><button class="btn small dark" id="simSave" type="button">Usa come ipotesi</button></div>
+  return `<section class="panel c12 simp"><div class="panel-h"><h2>${ico("calc",18)} E se i rinnovi ${sim.Y} fossero diversi?</h2><div class="spacer"></div><button class="btn small ghost" id="simReset" type="button">Ripristina</button><button class="btn small dark" id="simSave" type="button">Salva come ipotesi</button></div>
    <div class="grid" style="gap:0">
-    <div class="c6 panel-b" style="border-right:1px solid var(--line-2)"><p class="muted" style="margin:0 0 10px;font-size:13px">Cambia le condizioni dei rinnovi: i risultati si aggiornano subito. Vale dal rinnovo in poi (${sim.Y} e ${sim.Y+1}). Niente viene salvato finché non premi "Usa come ipotesi".</p>
-     <div class="tw"><table class="simt"><thead><tr><th>Cliente</th><th>€ / mese</th><th>€ / giorno trasferta</th><th>Giorni missione / anno</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+    <div class="c6 panel-b sim-in"><p class="muted" style="margin:0 0 10px;font-size:13px"><b>1.</b> Cambia compenso, indennità o giorni di trasferta dei rinnovi che stai trattando. <b>2.</b> A destra vedi subito cosa cambia nel ${sim.Y} rispetto alle ipotesi salvate: ricavi, tasse, netto. Non si salva nulla finché non premi «Salva come ipotesi».</p>
+     <div class="tw"><table class="simt"><thead><tr><th>Cliente</th><th>€ al mese</th><th>€ al giorno in trasferta</th><th>Giorni di trasferta nell'anno</th></tr></thead><tbody>${rows}</tbody></table></div></div>
     <div class="c6 panel-b"><div class="tw" id="simOut"></div></div>
    </div></section>`}
 function simOutHTML(){const sim=S.sim,Y=sim.Y,s=cfg().soglie;const B=fisco(),X=withScenario(simApply(sim),fisco);const b=B[Y]||{},x=X[Y]||{};
   const d=(a,c,neg)=>{const v=c-a;if(Math.abs(v)<1)return `<span class="muted">=</span>`;const good=neg?v<0:v>0;return `<b class="${good?"pos":"bad"}">${v>0?"+":"−"}${eur0(Math.abs(v))}</b>`};
   const rowsD=[["Ricavi "+Y,b.ric,x.ric,0],["Oneri (INPS + imposta)",b.oneri,x.oneri,1],["Netto "+Y,b.netto,x.netto,0],["Netto al mese",b.netto/12,x.netto/12,0],["F24 di giugno "+(Y+1),b.giugno,x.giugno,1],["Margine sulla soglia",s.s85-b.ric,s.s85-x.ric,0]];
-  return `<table><thead><tr><th>Indicatore</th><th class="r">Ipotesi attuale</th><th class="r">Scenario</th><th class="r">Differenza</th></tr></thead><tbody>${rowsD.map(([l,a,c,n])=>`<tr><td>${l}</td><td class="r num">${eur0(a||0)}</td><td class="r num"><b>${eur0(c||0)}</b></td><td class="r num">${d(a||0,c||0,n)}</td></tr>`).join("")}</tbody></table>
+  return `<table><thead><tr><th>${Y}</th><th class="r">Ipotesi salvate</th><th class="r">Con questi valori</th><th class="r">Differenza</th></tr></thead><tbody>${rowsD.map(([l,a,c,n])=>`<tr><td>${l}</td><td class="r num">${eur0(a||0)}</td><td class="r num"><b>${eur0(c||0)}</b></td><td class="r num">${d(a||0,c||0,n)}</td></tr>`).join("")}</tbody></table>
    ${x.ric>=s.allerta?`<p class="note" style="margin:10px 0 0">Con questo scenario superi l'allerta di ${eur0(s.allerta)}: valuta i tempi di fatturazione a dicembre.</p>`:""}`}
 function bindSim(){const out=$("#simOut");if(!out)return;out.innerHTML=simOutHTML();
   document.querySelectorAll("[data-sim]").forEach(i=>i.addEventListener("input",()=>{const [id,k]=i.dataset.sim.split(":");const v=readNum(i.value);S.sim.rows[id][k]=isNaN(v)||v==null?0:v;clearTimeout(bindSim._t);bindSim._t=setTimeout(()=>{$("#simOut").innerHTML=simOutHTML()},150)}));
@@ -1040,7 +1042,7 @@ function svgBars(cats,series,opt={}){
       const tip=`${esc(c)} · ${esc(s.name)}: ${eur(v)}`;
       if(opt.stacked){out+=`<rect x="${x0}" y="${y(acc+v)}" width="${gw}" height="${hh(v)}" fill="${st?"var(--band)":s.color}" ${st?`stroke="${s.color}" stroke-dasharray="3 2"`:""}></rect>`;acc+=v}
       else{const bw=gw/k;out+=`<rect x="${x0+bw*j+1}" y="${y(v)}" width="${bw-2}" height="${hh(v)}" fill="${st?"var(--band)":s.color}" ${st?`stroke="${s.color}" stroke-dasharray="3 2"`:""} rx="2"></rect>`;
-        if(opt.labels)out+=`<text x="${x0+bw*j+bw/2}" y="${y(v)-4}" text-anchor="middle" font-size="10" fill="var(--muted)">${v>=1000?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":Math.round(v)}</text>`}});
+        if(opt.labels)out+=`<text class="vl" x="${x0+bw*j+bw/2}" y="${y(v)-4}" text-anchor="middle" font-size="10" fill="var(--muted)">${v>=1000?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":Math.round(v)}</text>`}});
     {const tl=[c];let sum=0;series.forEach(s=>{const v=s.vals[i]||0;if(v>0){tl.push(s.name+": "+eur0(v));sum+=v}});if(opt.stacked&&tl.length>2)tl.push("Totale: "+eur0(sum));if(tl.length===1)tl.push("—");
      out+=`<rect class="hov" x="${L+sx*i}" y="${T}" width="${sx}" height="${H-T-B}" data-tip="${esc(tl.join("\n"))}"></rect>`}
     out+=`<text x="${L+sx*i+sx/2}" y="${H-9}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`});
@@ -1164,7 +1166,7 @@ function vAnal(FX){
   PRa.forEach(x=>{const k=x.incasso.slice(0,7);hv[k]=(hv[k]||0)+x.imponibile;hp[k]=1});
   const hmax=Math.max(1,...Object.values(hv));
   const heat=`<table class="heat"><thead><tr><th></th>${MESI.map(m=>`<th>${m}</th>`).join("")}<th>Tot.</th></tr></thead><tbody>${hy.map(y=>{let t=0;return `<tr><td class="y">${y}</td>${MESI.map((_,i)=>{const k=y+"-"+pad(i+1),v=hv[k]||0;t+=v;const a=v/hmax;return `<td style="background:${v?`color-mix(in srgb,var(--slate) ${Math.round(12+a*78)}%,var(--surface))`:"var(--surface-2)"};color:${a>.45?"#fff":"var(--fg)"};${hp[k]?"outline:1px dashed var(--slate-2);outline-offset:-2px;":""}" data-tip="${MESI[i]} ${y}\n${eur0(v)}${hp[k]?"\ninclude previsioni da contratto":""}">${v?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":""}</td>`}).join("")}<td class="num" style="font-weight:700">${(t/1000).toLocaleString("it-IT",{maximumFractionDigits:1})}k</td></tr>`}).join("")}</tbody></table>`;
-  const AT=[["sintesi","Sintesi"],["scenari","Scenari"],["cassa","Cassa e F24"],["clienti","Clienti"],["personali","Finanze personali"]];
+  const AT=[["sintesi","Sintesi"],["cassa","Cassa e F24"],["clienti","Clienti"],["personali","Finanze personali"]];
   const at=AT.some(x=>x[0]===S.atab)?S.atab:"sintesi", hid=k=>k===at?"":" hidden";
   return `
   <div class="segs" role="tablist" aria-label="Viste dell'analisi">${AT.map(([k,l])=>`<button type="button" role="tab" aria-selected="${k===at}" data-atab-go="${k}">${l}</button>`).join("")}</div>
@@ -1174,9 +1176,6 @@ function vAnal(FX){
    <section class="panel c6"><div class="panel-h"><h2>Andamento pluriennale</h2><div class="spacer"></div>${lg([["Ricavi","var(--c-ink)"],["Oneri","var(--tax)"],["Netto","var(--green-soft)"],["stima","var(--c-ink)",1]])}</div><div class="panel-b chart">${annual}<div class="chart-note">Anni con riquadro tratteggiato = includono ricavi stimati non ancora fatturati.</div></div></section>
    <section class="panel c6"><div class="panel-h"><h2>Ricavi cumulati ${sel}</h2><div class="spacer"></div>${lg(cumSeries.map(x=>[x.name,x.color]))}</div><div class="panel-b chart">${cumChart}<div class="chart-note">Include le fatture aperte alla data di incasso attesa.</div></div></section>
    <section class="panel c12"><div class="panel-h"><h2>Confronto annuale</h2></div><div class="tw"><table><thead><tr><th>Anno</th><th class="r">Minimo</th><th class="r">Ricavi</th><th class="r">Var.</th><th class="r">Oneri</th><th class="r">%</th><th class="r">Netto</th><th class="r">/mese</th><th class="c">Fatt.</th></tr></thead><tbody>${aRows}</tbody></table></div></section>
-  </div></div>
-  <div class="atab"${hid("scenari")}><div class="grid">
-   ${simPanel()}
   </div></div>
   <div class="atab"${hid("cassa")}><div class="grid">
    <section class="panel c12"><div class="panel-h"><h2>Cassa nei prossimi 12 mesi</h2><div class="spacer"></div>${lg([["Entrate previste","var(--c-ink)"],["F24","var(--tax)"],["Spese, PAC e risparmi","var(--amber-soft)"]])}</div><div class="panel-b chart">${cashChart}<div class="chart-note">Entrate = fatture aperte + previste dai contratti. Spese = media mensile dagli estratti conto, senza lavori di casa. Saldo dei 12 mesi: <b class="${FL.tsal<0?"bad":"pos"}">${FL.tsal<0?"−":"+"}${eur0(Math.abs(FL.tsal))}</b>. Dettaglio mese per mese nella scheda Entrate.</div></div></section>
@@ -1250,14 +1249,14 @@ function vTasse(FX){
     <div class="kpi green"><div class="l">Versato nel ${cy}</div><div class="v">${eur0(vers)}</div>${KT.vers||""}<div class="s">registrato nell'app</div></div>
   </div>
   <section class="panel"><div class="panel-h"><h2>${ico("euro",18)} Versamenti F24</h2><div class="spacer"></div><button class="btn small" id="addF24" type="button">+ Aggiungi versamento</button></div>
-  <details class="help panel-b"><summary>${ico("info",14)} Come funziona</summary><p>Le righe "stima" sono calcolate dal Calcolo fiscale e spariscono quando aggiungi il versamento reale dello stesso mese. Il bollo delle fatture elettroniche (€2 a fattura) lo precompila l'Agenzia nel portale Fatture e Corrispettivi: verifica con ${esc((cfg().commercialista||{}).nome||"la commercialista")} se lo versa già lei o con addebito diretto.</p></details>
+  <details class="help panel-b"><summary>${ico("info",14)} Come funziona</summary><p>Le righe "stima" sono calcolate dal Calcolo fiscale. Con «Modifica» metti l'importo vero (quello dell'F24 della commercialista): la riga diventa un versamento da fare e la stima sparisce. Lo stesso succede quando aggiungi il versamento reale dello stesso mese. Il bollo delle fatture elettroniche (€2 a fattura) lo precompila l'Agenzia nel portale Fatture e Corrispettivi: verifica con ${esc((cfg().commercialista||{}).nome||"la commercialista")} se lo versa già lei o con addebito diretto.</p></details>
   ${contoTassePanel(rows)}
   ${pastN?`<div class="panel-b" style="padding:8px 16px"><button class="btn small ghost" type="button" data-f24-past="1">${S.f24past?"Nascondi i versamenti degli anni precedenti":`Mostra i versamenti degli anni precedenti (${pastN})`}</button></div>`:""}
   <div class="tw"><table class="stack"><thead><tr><th>Data</th><th>Mancano</th><th>Descrizione</th><th>Tributi</th><th class="r">Importo</th><th class="c">Stato</th><th></th></tr></thead><tbody>
   ${rowsT.map(r=>{const late=!r.versato&&r.data<today, soon=!r.versato&&!late&&daysBetween(today,r.data)<=30;
     return `<tr class="u-${cdInfo(r.data,r.versato).c}"><td class="num">${dmy(r.data)}</td><td>${cdPill(r.data,r.versato)}</td><td>${esc(r.descrizione)}</td><td class="muted">${esc(r.tributi||"")}</td><td class="r num"><b class="neg">${eur(r.importo)}</b></td>
     <td class="c">${r.stima?`<span class="pill est">stima</span>`:r.versato?`<span class="pill ok">Versato</span>`:late?`<span class="pill late">Scaduto</span>`:`<span class="pill quiet">da versare</span>`}</td>
-    <td class="r acts">${r.stima?"":`<button class="btn small ${r.versato?"ghost":""}" data-f24pay="${r.id}">${r.versato?"Annulla":"Segna versato"}</button> <button class="btn small ghost" data-f24edit="${r.id}" aria-label="Modifica">Modifica</button>`}</td></tr>`}).join("")||`<tr><td colspan="7" class="empty">Nessuna scadenza.</td></tr>`}
+    <td class="r acts">${r.stima?`<button class="btn small" data-f24est="${r.id}" data-paid="1">Segna versato</button> <button class="btn small ghost" data-f24est="${r.id}" aria-label="Modifica la stima">Modifica</button>`:`<button class="btn small ${r.versato?"ghost":""}" data-f24pay="${r.id}">${r.versato?"Annulla":"Segna versato"}</button> <button class="btn small ghost" data-f24edit="${r.id}" aria-label="Modifica">Modifica</button>`}</td></tr>`}).join("")||`<tr><td colspan="7" class="empty">Nessuna scadenza.</td></tr>`}
   </tbody></table></div>${hidden||S.f24all?`<div class="panel-b" style="text-align:center"><button class="btn small ghost" id="f24more" type="button">${S.f24all?"Mostra solo i prossimi 12 mesi":"Mostra anni successivi ("+hidden+")"}</button></div>`:""}</section>
   ${ctPanelR(ctPlan(FX))}`;
 }
@@ -1368,6 +1367,11 @@ function bindView(FX){
   const ej=$("#exportJ");if(ej)ej.onclick=fullBackup;const ec=$("#exportCairn");if(ec)ec.onclick=exportCairn;
   app.querySelectorAll("[data-f24pay]").forEach(b=>b.onclick=()=>{const r=S.f24.find(x=>x.id===b.dataset.f24pay);if(r)write(db=>db.doc("f24/"+r.id).update({versato:!r.versato}),r.versato?"Segnato come da versare":"Versamento registrato")});
   app.querySelectorAll("[data-f24edit]").forEach(b=>b.onclick=()=>openF24(b.dataset.f24edit));
+  // Estimates: "Modifica" opens them as a new payment with the estimated figures (the real row then replaces the estimate);
+  // "Segna versato" records the estimated amount as paid.
+  app.querySelectorAll("[data-f24est]").forEach(b=>b.onclick=()=>{const r=f24Rows(fisco()).find(x=>x.id===b.dataset.f24est);if(!r)return;
+    const pre={data:r.data,importo:r.importo,descrizione:String(r.descrizione||"").replace(/\s*\(stima\)$/,""),tributi:r.tributi||"",versato:false};
+    if(b.dataset.paid)write(db=>db.doc("f24/"+r.data+"-"+uid()).set({...pre,versato:true}),"Versamento registrato");else openF24(null,pre)});
   const af=$("#addF24");if(af)af.onclick=()=>openF24(null);
   const cs=$("#ctSave");if(cs)cs.onclick=()=>{const v=readNum($("#ct-saldo").value);write(db=>saveCfg(db,{contoTasse:{saldo:v,data:todayISO()}}),"Saldo aggiornato")};
   app.querySelectorAll("[data-fov]").forEach(i=>i.addEventListener("change",()=>{const [y,k]=i.dataset.fov.split(":");const v=i.value.trim()===""?null:parseFloat(i.value.replace(/\./g,"").replace(",","."));
@@ -1388,7 +1392,7 @@ function bindView(FX){
 async function saveCfg(db,patch){const ref=db.doc("config/main");const snap=await ref.get();if(snap.exists)await ref.update(patch);else await ref.set(Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)),patch))}
 function sheet(title,body,actions){
   const root=$("#sheetRoot");
-  root.innerHTML=`<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-h"><h2>${esc(title)}</h2><div class="spacer"></div>${actions||""}<button class="btn ghost" id="sClose" type="button" aria-label="Chiudi">✕</button></div><div class="sheet-b" id="sBody">${body}</div></div></div>`;
+  root.innerHTML=`<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-h"><h2>${esc(title)}</h2><div class="spacer"></div>${actions?`<div class="sheet-acts">${actions}</div>`:""}<button class="btn ghost" id="sClose" type="button" aria-label="Chiudi">✕</button></div><div class="sheet-b" id="sBody">${body}</div></div></div>`;
   document.body.style.overflow="hidden";
   $("#sClose").onclick=closeSheet; $("#sbg").addEventListener("click",e=>{if(e.target.id==="sbg")closeSheet()});
   document.addEventListener("keydown",escClose);
@@ -1419,10 +1423,10 @@ function openDetail(id){
         <div class="sum-row"><span>${ico("send",14)} Inviata a ${esc((cfg().commercialista||{}).nome||"commercialista")}</span>${v.inviataCommercialista?`<small class="num">${dmyShort(v.inviataCommercialista)}</small>`:`<button class="btn small dark" id="dMail" type="button">${ico("mail",13)} Prepara email</button>`}</div>
         <div class="sum-row"><span>${ico("stamp",14)} Emessa allo SdI</span>${emessa(v)?`<small class="num">${v.emessaSdi?dmyShort(v.emessaSdi):"sì"}${v.numeroSdi?" · n. "+esc(v.numeroSdi):""}</small>`:`<span class="inline-pop"><input id="sdiDate" type="date" value="${todayISO()}" aria-label="Data emissione SdI"><input id="sdiNum" placeholder="n. SdI (opz.)" style="width:96px" aria-label="Numero SdI"><button class="btn small primary" id="sdiOk" type="button">Confermata</button></span>`}</div>
       </div>
-      <div class="sum-row" style="margin-top:6px"><span>${ico("file",14)} File della fattura elettronica</span>${v.pdf?`<span class="inline-pop"><a class="btn small" href="${esc(v.pdf.url||("/_blob/"+v.pdf.id))}" target="_blank" rel="noopener" title="${esc(v.pdf.nome||"")}">Apri</a>${env.attachmentBlob&&String(v.pdf.url||"").startsWith("cairn-att:")?`<button class="btn small ghost" id="pdfDl" type="button" title="Scarica ${esc(v.pdf.nome||"")}">${ico("down",13)} Scarica</button>`:""}</span>`:`<small class="muted">non caricato</small>`}</div>
-      ${assetsCap?`<div class="inline-pop" style="margin-top:6px"><label class="btn small ${!v.pdf&&emessa(v)?"primary":"ghost"}" for="pdfUp" style="cursor:pointer">${ico("file",13)} ${v.pdf?"Sostituisci file":"Carica fattura elettronica"}</label><input id="pdfUp" type="file" accept=".pdf,.xml,.p7m,application/pdf,application/xml,text/xml,application/pkcs7-mime" style="display:none"><span class="muted" id="pdfMsg" style="font-size:12px"></span></div>`:""}
+      <div class="sum-row" style="margin-top:6px"><span>${ico("file",14)} File della fattura elettronica</span>${v.pdf?`<span class="inline-pop file-acts"><a class="btn small" href="${esc(v.pdf.url||("/_blob/"+v.pdf.id))}" target="_blank" rel="noopener" title="${esc(v.pdf.nome||"")}">Apri</a>${env.attachmentBlob&&String(v.pdf.url||"").startsWith("cairn-att:")?`<button class="btn small" id="pdfDl" type="button" title="Scarica ${esc(v.pdf.nome||"")}">Scarica</button>`:""}</span>`:`<small class="muted">non caricato</small>`}</div>
+      ${assetsCap?`<div class="inline-pop" style="margin-top:6px"><label class="btn small ${!v.pdf&&emessa(v)?"primary":""}" for="pdfUp" style="cursor:pointer">${ico("file",13)} ${v.pdf?"Sostituisci file":"Carica fattura elettronica"}</label><input id="pdfUp" type="file" accept=".pdf,.xml,.p7m,application/pdf,application/xml,text/xml,application/pkcs7-mime" style="display:none"><span class="muted" id="pdfMsg" style="font-size:12px"></span></div>`:""}
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
-        ${v.incasso?`<div class="sum-row"><span>Incassata il</span><b class="num">${dmy(v.incasso)}</b></div><button class="btn small ghost" id="unpay" type="button">Annulla incasso</button>`
+        ${v.incasso?`<div class="sum-row"><span>Incassata il</span><b class="num">${dmy(v.incasso)}</b></div><button class="btn small" id="unpay" type="button">Annulla incasso</button>`
         :`<div class="eyebrow" style="margin-bottom:6px">${st==="Scaduta"?"Scaduta il "+dmy(scadenza(v)):"Incasso atteso il "+dmy(scadenza(v))}</div><div class="inline-pop"><label for="payDate" class="muted">Incassata il</label><input id="payDate" type="date" value="${todayISO()}"><button class="btn dark small" id="pay" type="button">Segna incassata</button></div>`}
       </div></div></section>
    </div>
@@ -1491,8 +1495,8 @@ function syncTrasf(remove){
 function autoBollo(){if(!D.bolloAuto)return;const t=D.righe.reduce((a,r)=>a+(+r.qta||0)*(+r.prezzo||0),0);D.bollo=t>cfg().soglie.bolloMin?cfg().soglie.bollo:0}
 function lineHtml(r,i){return `<div class="line" data-i="${i}"><div class="tag">${r.tipo==="trasferta"?"Indennità trasferta · tassata":r.tipo==="rimborso"?"Rimborso spesa documentata · non tassato":"Compenso"}</div>
     <textarea class="cell-in" data-k="desc" rows="2" aria-label="Descrizione riga ${i+1}">${esc(r.desc)}</textarea>
-    <input class="cell-in in num" data-k="qta" inputmode="decimal" value="${r.qta}" aria-label="Quantità riga ${i+1}">
-    <input class="cell-in in num" data-k="prezzo" inputmode="decimal" value="${String(r.prezzo).replace(".",",")}" aria-label="Prezzo riga ${i+1}">
+    <label class="lf"><span>Quantità</span><input class="cell-in in num" data-k="qta" inputmode="decimal" value="${r.qta}" aria-label="Quantità riga ${i+1}"></label>
+    <label class="lf"><span>Prezzo €</span><input class="cell-in in num" data-k="prezzo" inputmode="decimal" value="${String(r.prezzo).replace(".",",")}" aria-label="Prezzo riga ${i+1}"></label>
     <button class="icon-x" type="button" data-del="${i}" aria-label="Elimina riga ${i+1}">✕</button></div>`;}
 function renderLines(){const l=$("#lines");if(l)l.innerHTML=D.righe.map(lineHtml).join("");const b=$("#fm-bollo");if(b&&D.bolloAuto!==false)b.value=String(D.bollo).replace(".",",");
   const st=trasfState(),info=$("#tr-info");if(info){info.innerHTML=st.msg;info.style.color=st.err?"var(--pink-fg)":"";}updateSummary()}
@@ -1612,14 +1616,19 @@ function openProforma(v){
   sheet(`Proforma ${v.n}/${String(v.anno).slice(2)}`,`
    <div class="note">Stesso impianto del tuo modello Word. Per la fattura elettronica copia le descrizioni nel software di fatturazione${(v.righe||[]).some(r=>r.tipo==="rimborso")?"; i rimborsi documentati vanno in righe separate dal compenso":""}.</div>
    <div class="pf-wrap">${proformaHTML(v)}</div>`,
-   `<button class="btn small dark" id="mailBtn" type="button">Email a ${esc((cfg().commercialista||{}).nome||"commercialista")}</button><button class="btn small" id="cpBtn" type="button">Copia descrizioni</button><button class="btn small" id="v3Btn" type="button">Excel v3</button><button class="btn small primary" id="pdfBtn" type="button">Scarica PDF</button>`);
+   `<button class="btn small dark" id="mailBtn" type="button">Email a ${esc((cfg().commercialista||{}).nome||"commercialista")}</button><button class="btn small" id="cpBtn" type="button">Copia descrizioni</button><button class="btn small" id="v3Btn" type="button">Excel v3</button><button class="btn small" id="pdfBtn" type="button">${ico("down",14)} Scarica PDF</button>`);
   $("#v3Btn").onclick=()=>exportV3(fisco());
   $("#mailBtn").onclick=()=>openMail(v);
   $("#cpBtn").onclick=()=>{const txt=(v.righe||[]).map((r,i)=>`${i+1}. ${r.desc} — ${String(r.qta).replace(".",",")} × ${eur(r.prezzo)} = ${eur(r.qta*r.prezzo)}`).join("\n")+(v.bollo?`\nImposta di bollo: ${eur(v.bollo)}`:"")+`\nTotale documento: ${eur(tot(v).documento)}`;
     const done=()=>toast("Descrizioni copiate");
     try{navigator.clipboard.writeText(txt).then(done,()=>fallbackCopy(txt))}catch(e){fallbackCopy(txt)}};
   $("#pdfBtn").onclick=()=>pdfProforma(v);preloadPdf();
+  fitProforma();
 }
+/** The proforma is drawn at A4 width (760px): on a phone it is scaled down to the screen width instead of being cut off. */
+function fitProforma(){const w=$(".pf-wrap"),pf=w&&w.querySelector(".pf");if(!pf)return;
+  const fit=()=>{if(!pf.isConnected){removeEventListener("resize",fit);return}pf.style.zoom="";const k=Math.min(1,(w.clientWidth-2)/pf.offsetWidth);pf.style.zoom=k<1?k.toFixed(3):""};
+  fit();addEventListener("resize",fit);}
 function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;ta.style.cssText="position:fixed;left:0;top:0;width:90%;height:160px;z-index:70";document.body.appendChild(ta);ta.select();toast("Testo selezionato: copialo con Ctrl/⌘+C");setTimeout(()=>ta.remove(),8000)}
 function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`)){res();return}const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 async function save(filename,data){
@@ -1853,9 +1862,9 @@ function openClient(id){
     const doc={nome,ragione:g("#c-rag"),idFiscale:g("#c-id"),pec:g("#c-pec"),indirizzo:$("#c-ind").value,compenso:readNum(g("#c-comp"))||0,tariffa:readNum(g("#c-tar"))||0,gg:parseInt(g("#c-gg"))||30,desc:g("#c-desc"),descTrasf:g("#c-dtr"),ordine:k.ordine??(S.clients.length+1)};
     if(await write(db=>db.doc("clients/"+cid).set(doc),"Cliente salvato"))closeSheet()};
 }
-function openF24(id){
-  const r=id?S.f24.find(x=>x.id===id):{data:todayISO(),descrizione:"",tributi:"",importo:"",versato:false};
-  sheet(id?"Modifica versamento":"Nuovo versamento F24",`<section class="panel"><div class="panel-b"><div class="fields">
+function openF24(id,pre){
+  const r=id?S.f24.find(x=>x.id===id):pre||{data:todayISO(),descrizione:"",tributi:"",importo:"",versato:false};
+  sheet(id?"Modifica versamento":pre?"Modifica la stima":"Nuovo versamento F24",`<section class="panel">${pre?`<div class="panel-b note" style="margin:0">Importo calcolato da Cairn: correggilo con quello dell'F24 che ti ha mandato ${esc((cfg().commercialista||{}).nome||"la commercialista")}. Salvato, prende il posto della stima.</div>`:""}<div class="panel-b"><div class="fields">
    <div class="f s2"><label for="g-d">Data</label><input id="g-d" type="date" value="${r.data}"></div>
    <div class="f s2"><label for="g-i">Importo (€)</label><input id="g-i" class="in num" inputmode="decimal" value="${String(r.importo).replace(".",",")}"></div>
    <div class="f s2"><label class="switch" style="margin-top:22px"><input type="checkbox" id="g-v" ${r.versato?"checked":""}> Versato</label></div>

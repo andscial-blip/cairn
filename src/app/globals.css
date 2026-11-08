@@ -290,9 +290,13 @@ tr.click:hover td{background:var(--band)}
 .f input.in,.cell-in.in{color:var(--cyan);font-weight:600}
 .f .help{font-size:12px;color:var(--faint)}
 .lines{display:grid;gap:8px}
-.line{display:grid;grid-template-columns:minmax(0,1fr) 70px 110px 34px;gap:8px;align-items:start}
-.line textarea{resize:vertical;min-height:38px}
-@media (max-width:520px){.line{grid-template-columns:minmax(0,1fr) 60px 90px 30px}}
+.line{display:grid;grid-template-columns:minmax(0,1fr) 84px 120px 34px;gap:8px;align-items:end}
+.line textarea{resize:vertical;min-height:38px;align-self:stretch}
+.line .lf{display:grid;gap:3px;min-width:0}
+.line .lf span{font-size:11px;color:var(--muted);line-height:1.2}
+.line .lf input{width:100%}
+/* Phone: the description takes the whole width; quantity, price and delete go on the row below. */
+@media (max-width:620px){.line{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 38px;row-gap:6px}.line textarea{grid-column:1/-1}}
 .line .tag{grid-column:1/-1;font-family:var(--f-ui);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:-4px}
 .icon-x{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);height:38px;cursor:pointer;color:var(--muted)}
 .icon-x:hover{color:var(--red)}
@@ -400,3 +404,37 @@ ul.chk{margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:9px;fo
 @media (max-width:520px){.sb-hide-sm{display:none}.top .brand span{display:none}.top .wrap{gap:10px}}
 a.btn{text-decoration:none;color:inherit}.top a.cdp{text-decoration:none}
 @media (max-width:760px){table.stack tr.grp{background:var(--surface-2);padding:8px 12px}table.stack tr.grp td{font-size:12px}}
+
+/* Spese: sources on one line with the import action on the right; stacked on phones. */
+.srcbar{gap:8px 18px;padding:10px 12px;border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--surface)}
+.srcbar .src-l{font-weight:600;color:var(--ink);font-size:13px}
+.srcbar .src{display:inline-flex;align-items:center;white-space:nowrap}
+.srcbar .src .lgo.s{vertical-align:0}
+.srcbar #speseImp{margin-left:auto}
+@media (max-width:620px){.srcbar{display:grid;grid-template-columns:1fr;gap:8px}.srcbar #speseImp{margin-left:0;width:100%;justify-content:center}}
+/* Invoice detail: Apri and Scarica side by side, never wrapped under each other. */
+.file-acts{flex-wrap:nowrap;flex-shrink:0}
+td.nw{white-space:nowrap}
+.sim-in{border-right:1px solid var(--line-2)}
+@media (max-width:900px){.sim-in{border-right:0;border-bottom:1px solid var(--line-2)}}
+/* Fatture on phones: filters stacked at full width, the two exports side by side. */
+@media (max-width:620px){
+  .filters{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .filters select,.filters input{width:100%;min-width:0}
+  .filters #fQ{grid-column:1/-1}
+}
+/* Sheet actions: in the header on wide screens; on phones a row of their own under the title. */
+.sheet-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:620px){
+  .sheet-h{flex-wrap:wrap;row-gap:10px}
+  .sheet-h h2{flex:1;min-width:0}
+  .sheet-h .spacer{display:none}
+  .sheet-acts{order:3;flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr}
+  .sheet-acts .btn{justify-content:center;min-width:0}
+  .sheet-acts .btn:only-child,.sheet-acts .btn:last-child:nth-child(odd){grid-column:1/-1}
+  .pf-wrap{overflow:hidden}
+}
+.yrtot{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;font-size:13px;border-top:1px solid var(--line-2);padding-top:10px;padding-bottom:10px}
+.yrtot>.muted{flex-basis:100%}
+@media (min-width:621px){.yrtot>.muted{flex-basis:auto}}
+@media (max-width:620px){.fields .f>.switch[style]{margin-top:2px!important}}
