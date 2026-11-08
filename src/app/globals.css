@@ -447,3 +447,22 @@ td.nw{white-space:nowrap}
 .alrow:has(>.clg){grid-template-columns:40px 1fr auto;align-items:center}
 .logo-ed{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .logo-ed .clg.big{width:96px;height:56px;border-radius:10px;padding:6px;vertical-align:middle;margin:0}
+/* Audit (Nov 2026) */
+.cliw{display:inline-flex;align-items:center;gap:8px;max-width:100%;vertical-align:middle;text-align:left}
+.cliw>.clg{margin-right:0}
+.cliw>span{min-width:0}
+.icard .t>.clg{margin-right:8px;vertical-align:-7px}
+td.nw,.nw{white-space:nowrap}
+svg text.ref{paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+table.stack tr.grp td{text-align:left}
+@media (max-width:760px){
+  td.m-hide{display:none}
+  /* Invoice detail: description on its own row, quantity · price · amount below */
+  table.dlines thead{display:none}
+  table.dlines tr.dl{display:grid;grid-template-columns:auto 1fr auto;column-gap:12px;padding:10px 0;border-bottom:1px solid var(--line-2)}
+  table.dlines tr.dl td{border:0;padding:0}
+  table.dlines td.dl-d{grid-column:1/-1;margin-bottom:6px;line-height:1.35}
+  table.dlines td[data-l]::before{content:attr(data-l) " ";color:var(--muted);font-size:12px;margin-right:4px}
+  table.dlines td:empty{display:none}
+}
+.legend.under.top{margin:0 0 12px}

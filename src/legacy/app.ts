@@ -138,6 +138,8 @@ const clg=(id,big)=>{const c=typeof id==="object"?id:clientById(id);const n=c?c.
   if(c&&c.logo&&/^data:image\/(png|webp|jpeg);base64,/.test(c.logo))return `<img class="clg${big?" big":""}" src="${c.logo}" alt="" aria-hidden="true">`;
   const ini=n.replace(/[^A-Za-zÀ-ÿ ]/g," ").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join("")||"?";
   return `<span class="clg mono${big?" big":""}" aria-hidden="true">${esc(ini)}</span>`};
+/** Logo and client name together, on one line (tables and cards). */
+const cliw=(id,name,big)=>`<span class="cliw">${clg(id,big)}<span>${esc(name)}</span></span>`;
 const ym=d=>d.slice(0,7);
 const addMonths=(m,n)=>{const [y,mm]=m.split("-").map(Number);const d=new Date(y,mm-1+n,1);return d.getFullYear()+"-"+pad(d.getMonth()+1)};
 const mLabel=m=>{const [y,mm]=m.split("-").map(Number);return MESI[mm-1].toLowerCase()+" "+y};
@@ -354,10 +356,10 @@ function vInv(FX){
   const yCount={};list.forEach(v=>{const k=(v.data||"").slice(0,4);yCount[k]=(yCount[k]||0)+1});let lastY="",lastYc="";
   const yHead=(v,cols)=>{const k=(v.data||"").slice(0,4);if(k===lastY)return "";lastY=k;return `<tr class="grp"><td colspan="${cols}">${k} · ${yCount[k]} ${yCount[k]>1?"fatture":"fattura"}</td></tr>`};
   const rows=list.map(v=>{const t=tot(v),o=oneriInv(v,FX),c=clientById(v.cliente);
-    return yHead(v,12)+`<tr class="click" data-open="${v.id}"><td class="num">${dmyShort(v.data)}</td><td class="num"><b>${esc(v.num)}</b>${v.inviataCommercialista?' <span title="Inviata alla commercialista" style="color:var(--green)">✉</span>':""}${v.pdf?` <span title="Fattura elettronica caricata" class="att-ok">${ico("file",13)}</span>`:""}</td><td class="cli">${clg(v.cliente)}${esc(c?c.nome:v.cliente)}</td>
+    return yHead(v,12)+`<tr class="click" data-open="${v.id}"><td class="num">${dmyShort(v.data)}</td><td class="num"><b>${esc(v.num)}</b>${v.inviataCommercialista?' <span title="Inviata alla commercialista" style="color:var(--green)">✉</span>':""}${v.pdf?` <span title="Fattura elettronica caricata" class="att-ok">${ico("file",13)}</span>`:""}</td><td class="cli">${cliw(v.cliente,c?c.nome:v.cliente)}</td>
       <td class="r num money-in">${eur(t.comp)}</td><td class="r num">${t.ind?eur(t.ind):"—"}</td><td class="r num">${t.rimb?eur(t.rimb):"—"}</td><td class="r num"><b>${eur(t.documento)}</b></td>
       <td class="r num neg">${eur(o.oneri)}</td><td class="r num pos"><b>${eur(o.netto)}</b></td><td class="c">${pillFor(v)}</td><td class="num">${v.incasso?dmyShort(v.incasso):`<span class="muted">att. ${dmyShort(scadenza(v))}</span>`}</td><td class="c num">${fy(v)||""}</td></tr>`}).join("");
-  const cards=list.map(v=>{const t=tot(v),c=clientById(v.cliente);const k=(v.data||"").slice(0,4);const hd=k!==lastYc?(lastYc=k,`<div class="igrp">${k} · ${yCount[k]} ${yCount[k]>1?"fatture":"fattura"}</div>`):"";return hd+`<div class="icard" data-open="${v.id}"><div class="t">${esc(v.num)} · <span class="cli">${clg(v.cliente)}${esc(c?c.nome:v.cliente)}</span></div><div class="a num">${eur(t.documento)}</div><div class="m">${dmy(v.data)} · ${v.incasso?"incassata "+dmy(v.incasso):"attesa "+dmy(scadenza(v))}</div><div style="text-align:right">${pillFor(v)}</div></div>`}).join("");
+  const cards=list.map(v=>{const t=tot(v),c=clientById(v.cliente);const k=(v.data||"").slice(0,4);const hd=k!==lastYc?(lastYc=k,`<div class="igrp">${k} · ${yCount[k]} ${yCount[k]>1?"fatture":"fattura"}</div>`):"";return hd+`<div class="icard" data-open="${v.id}"><div class="t">${clg(v.cliente)}${esc(v.num)} · <span class="cli">${esc(c?c.nome:v.cliente)}</span></div><div class="a num">${eur(t.documento)}</div><div class="m">${dmy(v.data)} · ${v.incasso?"incassata "+dmy(v.incasso):"attesa "+dmy(scadenza(v))}</div><div style="text-align:right">${pillFor(v)}</div></div>`}).join("");
   return `<section class="panel">
     <div class="panel-h" style="flex-wrap:wrap"><h2>Registro fatture</h2><div class="spacer"></div>
       <div class="filters">
@@ -377,7 +379,7 @@ function vPrev(FX){
   const PR=projections(), today=todayISO();
   const now=PR.filter(x=>x.data<=addDays(today,10)), later=PR.filter(x=>x.data>addDays(today,10));
   const byYear={};PR.forEach(x=>{byYear[x.anno]=(byYear[x.anno]||0)+x.imponibile});
-  const card=x=>`<div class="pcard"><div class="pc-top"><span class="cli">${clg(x.cliente)}${esc(c2n(x.cliente))}</span>${x.data<today?'<span class="pill late">'+ico("alert",12)+'in ritardo</span>':'<span class="pill open">'+ico("clock",12)+dayName(x.data)+' '+dmyShort(x.data)+'</span>'}</div>
+  const card=x=>`<div class="pcard"><div class="pc-top"><span class="cli">${cliw(x.cliente,c2n(x.cliente))}</span>${x.data<today?'<span class="pill late">'+ico("alert",12)+'in ritardo</span>':'<span class="pill open">'+ico("clock",12)+dayName(x.data)+' '+dmyShort(x.data)+'</span>'}</div>
     <div class="pc-per">${x.label}${x.ipotesi?' <span class="pill est">ipotesi</span>':""}</div>
     <div class="pc-amt num">${eur(x.comp+x.ind+x.bollo)}</div>
     <div class="muted" style="font-size:13px">${eur(x.comp)} compenso${x.ind?` + ${x.gg} gg trasferta (${eur(x.ind)})`:""} + bollo</div>
@@ -385,7 +387,7 @@ function vPrev(FX){
   // v2: show the next 6 months; the rest on request (the list used to span ~2 years, 48 rows).
   const lim=addDays(today,183), shown=S.prevAll?later:later.filter(x=>x.data<=lim), hiddenN=later.length-shown.length;
   let lastM="";const rows=shown.map(x=>{const m=x.data.slice(0,7);const head=m!==lastM?`<tr class="mhead"><td colspan="6">${MESI_L[+m.slice(5)-1].toLowerCase()} ${m.slice(0,4)}</td></tr>`:"";lastM=m;
-    return head+`<tr><td class="num">${dayName(x.data).slice(0,3)} ${dmyShort(x.data)}</td><td class="cli">${clg(x.cliente)}${esc(c2n(x.cliente))}</td><td>${x.label}${x.ipotesi?' <span class="pill est">ipotesi</span>':""}</td><td class="r num">${x.ind?`<span class="muted">${x.gg} gg · </span>`+eur(x.ind):"—"}</td><td class="r num"><b>${eur(x.comp+x.ind+x.bollo)}</b></td><td class="r"><button class="btn small ghost" data-proj="${esc(x.contratto)}|${x.months[0]}" type="button">Crea</button></td></tr>`}).join("");
+    return head+`<tr><td class="num">${dayName(x.data).slice(0,3)} ${dmyShort(x.data)}</td><td class="cli">${cliw(x.cliente,c2n(x.cliente))}</td><td>${x.label}${x.ipotesi?' <span class="pill est">ipotesi</span>':""}</td><td class="r num${x.ind?"":" m-hide"}">${x.ind?`<span class="muted">${x.gg} gg · </span>`+eur(x.ind):"—"}</td><td class="r num"><b>${eur(x.comp+x.ind+x.bollo)}</b></td><td class="r"><button class="btn small ghost" data-proj="${esc(x.contratto)}|${x.months[0]}" type="button">Crea</button></td></tr>`}).join("");
   return `${intro("Le fatture che dovrai emettere, calcolate dai <b>contratti</b> (importi e date) e dalle <b>missioni</b> (indennità). Quando crei una fattura, sparisce da qui e passa nel registro.")}
   <section class="panel"><div class="panel-h"><h2>${ico("pen",18)} Da emettere ora</h2></div><div class="panel-b">${now.length?`<div class="pgrid">${now.map(card).join("")}</div>`:`<div class="empty" style="padding:12px">Nessuna fattura da emettere nei prossimi 10 giorni.${PR[0]?` La prossima: <b>${esc(c2n(PR[0].cliente))}</b> il ${dmy(PR[0].data)}.`:""}</div>`}</div></section>
   <section class="panel"><div class="panel-h"><h2>${ico("cal",18)} In arrivo</h2></div>
@@ -400,7 +402,7 @@ function vContr(FX){
   const groups=[["In corso",c=>c.attivo!==false&&!c.ipotesi&&c.al>=nowM],["Ipotesi di rinnovo",c=>c.attivo!==false&&c.ipotesi],["Conclusi o esclusi",c=>c.attivo===false||(!c.ipotesi&&c.al<nowM)]];
   const card=c=>{let months=0;for(let m=c.dal;m<=c.al;m=addMonths(m,1))months++;let el=0;for(let m=c.dal;m<=c.al&&m<=nowM;m=addMonths(m,1))el++;
     const perMese=(+c.importo||0)/(+c.ogni||1);
-    return `<div class="ccard"><div class="pc-top"><span class="cli" style="font-size:16px">${clg(c.cliente,1)}${esc(c2n(c.cliente))}</span>${c.ipotesi?'<span class="pill open">ipotesi</span>':c.al<nowM?'<span class="pill ok">concluso</span>':'<span class="pill ok">'+ico("check",12)+'in corso</span>'}</div>
+    return `<div class="ccard"><div class="pc-top"><span class="cli" style="font-size:16px">${cliw(c.cliente,c2n(c.cliente),1)}</span>${c.ipotesi?'<span class="pill open">ipotesi</span>':c.al<nowM?'<span class="pill ok">concluso</span>':'<span class="pill ok">'+ico("check",12)+'in corso</span>'}</div>
       <div class="cc-amt num">${eur0(perMese)}<small> / mese</small></div>
       <div class="cc-grid"><span>Fattura</span><b>${eur0(c.importo)} ${c.ogni>1?"ogni "+c.ogni+" mesi":"al mese"}</b><span>Trasferta</span><b>${c.tariffa?eur0(c.tariffa)+" al giorno":"—"}</b><span>Emissione</span><b>${regolaTxt(c)}</b><span>Durata</span><b>${mLabel(c.dal)} → ${mLabel(c.al)}</b></div>
       <div class="meter" style="height:8px;margin-top:10px" title="${el} di ${months} mesi"><i style="width:${months?Math.min(100,el/months*100):0}%"></i></div>
@@ -417,12 +419,12 @@ function vMis(FX){
   const fatt=(cl,Y)=>S.invoices.filter(v=>v.cliente===cl&&(v.data||"").startsWith(String(Y))).reduce((a,v)=>a+(v.righe||[]).filter(r=>r.tipo==="trasferta").reduce((b,r)=>b+(+r.qta||0),0),0);
   const datedIn=(cl,Y)=>dated.filter(x=>x.cliente===cl&&x.dal.startsWith(String(Y))).reduce((a,x)=>a+daysBetween(x.dal,x.al)+1,0);
   const qcard=q=>{const f=fatt(q.cliente,q.anno),d=datedIn(q.cliente,q.anno),rest=Math.max(0,q.giorni-f-d),pf=Math.min(100,f/q.giorni*100),pd=Math.min(100-pf,d/q.giorni*100);
-    return `<div class="ccard"><div class="pc-top"><span class="cli">${clg(q.cliente)}${esc(c2n(q.cliente))}</span><span class="pill est">stima ${q.anno}</span></div>
+    return `<div class="ccard"><div class="pc-top"><span class="cli">${cliw(q.cliente,c2n(q.cliente))}</span><span class="pill est">stima ${q.anno}</span></div>
      <div class="cc-amt num">${q.giorni}<small> giorni previsti</small></div>
      <div class="meter" style="height:10px;margin-top:6px"><i style="width:${pf}%"></i><i class="f" style="left:${pf}%;width:${pd}%"></i></div>
      <div class="meter-legend"><span>${f} fatturati</span><span>${d} con date</span><span><b>${rest}</b> da distribuire</span></div>
      <button class="btn small ghost" data-mis="${q.id}" type="button" style="margin-top:8px;align-self:flex-start">${ico("pen",13)} Modifica</button></div>`};
-  const row=x=>{const n=daysBetween(x.dal,x.al)+1;return `<tr><td class="cli">${clg(x.cliente)}${esc(c2n(x.cliente))}</td><td class="num">${dmyShort(x.dal)} → ${dmyShort(x.al)}</td><td class="r num">${n}</td><td class="c">${x.ipotesi?'<span class="pill open">ipotesi</span>':x.al<today?'<span class="pill ok">svolta</span>':x.dal<=today?'<span class="pill open">'+ico("clock",12)+'in corso</span>':'<span class="pill ok">confermata</span>'}</td><td class="muted">${esc(x.note||"")}</td><td class="r"><button class="btn small ghost" data-mis="${x.id}" type="button">Modifica</button></td></tr>`};
+  const row=x=>{const n=daysBetween(x.dal,x.al)+1;return `<tr><td class="cli">${cliw(x.cliente,c2n(x.cliente))}</td><td class="num">${dmyShort(x.dal)} → ${dmyShort(x.al)}</td><td class="r num">${n}</td><td class="c">${x.ipotesi?'<span class="pill open">ipotesi</span>':x.al<today?'<span class="pill ok">svolta</span>':x.dal<=today?'<span class="pill open">'+ico("clock",12)+'in corso</span>':'<span class="pill ok">confermata</span>'}</td><td class="muted">${esc(x.note||"")}</td><td class="r"><button class="btn small ghost" data-mis="${x.id}" type="button">Modifica</button></td></tr>`};
   return `${intro("I giorni in Madagascar che generano l'indennità di trasferta. Se sai solo <b>quanti giorni</b> farai in un anno, usa la stima annua; quando conosci le date, aggiungi la missione: la stima si riduce da sola.")}
   <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><button class="btn" data-quota="new" type="button">+ Stima annua</button><button class="btn dark" data-mis="new" type="button">+ Missione con date</button></div>
   <section><div class="eyebrow" style="margin:6px 0 8px">Stime annue</div>${quotas.length?`<div class="pgrid">${quotas.map(qcard).join("")}</div>`:`<div class="panel empty">Nessuna stima annua.</div>`}</section>
@@ -594,7 +596,7 @@ function vSpese(FX){const st=speseStats();const {inTot,outTot,spTot}=cashYear(FX
     stra:VZ.cols(st.stra,[],"Lavori casa per mese\n"+st.stra.map((v,i)=>ml[i]+": "+eur0(v)).join("\n"),()=>"var(--amber-soft)"),
     inv:VZ.cols(st.L.map(m=>+m.investito||0),[],"Investito per mese\n"+st.L.map((m,i)=>ml[i]+": "+eur0(+m.investito||0)).join("\n"),()=>"var(--green-soft)"),
     net:VZ.stack([{v:Math.max(0,net),c:"var(--green-soft)"},{v:sp,c:"var(--amber-soft)"},{v:outTot,c:"var(--c-mid)"}],Math.max(1,inTot),[],`Entrate ${new Date().getFullYear()}: ${eur0(inTot)}\nLibero: ${eur0(net)}\nSpese: ${eur0(sp)}\nF24: ${eur0(outTot)}`)+`<div class="vzl"><span>libero</span><span>spese</span><span>F24</span></div>`};
-  const monthRows=st.L.map((m,i)=>`<tr><td class="num">${MESI[+m.mese.slice(5)-1]} ${m.mese.slice(0,4)}</td><td class="r num">${eur0(st.rec[i])}</td><td class="r num muted">${st.stra[i]?eur0(st.stra[i]):"—"}</td><td class="r num">${eur0(+m.investito||0)}</td></tr>`).join("");
+  const monthRows=st.L.map((m,i)=>`<tr><td class="num nw">${MESI[+m.mese.slice(5)-1]} ${m.mese.slice(0,4)}</td><td class="r num">${eur0(st.rec[i])}</td><td class="r num muted">${st.stra[i]?eur0(st.stra[i]):"—"}</td><td class="r num">${eur0(+m.investito||0)}</td></tr>`).join("");
   return head+`<div class="kpis">
     <div class="kpi"><div class="l">Spesa ricorrente al mese</div><div class="v">${eur0(st.avgRec)}</div>${KS.rec}<div class="s">media di ${st.n} mesi</div></div>
     <div class="kpi"><div class="l">Lavori casa</div><div class="v">${eur0(st.straTot)}</div>${KS.stra}<div class="s">straordinari, ${st.n} mesi</div></div>
@@ -885,7 +887,7 @@ function vRisp(FX){const head=intro("La liquidità messa da parte: salvadanai e 
 /** Risparmi: the tax account is shown as one row (saldo + update); its plan lives in Fisco › Tasse e F24. */
 function ctRowR(P){if(!P||!P.ct.linked)return "";const c=P.ct.linked;
   return `<section class="panel c12 ctrow"><div class="panel-h">${logoImg(c.logo,c.nome)}<h2 style="margin-left:10px">Conto tasse</h2><span class="muted" style="margin-left:8px;font-size:13px">${esc(c.nome)} · ${esc(c.prodotto||"")}</span><div class="spacer"></div><b class="num" style="font-size:20px">${eur(P.ct.saldo)}</b></div>
-   <div class="panel-b ctrow-b"><span class="muted">Non entra nel fondo emergenza né nel patrimonio: sono soldi già dovuti allo Stato. Piano di accantonamento e scadenze in Fisco.</span><span class="ctrow-a"><button class="btn small ghost" data-risp="${esc(c.id)}" type="button">${ico("pen",13)} Aggiorna saldo</button><button class="btn small" data-go-v="tasse" type="button">Apri il piano</button></span></div></section>`}
+   <div class="panel-b ctrow-b"><span class="muted">Non entra nel fondo emergenza né nel patrimonio: sono soldi già dovuti allo Stato. Piano di accantonamento e scadenze in Fisco.</span><span class="ctrow-a"><button class="btn small" data-risp="${esc(c.id)}" type="button">${ico("pen",13)} Aggiorna saldo</button><button class="btn small" data-go-v="tasse" type="button">Apri il piano</button></span></div></section>`}
 function ctPanelR(P){if(!P||!P.ct.linked)return "";const c=P.ct.linked,ok=P.min>=0;const nd=P.need===Infinity?null:Math.ceil(Math.max(0,P.need)/50)*50;
   const rows=P.pre.map(r=>`<div><span class="muted num">${dmy(r.data)}</span><span class="muted">${esc(r.descrizione)} · dal conto corrente</span><span class="muted num">−${eur0(r.importo)}</span><span></span></div>`).join("")+P.pts.map(p=>`<div><span class="muted num">${dmy(p.d)}</span><span>${esc(p.desc)}</span><b class="num">−${eur0(p.imp)}</b><b class="num ${p.bal<0?"bad":"pos"}">${eur0(p.bal)}</b></div>`).join("");
   return `<section class="panel c12"><div class="panel-h">${logoImg(c.logo,c.nome)}<h2 style="margin-left:10px">Accantonamento tasse</h2><span class="muted" style="margin-left:8px;font-size:13px">${esc(c.nome)} · ${esc(c.prodotto||"")} · ${(+c.tassoLordo||0).toFixed(2).replace(".",",")}% lordo</span><div class="spacer"></div><button class="btn small ghost" data-risp="${esc(c.id)}" type="button">${ico("pen",14)} Aggiorna</button></div>
@@ -926,7 +928,7 @@ function personalAnal(FX){const R=rispCalc(),inv=invCalc((S.investimenti||[]).fi
     const vS=ys.map((_,k)=>(inv?inv.netDep+inv.pac*Math.min(k*12,inv.n):0)+rt+rm*k*12);
     p4=`<section class="panel c12"><div class="panel-h"><h2>Patrimonio tra 10 anni, con i versamenti attuali</h2><div class="spacer"></div>${lg([["Totale","var(--green-soft)"],["Investimenti al 5%","var(--cost)"],["Risparmi","var(--sky)"],["Versato","var(--gold-d)"]])}</div><div class="panel-b chart">${svgLines(ys,[{name:"Totale",vals:ys.map((_,k)=>inS[k]+rS[k]),color:"var(--green-soft)",area:1},{name:"Investimenti al 5%",vals:inS,color:"var(--cost)"},{name:"Risparmi",vals:rS,color:"var(--sky)"},{name:"Versato",vals:vS,color:"var(--gold-d)",dash:"5 4",w:2}],{wide:true,label:"Proiezione patrimonio"})}
      <p class="muted" style="font-size:13px;margin:6px 0 0">Ipotesi illustrativa: PAC ${eur0(pac)} al mese al 5% annuo, risparmi ${eur0(rm)} al mese ai tassi attuali al netto di costi e bollo. Valori nominali, al lordo delle tasse sui guadagni. Il conto tasse è escluso.</p></div></section>`}
-  return `<div class="eyebrow" style="margin:22px 0 8px">Finanze personali</div><div class="grid">${p1}${p2}${ind}${p4}</div>`}
+  return `<div class="grid">${p1}${p2}${ind}${p4}</div>`}
 function vEntrate(FX){const cy=new Date().getFullYear();const Y=S.entY===cy+1?cy+1:cy;const nowY=Y===cy;
   const head=intro("Le tue entrate per anno solare e per data di incasso. Nell'anno in corso i mesi passati sono quelli reali (fatture incassate, F24 registrati, spese degli estratti conto), da questo mese a dicembre c'è la previsione (fatture aperte e fatture previste dai contratti). L'anno prossimo è tutto previsione. La tabella in basso mette insieme entrate, F24, spese, PAC e risparmi mese per mese: è il tuo flusso di cassa personale.");
   const F=flowYear(FX,Y);const ml=m=>MESI[+m.slice(5)-1]+" "+m.slice(2,4);const fut=F.rows.filter(r=>!r.past);
@@ -934,11 +936,11 @@ function vEntrate(FX){const cy=new Date().getFullYear();const Y=S.entY===cy+1?cy
   const cl=id=>(clientById(id)||{nome:id}).nome;
   const tabs=`<div class="segs" role="tablist" aria-label="Anno" style="margin:0 0 14px">${[cy,cy+1].map(y=>`<button type="button" role="tab" data-enty="${y}" aria-selected="${y===Y}">${y===cy?`${y} · anno in corso`:`${y} · previsione`}</button>`).join("")}</div>`;
   const colsTip=(t,f)=>t+"\n"+F.rows.map(r=>ml(r.m)+": "+eur0(f(r))).join("\n");
-  const K={tot:VZ.cols(F.rows.map(r=>r.in),[],colsTip(`Entrate ${Y}`,r=>r.in),i=>F.rows[i].past?"var(--cost)":F.rows[i].ipo>F.rows[i].firm?"var(--c-pale)":"var(--c-ink)"),
+  const K={tot:VZ.cols(F.rows.map(r=>r.in),[],colsTip(`Entrate ${Y}`,r=>r.in),i=>{const r=F.rows[i];return r.past||r.done>=r.in*.99?"var(--cost)":r.ipo>r.firm-r.done?"var(--c-mid)":"var(--c-blue)"}),
     done:VZ.cols(F.rows.map(r=>r.done),[],colsTip(`Incassato ${Y}`,r=>r.done),()=>"var(--cost)"),
     f24:VZ.cols(F.rows.map(r=>r.f24),[],colsTip(`F24 ${Y}`,r=>r.f24),()=>"var(--tax)"),
     net:VZ.stack([{v:F.tf24/12,c:"var(--tax)"},{v:fixedM,c:"var(--amber-soft)"},{v:Math.max(0,netM-fixedM),c:"var(--green-soft)"}],Math.max(1,F.tin/12),[],`Entrate medie: ${eur0(F.tin/12)}\nF24: ${eur0(F.tf24/12)}\nSpese, PAC e risparmi: ${eur0(fixedM)}\nMargine: ${eur0(netM-fixedM)}`)+`<div class="vzl"><span>F24</span><span>uscite fisse</span><span>margine</span></div>`,
-    firm:VZ.stack([{v:F.tfirm,c:"var(--c-ink)"},{v:F.tipo,c:"var(--c-pale)"}],Math.max(1,F.tin),[],`${nowY?"Incassato, fatture aperte e contratti firmati":"Da contratti firmati"}: ${eur0(F.tfirm)}\nDa rinnovi ipotizzati: ${eur0(F.tipo)}`)+`<div class="vzl"><span>firmato ${eur0(F.tfirm)}</span><span>ipotesi ${eur0(F.tipo)}</span></div>`};
+    firm:VZ.stack([{v:F.tdone,c:"var(--cost)"},{v:F.tfirm-F.tdone,c:"var(--c-blue)"},{v:F.tipo,c:"var(--c-mid)"}],Math.max(1,F.tin),[],`Incassato: ${eur0(F.tdone)}\nFatture aperte e contratti firmati: ${eur0(F.tfirm-F.tdone)}\nDa rinnovi ipotizzati: ${eur0(F.tipo)}`)+`<div class="vzl"><span>${F.tdone?"incassato":"firmato"}</span><span>${F.tdone?"firmato":""}</span><span>ipotesi</span></div>`};
   const rest=fut.reduce((a,r)=>a+r.in-r.done,0);
   const k2=nowY?`<div class="kpi"><div class="l">Incassato da gennaio</div><div class="v">${eur0(F.tdone)}</div>${K.done}<div class="s">mancano ${eur0(rest)} entro dicembre</div></div>`
     :`<div class="kpi"><div class="l">F24 ${Y}</div><div class="v">${eur0(F.tf24)}</div>${K.f24}<div class="s">stima dal Calcolo fiscale</div></div>`;
@@ -947,19 +949,19 @@ function vEntrate(FX){const cy=new Date().getFullYear();const Y=S.entY===cy+1?cy
   const byC={};F.rows.forEach(r=>Object.entries(r.src).forEach(([k,v])=>byC[k]=(byC[k]||0)+v));const cr=Object.entries(byC).sort((a,b)=>b[1]-a[1]);
   const cRows=cr.map(([k,v],i)=>`<div class="alrow">${clg(k)}<div class="an"><b>${esc(cl(k))}</b></div><div class="ap num">${eur0(v)}</div><div class="at num muted">${pct(v/Math.max(1,F.tin),0)} delle entrate · ${eur0(v/12)} al mese</div></div>`).join("")||`<div class="muted">Nessuna entrata nel ${Y}.</div>`;
   const neg=v=>v<0?"bad":"pos";
-  const tRows=F.rows.map(r=>`<tr class="${r.past?"is-past":""}"><td class="num">${ml(r.m)}</td><td class="r num">${eur0(r.in)}${!r.past&&r.done?`<div class="muted" style="font-size:12px">incassati ${eur0(r.done)}</div>`:""}${r.ipo?`<div class="muted" style="font-size:12px">ipotesi ${eur0(r.ipo)}</div>`:""}</td><td class="r num">${r.f24?"−"+eur0(r.f24):"—"}</td><td class="r num">−${eur0(r.sp)}${r.past&&!r.spReal?`<div class="muted" style="font-size:12px">media</div>`:""}</td><td class="r num">−${eur0(r.pac+r.rm)}</td><td class="r num ${neg(r.saldo)}"><b>${r.saldo<0?"−":"+"}${eur0(Math.abs(r.saldo))}</b></td><td class="r num ${neg(r.cum)}">${eur0(r.cum)}</td></tr>`).join("");
+  const tRows=F.rows.map(r=>`<tr class="${r.past?"is-past":""}"><td class="num nw">${MESI[+r.m.slice(5)-1]}</td><td class="r num">${eur0(r.in)}${!r.past&&r.done?`<div class="muted" style="font-size:12px">incassati ${eur0(r.done)}</div>`:""}${r.ipo?`<div class="muted" style="font-size:12px">ipotesi ${eur0(r.ipo)}</div>`:""}</td><td class="r num">${r.f24?"−"+eur0(r.f24):"—"}</td><td class="r num">−${eur0(r.sp)}${r.past&&!r.spReal?`<div class="muted" style="font-size:12px">media</div>`:""}</td><td class="r num">−${eur0(r.pac+r.rm)}</td><td class="r num ${neg(r.saldo)}"><b>${r.saldo<0?"−":"+"}${eur0(Math.abs(r.saldo))}</b></td><td class="r num ${neg(r.cum)}">${eur0(r.cum)}</td></tr>`).join("");
   const RR=fut.length?fut:F.rows,minC=Math.min(...RR.map(r=>r.cum)),minR=RR.find(r=>r.cum===minC);
   return head+tabs+`<!--feat--><div class="kpis">
     <div class="kpi"><div class="l">${nowY?`Entrate ${Y}`:`Entrate previste ${Y}`}</div><div class="v">${eur0(F.tin)}</div>${K.tot}<div class="s">${eur0(F.tin/12)} al mese in media</div></div>
     ${k2}
     <div class="kpi green"><div class="l">Netto dopo F24</div><div class="v">${eur0(netM)}<small style="font-size:14px;font-weight:600"> / mese</small></div>${K.net}<div class="s">uscite fisse ${eur0(fixedM)} al mese</div></div>
-    <div class="kpi ${firmQ<.5?"alert":""}"><div class="l">Entrate già firmate</div><div class="v">${pct(firmQ,0)}</div>${K.firm}<div class="s">il resto dipende dai rinnovi</div></div>
+    <div class="kpi ${firmQ<.5?"alert":""}"><div class="l">Entrate già firmate</div><div class="v">${pct(firmQ,0)}</div>${K.firm}<div class="s">${firmQ>=.995?"nessun rinnovo da firmare":"il resto dipende dai rinnovi"}</div></div>
   </div>
   <div class="grid">
     <section class="panel c12"><div class="panel-h"><h2>Entrate mese per mese, ${Y}</h2><div class="spacer"></div>${lg([["Incassato","var(--cost)"],["Previsto firmato","var(--c-blue)"],["Previsto ipotesi","var(--c-mid)",1]])}</div><div class="panel-b chart">${chart}<div class="chart-note">Per data di incasso. La linea arancione è quanto esce ogni mese per spese ricorrenti, PAC e risparmi: i mesi sotto la linea si reggono sulla cassa accumulata.</div></div></section>
     <section class="panel c8"><div class="panel-h"><h2>Flusso di cassa ${Y}</h2><div class="spacer"></div><span class="eyebrow">entrate − F24 − spese − PAC e risparmi</span></div><div class="tw"><table><thead><tr><th>Mese</th><th class="r">Entrate</th><th class="r">F24</th><th class="r">Spese</th><th class="r">PAC e risp.</th><th class="r">Saldo mese</th><th class="r">Da gennaio</th></tr></thead><tbody>${tRows}</tbody><tfoot><tr><td><b>Totale</b></td><td class="r num"><b>${eur0(F.tin)}</b></td><td class="r num">−${eur0(F.tf24)}</td><td class="r num">−${eur0(F.tsp)}</td><td class="r num">−${eur0((F.pac+F.rm)*12)}</td><td class="r num ${neg(F.tsal)}"><b>${F.tsal<0?"−":"+"}${eur0(Math.abs(F.tsal))}</b></td><td></td></tr></tfoot></table></div></section>
     <section class="panel c4"><div class="panel-h"><h2>Da chi arrivano</h2><div class="spacer"></div><span class="eyebrow">${Y}</span></div><div class="panel-b"><div class="alist">${cRows}</div>
-      <ul class="chk" style="margin-top:14px"><li>${minC<0?`<b class="bad">Cassa sotto zero</b> a ${ml(minR.m)} (${eur0(minC)} da gennaio): serve la liquidità accumulata sul conto corrente.`:`<b class="pos">Cassa sempre positiva</b> ${nowY?"da qui a dicembre":"nel "+Y}: il punto più basso è ${eur0(minC)} (da gennaio) a ${ml(minR.m)}.`}</li>
+      <ul class="chk" style="margin-top:14px"><li>${minC<0?`<b class="bad">Cassa sotto zero</b> a ${MESI_L[+minR.m.slice(5)-1].toLowerCase()} (${eur0(minC)}, contato da gennaio): serve la liquidità accumulata sul conto corrente.`:`<b class="pos">Cassa sempre positiva</b> ${nowY?"da qui a dicembre":"nel "+Y}: il saldo più basso, contato da gennaio, è ${eur0(minC)} a ${MESI_L[+minR.m.slice(5)-1].toLowerCase()}.`}</li>
       <li>${pct(1-firmQ,0)} delle entrate del ${Y} viene da rinnovi non ancora firmati: se un contratto salta, la tabella cambia di conseguenza.</li>
       <li>${nowY?"Spese dei mesi passati dagli estratti conto (media dove mancano); da questo mese, la media dei mesi caricati, senza lavori di casa.":"Le spese sono la media dei mesi caricati, senza lavori di casa."}</li></ul></div></section>
   </div<!--/feat-->`}
@@ -1022,7 +1024,7 @@ function simPanel(){
   if(!ids.length)return "";
   const inp=(id,k,v,lab)=>`<input class="in num" data-sim="${id}:${k}" inputmode="decimal" value="${v}" aria-label="${lab}">`;
   const rows=ids.map(id=>{const c=S.contratti.find(x=>x.id===id)||{};const r=sim.rows[id];
-    return `<tr><td class="cli">${clg(c.cliente)}${esc(c2n(c.cliente))}</td>
+    return `<tr><td class="cli">${cliw(c.cliente,c2n(c.cliente))}</td>
       <td>${inp(id,"mese",r.mese,"Compenso al mese")}</td><td>${inp(id,"tariffa",r.tariffa,"Indennità al giorno")}</td><td>${inp(id,"gg",r.gg,"Giorni di missione all'anno")}</td></tr>`}).join("");
   return `<section class="panel c12 simp"><div class="panel-h"><h2>${ico("calc",18)} E se i rinnovi ${sim.Y} fossero diversi?</h2><div class="spacer"></div><button class="btn small ghost" id="simReset" type="button">Ripristina</button><button class="btn small dark" id="simSave" type="button">Salva come ipotesi</button></div>
    <div class="grid" style="gap:0">
@@ -1063,7 +1065,7 @@ function svgBars(cats,series,opt={}){
     {const tl=[c];let sum=0;series.forEach(s=>{const v=s.vals[i]||0;if(v>0){tl.push(s.name+": "+eur0(v));sum+=v}});if(opt.stacked&&tl.length>2)tl.push("Totale: "+eur0(sum));if(tl.length===1)tl.push("—");
      out+=`<rect class="hov" x="${L+sx*i}" y="${T}" width="${sx}" height="${H-T-B}" data-tip="${esc(tl.join("\n"))}"></rect>`}
     out+=`<text x="${L+sx*i+sx/2}" y="${H-9}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`});
-  (opt.refs||[]).forEach(r=>{out+=`<line x1="${L}" x2="${W-R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${W-R}" y="${y(r.v)-5}" text-anchor="end" font-size="11" fill="${r.color}">${esc(r.label)}</text>`});
+  (opt.refs||[]).forEach(r=>{out+=`<line x1="${L}" x2="${W-R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/><text class="ref" x="${W-R}" y="${y(r.v)-5}" text-anchor="end" font-size="11" fill="${r.color}">${esc(r.label)}</text>`});
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label||"grafico")}">${out}</svg>`;
 }
 function svgLines(cats,series,opt={}){
@@ -1071,14 +1073,14 @@ function svgLines(cats,series,opt={}){
   const max=Math.max(1000,...series.flatMap(s=>s.vals.filter(v=>v!=null)),...(opt.refs||[]).map(r=>r.v));
   const step=niceStep(max/4),top=Math.ceil(max/step)*step,sx=(W-L-R)/(n-1||1),y=v=>T+(H-T-B)*(1-v/top),x=i=>L+sx*i;
   let out=axis(top,step,L,W,R,y);
-  (opt.refs||[]).forEach(r=>{out+=`<line x1="${L}" x2="${W-R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${L+6}" y="${y(r.v)-5}" font-size="11" fill="${r.color}">${esc(r.label)}</text>`});
+  (opt.refs||[]).forEach(r=>{out+=`<line x1="${L}" x2="${W-R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/><text class="ref" x="${L+6}" y="${y(r.v)-5}" font-size="11" fill="${r.color}">${esc(r.label)}</text>`});
   series.forEach(s=>{const pts=s.vals.map((v,i)=>v==null?null:[x(i),y(v)]);let d="";pts.forEach((p,i)=>{if(!p)return;d+=(d&&pts[i-1]?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)});
     if(s.area){const last=pts.map((p,i)=>p?i:-1).filter(i=>i>=0);if(last.length)out+=`<path d="${d}L${x(last[last.length-1])} ${y(0)}L${x(last[0])} ${y(0)}Z" fill="${s.color}" opacity=".12"/>`}
     out+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w||2.4}" ${s.dash?`stroke-dasharray="${s.dash}"`:""} stroke-linejoin="round"/>`;
     const li=s.vals.map((v,i)=>v!=null?i:-1).filter(i=>i>=0).pop();
     if(li!=null&&li>=0)out+=`<circle cx="${x(li)}" cy="${y(s.vals[li])}" r="4" fill="${s.color}"></circle>`;});
   cats.forEach((c,i)=>{const tl=[c];series.forEach(s=>{if(s.vals[i]!=null)tl.push(s.name+": "+eur0(s.vals[i]))});const w=sx||(W-L-R);out+=`<rect class="hov" x="${Math.max(L,x(i)-w/2)}" y="${T}" width="${w}" height="${H-T-B}" data-tip="${esc(tl.join("\n"))}"></rect>`});
-  cats.forEach((c,i)=>{out+=`<text x="${x(i)}" y="${H-9}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`});
+  cats.forEach((c,i)=>{const a=i===n-1&&n>1?"end":"middle";out+=`<text x="${i===n-1&&n>1?x(i)+4:x(i)}" y="${H-9}" text-anchor="${a}" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`});
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label||"grafico")}">${out}</svg>`;
 }
 const lg=items=>`<div class="legend">${items.map(([n,c,d])=>`<span><i style="background:${d?"var(--band)":c};${d?`border:1px dashed ${c}`:""}"></i>${esc(n)}</span>`).join("")}</div>`;
@@ -1182,7 +1184,7 @@ function vAnal(FX){
   PRa.forEach(x=>{const k=x.incasso.slice(0,7);hv[k]=(hv[k]||0)+x.imponibile;hp[k]=1});
   const hmax=Math.max(1,...Object.values(hv));
   const heat=`<table class="heat"><thead><tr><th></th>${MESI.map(m=>`<th>${m}</th>`).join("")}<th>Tot.</th></tr></thead><tbody>${hy.map(y=>{let t=0;return `<tr><td class="y">${y}</td>${MESI.map((_,i)=>{const k=y+"-"+pad(i+1),v=hv[k]||0;t+=v;const a=v/hmax;return `<td style="background:${v?`color-mix(in srgb,var(--slate) ${Math.round(12+a*78)}%,var(--surface))`:"var(--surface-2)"};color:${a>.45?"#fff":"var(--fg)"};${hp[k]?"outline:1px dashed var(--slate-2);outline-offset:-2px;":""}" data-tip="${MESI[i]} ${y}\n${eur0(v)}${hp[k]?"\ninclude previsioni da contratto":""}">${v?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":""}</td>`}).join("")}<td class="num" style="font-weight:700">${(t/1000).toLocaleString("it-IT",{maximumFractionDigits:1})}k</td></tr>`}).join("")}</tbody></table>`;
-  const AT=[["sintesi","Sintesi"],["cassa","Cassa e F24"],["clienti","Clienti"],["personali","Finanze personali"]];
+  const AT=[["sintesi","Sintesi"],["cassa","Cassa e F24"],["clienti","Clienti"],["personali","Finanze"]];
   const at=AT.some(x=>x[0]===S.atab)?S.atab:"sintesi", hid=k=>k===at?"":" hidden";
   return `
   <div class="segs" role="tablist" aria-label="Viste dell'analisi">${AT.map(([k,l])=>`<button type="button" role="tab" aria-selected="${k===at}" data-atab-go="${k}">${l}</button>`).join("")}</div>
@@ -1194,13 +1196,13 @@ function vAnal(FX){
    <section class="panel c12"><div class="panel-h"><h2>Confronto annuale</h2></div><div class="tw"><table><thead><tr><th>Anno</th><th class="r">Minimo</th><th class="r">Ricavi</th><th class="r">Var.</th><th class="r">Oneri</th><th class="r">%</th><th class="r">Netto</th><th class="r">/mese</th><th class="c">Fatt.</th></tr></thead><tbody>${aRows}</tbody></table></div></section>
   </div></div>
   <div class="atab"${hid("cassa")}><div class="grid">
-   <!--feat--><section class="panel c12"><div class="panel-h"><h2>Cassa ${sel}</h2><div class="spacer"></div>${lg([["Entrate previste","var(--c-ink)"],["F24","var(--tax)"],["Spese, PAC e risparmi","var(--amber-soft)"]])}</div><div class="panel-b chart">${cashChart}<div class="chart-note">Gennaio–dicembre ${sel}: i mesi passati sono reali (incassi, F24 registrati, spese degli estratti conto), gli altri previsti da fatture aperte e contratti. Spese senza lavori di casa. Saldo dell'anno: <b class="${FY.tsal<0?"bad":"pos"}">${FY.tsal<0?"−":"+"}${eur0(Math.abs(FY.tsal))}</b>. Dettaglio mese per mese nella scheda Entrate.</div></div></section><!--/feat-->
+   <!--feat--><section class="panel c12"><div class="panel-h"><h2>Cassa ${sel}</h2><div class="spacer"></div>${lg([["Entrate","var(--c-ink)"],["F24","var(--tax)"],["Spese, PAC e risparmi","var(--amber-soft)"]])}</div><div class="panel-b chart">${cashChart}<div class="chart-note">Gennaio–dicembre ${sel}: i mesi passati sono reali (incassi, F24 registrati, spese degli estratti conto), gli altri previsti da fatture aperte e contratti. Spese senza lavori di casa. Saldo dell'anno: <b class="${FY.tsal<0?"bad":"pos"}">${FY.tsal<0?"−":"+"}${eur0(Math.abs(FY.tsal))}</b>. Dettaglio mese per mese nella scheda Entrate.</div></div></section><!--/feat-->
    <section class="panel c12"><div class="panel-h"><h2>Dove vanno 100 €</h2><div class="spacer"></div>${lg([["Netto / margine","var(--green-soft)"],["INPS","var(--c-mid)"],["Imposta / F24","var(--tax)"],["Spese","var(--amber-soft)"],["PAC","var(--cost)"],["Risparmi","var(--sky)"]])}</div><div class="panel-b split2"><div>${hundred||`<div class="empty">Nessun dato.</div>`}</div>
      <div class="mini">
       <!--feat--><div><span>Entrate ${sel}</span><b class="num">${eur0(inTot)}</b></div>
       <div><span>F24 ${sel}</span><b class="num neg">${eur0(outTot)}</b></div>
       <div><span>Disponibile dopo F24</span><b class="num pos">${eur0(inTot-outTot)}</b></div>
-      <div><span>Mese più pesante</span><b class="num">${peakF>0?MESI[+m12[peakI].slice(5)-1]+" "+m12[peakI].slice(0,4)+" · "+eur0(peakF):"—"}</b></div><!--/feat-->
+      <div><span>Mese più pesante</span><b class="num">${peakF>0?MESI[+m12[peakI].slice(5)-1]+" · "+eur0(peakF):"—"}</b></div><!--/feat-->
      </div></div></section>
    <section class="panel c12"><div class="panel-h"><h2>Incassi mese per mese</h2><div class="spacer"></div><span class="eyebrow">per data di incasso · bordo tratteggiato = include previsioni da contratto</span></div><div class="panel-b" style="overflow-x:auto">${heat}</div></section>
    <section class="panel c12"><div class="panel-h"><h2>Calendario F24</h2><div class="spacer"></div>${lg([["Versato","var(--green-soft)"],["Da versare","var(--tax)"],["Stima","var(--c-mid)",1]])}</div><div class="panel-b chart">${f24Chart}</div></section>
@@ -1209,7 +1211,7 @@ function vAnal(FX){
    <section class="panel c6"><div class="panel-h"><h2>Ricavi per cliente</h2><div class="spacer"></div>${lg(cSer.map(x=>[x.name,x.color]))}</div><div class="panel-b chart">${cliChart}</div></section>
    <section class="panel c6"><div class="panel-h"><h2>Composizione del fatturato</h2><div class="spacer"></div>${lg([["Compenso","var(--c-ink)"],["Indennità","var(--sky)"],["Rimborsi","var(--green-soft)"]])}</div><div class="panel-b chart">${compChart}</div></section>
    <section class="panel c12"><div class="panel-h"><h2>Clienti a confronto</h2></div><div class="tw"><table><thead><tr><th>Cliente</th><th class="r">Ricavi totali</th><th class="r">Netto stimato</th><th class="r">Quota ${sel}</th><th class="c">Fatture</th><th class="r">Gg incasso medi</th><th class="r">min–max</th><th class="r">Gg trasferta</th><th class="r">Da incassare</th></tr></thead><tbody>
-     ${cliRows.map(r=>`<tr><td class="cli">${clg(r.c)}${esc(r.c.nome)}</td><td class="r num">${eur0(r.ric)}</td><td class="r num pos">${eur0(r.net)}</td><td class="r num ${r.ricSel/totSel>.6?"neg":""}">${pct(r.ricSel/totSel,0)}</td><td class="c num">${r.n}</td><td class="r num">${r.avg==null?"—":Math.round(r.avg)}</td><td class="r num muted">${r.min==null?"":r.min+"–"+r.max}</td><td class="r num">${r.gg||"—"}</td><td class="r num">${r.open?eur0(r.open):"—"}</td></tr>`).join("")}
+     ${cliRows.map(r=>`<tr><td class="cli">${cliw(r.c,r.c.nome)}</td><td class="r num">${eur0(r.ric)}</td><td class="r num pos">${eur0(r.net)}</td><td class="r num ${r.ricSel/totSel>.6?"neg":""}">${pct(r.ricSel/totSel,0)}</td><td class="c num">${r.n}</td><td class="r num">${r.avg==null?"—":Math.round(r.avg)}</td><td class="r num muted">${r.min==null?"":r.min+"–"+r.max}</td><td class="r num">${r.gg||"—"}</td><td class="r num">${r.open?eur0(r.open):"—"}</td></tr>`).join("")}
    </tbody></table></div></section>
    <section class="panel c12"><div class="panel-h"><h2>Trasferte ${sel}</h2></div><div class="panel-b"><div class="mini">
       <div><span>Giorni fatturati</span><b>${tr.gg||0}</b></div>
@@ -1228,7 +1230,7 @@ function contoTassePanel(rows){
   const FX=fisco();const y=new Date().getFullYear();
   const accYTD=S.invoices.filter(v=>v.incasso&&v.incasso.startsWith(String(y))&&(!ct.data||v.incasso>ct.data)).reduce((a,v)=>a+oneriInv(v,FX).accantona,0);
   return `<div class="panel-b" style="border-top:1px solid var(--line-2)">
-   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">${ico("piggy",18)}<b style="font-family:var(--f-ui);font-size:16px">Conto tasse</b><span class="muted" style="font-size:13px">quanto hai messo da parte contro quanto dovrai versare</span></div>
+   <div style="display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:10px"><b style="font-family:var(--f-ui);font-size:16px;white-space:nowrap;display:inline-flex;align-items:center;gap:8px">${ico("piggy",18)}Conto tasse</b><span class="muted" style="font-size:13px">quanto hai messo da parte contro quanto dovrai versare</span></div>
    <div class="mini m3">
     <div><span>Saldo accantonato${ct.data?" al "+dmy(ct.data):""}</span><b class="num">${eur0(saldo)}</b></div>
     <div><span>F24 nei prossimi 6 mesi</span><b class="num neg">${eur0(d6)}</b></div>
@@ -1331,7 +1333,7 @@ function vSet(){
   return `<div class="grid">
   <section class="panel c6"><div class="panel-h"><h2>Clienti</h2><div class="spacer"></div><button class="btn small" id="addCli" type="button">+ Cliente</button></div>
    <div class="tw"><table><thead><tr><th>Cliente</th><th class="r">Compenso/mese</th><th class="r">€/gg trasf.</th><th class="r">Gg pagam.</th><th></th></tr></thead><tbody>
-   ${S.clients.map(k=>`<tr><td class="cli">${clg(k)}${esc(k.nome)}</td><td class="r num">${k.compenso?eur(k.compenso):"—"}</td><td class="r num">${k.tariffa?eur(k.tariffa):"—"}</td><td class="r num">${k.gg??"—"}</td><td class="r"><button class="btn small ghost" data-cli="${k.id}">Modifica</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">Nessun cliente.</td></tr>`}
+   ${S.clients.map(k=>`<tr><td class="cli">${cliw(k,k.nome)}</td><td class="r num">${k.compenso?eur(k.compenso):"—"}</td><td class="r num">${k.tariffa?eur(k.tariffa):"—"}</td><td class="r num">${k.gg??"—"}</td><td class="r"><button class="btn small ghost" data-cli="${k.id}">Modifica</button></td></tr>`).join("")||`<tr><td colspan="5" class="empty">Nessun cliente.</td></tr>`}
    </tbody></table></div></section>
   <section class="panel c6"><div class="panel-h"><h2>Parametri fiscali per anno</h2></div>
    <div class="tw"><table><thead><tr><th>Anno</th><th class="r">Coeff.</th><th class="r">INPS</th><th class="r">Imposta</th><th class="r">Margine</th></tr></thead><tbody>
@@ -1421,9 +1423,9 @@ function openDetail(id){
   sheet(`Fattura ${v.num}`,`
    <div class="grid">
     <section class="panel c7"><div class="panel-h"><h2>${esc(c.nome)}</h2><div class="spacer"></div>${pillFor(v)}</div>
-      <div class="panel-b"><div class="tw"><table><thead><tr><th>Descrizione</th><th class="r">Q.tà</th><th class="r">Prezzo</th><th class="r">Importo</th></tr></thead><tbody>
-      ${(v.righe||[]).map(r=>`<tr><td>${esc(r.desc)}${r.tipo==="rimborso"?' <span class="pill est">non tassato</span>':""}</td><td class="r num">${r.qta}</td><td class="r num">${eur(r.prezzo)}</td><td class="r num">${eur(r.qta*r.prezzo)}</td></tr>`).join("")}
-      ${t.bollo?`<tr><td>Imposta di bollo</td><td></td><td></td><td class="r num">${eur(t.bollo)}</td></tr>`:""}
+      <div class="panel-b"><div class="tw"><table class="dlines"><thead><tr><th>Descrizione</th><th class="r">Q.tà</th><th class="r">Prezzo</th><th class="r">Importo</th></tr></thead><tbody>
+      ${(v.righe||[]).map(r=>`<tr class="dl"><td class="dl-d">${esc(r.desc)}${r.tipo==="rimborso"?' <span class="pill est">non tassato</span>':""}</td><td class="r num" data-l="Q.tà">${String(r.qta).replace(".",",")}</td><td class="r num" data-l="Prezzo">${eur(r.prezzo)}</td><td class="r num" data-l="Importo">${eur(r.qta*r.prezzo)}</td></tr>`).join("")}
+      ${t.bollo?`<tr class="dl"><td class="dl-d">Imposta di bollo</td><td></td><td></td><td class="r num" data-l="Importo">${eur(t.bollo)}</td></tr>`:""}
       </tbody></table></div>
       ${v.note?`<p class="note" style="margin-top:12px">${esc(v.note)}</p>`:""}</div></section>
     <section class="panel c5"><div class="panel-h"><h2>Riepilogo</h2></div><div class="panel-b">

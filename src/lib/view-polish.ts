@@ -113,15 +113,17 @@ export function settingsIndex(root: HTMLElement) {
  */
 export function legendsUnderCharts(root: ParentNode) {
   root.querySelectorAll<HTMLElement>(".panel").forEach((p) => {
-    const lgd = p.querySelector<HTMLElement>(":scope > .panel-h > .legend"); const body = p.querySelector<HTMLElement>(":scope > .panel-b.chart");
+    const lgd = p.querySelector<HTMLElement>(":scope > .panel-h > .legend"); const chartBody = p.querySelector<HTMLElement>(":scope > .panel-b.chart");
+    const body = chartBody ?? p.querySelector<HTMLElement>(":scope > .panel-b");
     if (!lgd || !body) return;
-    const half = p.matches(".grid > .panel:is(.c4,.c5,.c6,.c7,.c8)");
+    const half = !!chartBody && p.matches(".grid > .panel:is(.c4,.c5,.c6,.c7,.c8)");
     const h2 = p.querySelector<HTMLElement>(":scope > .panel-h h2");
     const wraps = lgd.getBoundingClientRect().height > 30 || (!!h2 && Math.abs(lgd.getBoundingClientRect().top - h2.getBoundingClientRect().top) > 12);
     if (!half && p.clientWidth >= 640 && !wraps) return;
     const svg = body.querySelector(":scope > svg, :scope > .chart-scroll, :scope > div > svg");
     lgd.classList.add("under");
-    if (svg && svg.parentElement === body) svg.after(lgd); else body.prepend(lgd), body.appendChild(lgd);
+    if (!chartBody) { lgd.classList.add("top"); body.prepend(lgd); }
+    else if (svg && svg.parentElement === body) svg.after(lgd); else body.appendChild(lgd);
   });
 }
 

@@ -42,7 +42,7 @@ const COMPOSE: Record<string, (FX: unknown) => string> = {
   invest: (FX) => app!.vInvest(FX), anal: (FX) => app!.vAnal(FX), inv: (FX) => app!.vInv(FX), prev: (FX) => app!.vPrev(FX), f24: (FX) => app!.vF24(FX),
   // Fisco › Tasse e F24: compliance always on top, then one of three focused views (was one 5,000 px page).
   tasse: (FX) => {
-    const T = [["f24", "Versamenti e conto tasse"], ["calc", "Calcolo annuale"], ["redditi", "Altri redditi"]];
+    const T = [["f24", "Versamenti"], ["calc", "Calcolo annuale"], ["redditi", "Altri redditi"]];
     const t = T.some((x) => x[0] === S.ttab) ? S.ttab : "f24";
     const bar = `<div class="segs" role="tablist" aria-label="Viste di tasse e F24">${T.map(([k, l]) => `<button type="button" role="tab" aria-selected="${k === t}" data-ttab-go="${k}">${l}</button>`).join("")}</div>`;
     return app!.compliancePanel() + bar + (t === "f24" ? app!.vTasse(FX) : t === "calc" ? app!.vFisco(FX) : app!.redditiPanel());
