@@ -197,7 +197,10 @@ async function write(fn,okMsg){
 }
 function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;$("#toastRoot").replaceChildren(t);setTimeout(()=>{if(t.parentNode)t.remove()},2600)}
 let _pc=null,_pcT=0;
+// Dashboard notes: text being typed (kept across re-renders until saved) and the caret, so a re-render never loses either.
+let _noteDraft=null,_noteSel=null;
 function vHome(FX){
+  if(_noteDraft!==null&&_noteDraft===(cfg().note||""))_noteDraft=null;
   const y=S.year, f=FX[y]||{}, s=cfg().soglie, FMIN=fiscoMin();
   const inYear=S.invoices.filter(v=>fy(v)===y);
   const paid=inYear.filter(v=>v.incasso);
@@ -314,6 +317,9 @@ function vHome(FX){
   <section class="panel h-todo" data-card="todo"><div class="panel-h"><h2>Da fare</h2><span class="eyebrow tday" style="margin-left:4px">oggi ${dmy(todayISO())}</span><div class="spacer"></div><button class="btn small ghost" data-calsync="1" type="button" title="Aggiorna Google Calendar">${ico("sync",14)}<span class="not-phone"> Calendario</span></button></div>
     <ul class="tlist">${todo.map((t,i)=>li(t,!S.todoAll&&i>=TODO_MAX)).join("")}</ul>
     ${todo.length>TODO_MAX?`<div class="more"><button class="btn small ghost" type="button" data-todo-all="1">${S.todoAll?"Mostra solo le più urgenti":`<span>Mostra tutte (altre <span class="tm-n">${todo.length-TODO_MAX}</span>)</span>`}</button></div>`:""}
+  </section>
+  <section class="panel h-note" data-card="note"><div class="panel-h"><h2>Note</h2><div class="spacer"></div><span class="eyebrow" id="noteSt">${cfg().noteAt?"salvate il "+dmy(cfg().noteAt.slice(0,10))+" alle "+cfg().noteAt.slice(11,16):"si salvano da sole"}</span></div>
+    <div class="panel-b"><textarea id="homeNote" aria-label="Note" placeholder="Appunti, idee, cose da ricordare… Si salvano da sole e le ritrovi su tutti i dispositivi." spellcheck="true">${esc(_noteDraft??cfg().note??"")}</textarea></div>
   </section>
   </div></div>`;
 }
@@ -1411,6 +1417,20 @@ function bindView(FX){
   app.querySelectorAll("[data-mail]").forEach(b=>b.onclick=()=>{const v=S.invoices.find(x=>x.id===b.dataset.mail);if(v)openMail(v)});
   app.querySelectorAll("[data-pm-done]").forEach(b=>b.onclick=()=>{const r=S.promemoria.find(x=>x.id===b.dataset.pmDone);if(r)write(db=>db.doc("promemoria/"+r.id).update({fatto:!r.fatto}),r.fatto?"Riaperto":"Segnato come fatto")});
   app.querySelectorAll("[data-pm]").forEach(b=>b.onclick=()=>openReminder(b.dataset.pm==="new"?null:b.dataset.pm));
+  {const nt=app.querySelector("#homeNote");if(nt){
+    const st=app.querySelector("#noteSt"),say=m=>{if(st)st.textContent=m};let tm=null;
+    const keep=()=>{_noteSel=[nt.selectionStart,nt.selectionEnd]};
+    const save=async()=>{clearTimeout(tm);const v=nt.value;if(v===(cfg().note||""))return;
+      if(!S.db||!S.writable){say("sola lettura: non salvate");return}
+      const at=new Date();const iso=at.toISOString().slice(0,10)+"T"+String(at.getHours()).padStart(2,"0")+":"+String(at.getMinutes()).padStart(2,"0");
+      try{await S.db.doc("config/main").update({note:v,noteAt:iso});say("salvate alle "+iso.slice(11,16))}catch(e){say("non salvate: riprova")}};
+    if(_noteSel){nt.focus();try{nt.setSelectionRange(_noteSel[0],_noteSel[1])}catch(e){}}
+    nt.addEventListener("input",()=>{_noteDraft=nt.value;keep();say("sto salvando…");clearTimeout(tm);tm=setTimeout(save,1200)});
+    ["keyup","click","select"].forEach(ev=>nt.addEventListener(ev,keep));
+    // A re-render replaces the textarea and blurs the old one: that is not the user leaving the notes.
+    nt.addEventListener("blur",()=>setTimeout(()=>{if(!nt.isConnected)return;if(document.activeElement===nt)return;_noteSel=null;save()},0));
+    nt.addEventListener("click",e=>e.stopPropagation());
+  }}
   app.querySelectorAll("[data-go-v]").forEach(b=>b.onclick=e=>{if(b.matches(".go")&&e.target.closest&&e.target.closest("[data-tip]")&&(e.target.closest("[data-tip]")!==b)&&matchMedia("(hover: none)").matches)return;setView(b.dataset.goV)});
   app.querySelectorAll("[data-inbox-open]").forEach(b=>b.onclick=openInboxSheet);
   app.querySelectorAll("[data-ctr]").forEach(b=>b.onclick=()=>openContract(b.dataset.ctr==="new"?null:b.dataset.ctr));

@@ -172,7 +172,8 @@ export function fitTodo(root: ParentNode) {
   const more = [...root.querySelectorAll<HTMLElement>(".tlist li.t-more")];
   if (!side || !left || !more.length) return;
   more.forEach((li) => li.classList.remove("t-fit"));
-  if (window.innerWidth >= 1100) {
+  // With the Notes card visible the to-do keeps its five items and the notes take the remaining height.
+  if (window.innerWidth >= 1100 && !root.querySelector(".h-note:not([hidden])")) {
     for (const li of more) {
       li.classList.add("t-fit");
       if (side.getBoundingClientRect().height > left.getBoundingClientRect().height + 4) { li.classList.remove("t-fit"); break; }
@@ -273,8 +274,8 @@ export function yearColumns(root: ParentNode, year: number) {
  * On a computer "Da fare" stays in the right column; its place in the order counts on tablet and phone.
  */
 const HOME_KEY = "cairn-home-cards", ORDER_KEY = "cairn-home-order";
-const CARDS: [string, string][] = [["anno", "Il tuo anno"], ["todo", "Da fare"], ["entr", "Entrate e uscite"], ["spese", "Spese"], ["tasse", "Tasse"], ["patr", "Patrimonio"]];
-const HIDE_LABEL: Record<string, string> = { todo: "Da fare", entr: "Entrate e uscite", spese: "Spese", tasse: "Tasse", patr: "Patrimonio" };
+const CARDS: [string, string][] = [["anno", "Il tuo anno"], ["todo", "Da fare"], ["note", "Note"], ["entr", "Entrate e uscite"], ["spese", "Spese"], ["tasse", "Tasse"], ["patr", "Patrimonio"]];
+const HIDE_LABEL: Record<string, string> = { todo: "Da fare", note: "Note", entr: "Entrate e uscite", spese: "Spese", tasse: "Tasse", patr: "Patrimonio" };
 function homePrefs(): Record<string, boolean> { try { return JSON.parse(localStorage.getItem(HOME_KEY) || "{}"); } catch { return {}; } }
 function homeOrder(): string[] {
   let o: string[] = []; try { o = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]"); } catch { /* none */ }
@@ -290,7 +291,7 @@ export function homeCustomize(root: HTMLElement) {
   const card = (k: string) => home.querySelector<HTMLElement>(`[data-card="${k}"]`);
   const apply = () => {
     for (const [k, l] of Object.entries(HIDE_LABEL)) { const el = card(k); if (el) el.hidden = prefs[l] === false; }
-    order.forEach((k, i) => { const el = card(k); if (!el) return; el.style.setProperty("--o", String(i)); if (k !== "todo") left.appendChild(el); });
+    order.forEach((k, i) => { const el = card(k); if (!el) return; el.style.setProperty("--o", String(i)); if (k !== "todo" && k !== "note") left.appendChild(el); });
     // A half-width card left alone before a full-width one (or at the end) takes the whole row: no holes in the grid.
     const mark = (list: HTMLElement[], full: (el: HTMLElement) => boolean, cls: string) => {
       list.forEach((el) => el.classList.remove(cls)); let open: HTMLElement | null = null;
@@ -299,8 +300,8 @@ export function homeCustomize(root: HTMLElement) {
     };
     const vis = order.map(card).filter((el): el is HTMLElement => !!el && !el.hidden);
     const full = (el: HTMLElement) => el.dataset.card === "anno";
-    mark(vis.filter((el) => el.dataset.card !== "todo"), full, "wide");
-    mark(vis, (el) => full(el) || el.dataset.card === "todo", "wide2");
+    mark(vis.filter((el) => el.dataset.card !== "todo" && el.dataset.card !== "note"), full, "wide");
+    mark(vis, (el) => full(el) || el.dataset.card === "todo" || el.dataset.card === "note", "wide2");
     fitTodo(root);
   };
   apply();
@@ -313,7 +314,7 @@ export function homeCustomize(root: HTMLElement) {
   const draw = () => {
     pop.innerHTML = `<b>Riquadri</b>` + order.map((k, i) => { const l = CARDS.find(([c]) => c === k)![1], hid = HIDE_LABEL[k];
       return `<div class="hc-row">${hid ? `<label><input type="checkbox" data-hide="${k}" ${prefs[hid] === false ? "" : "checked"}> ${l}</label>` : `<span style="padding-left:24px">${l}</span>`}<button type="button" class="hc-mv" data-mv="${k}" data-d="-1" aria-label="Sposta ${l} prima" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" class="hc-mv" data-mv="${k}" data-d="1" aria-label="Sposta ${l} dopo" ${i === order.length - 1 ? "disabled" : ""}>↓</button></div>`; }).join("")
-      + `<div class="hc-sep"></div><button type="button" class="btn small" data-move-start>Trascina i riquadri</button><button type="button" class="btn small ghost" data-reset>Ripristina l'ordine</button><small>Salvato su questo dispositivo. Su computer "Da fare" resta a destra.</small>`;
+      + `<div class="hc-sep"></div><button type="button" class="btn small" data-move-start>Trascina i riquadri</button><button type="button" class="btn small ghost" data-reset>Ripristina l'ordine</button><small>Salvato su questo dispositivo. Su computer "Da fare" e "Note" restano a destra.</small>`;
     pop.querySelectorAll<HTMLInputElement>("input[data-hide]").forEach((inp) => inp.addEventListener("change", () => { prefs[HIDE_LABEL[inp.dataset.hide!]!] = inp.checked; save(HOME_KEY, prefs); apply(); }));
     pop.querySelectorAll<HTMLButtonElement>("[data-mv]").forEach((b) => b.addEventListener("click", () => {
       const k = b.dataset.mv!, i = order.indexOf(k), j = i + Number(b.dataset.d); if (j < 0 || j >= order.length) return;
@@ -339,7 +340,7 @@ export function homeCustomize(root: HTMLElement) {
     const block = (e: Event) => { if ((e.target as Element).closest?.("[data-card]") && !(e.target as Element).closest(".hmove-bar")) { e.preventDefault(); e.stopPropagation(); } };
     const down = (e: PointerEvent) => {
       const el = (e.target as Element).closest<HTMLElement>("[data-card]"); if (!el || !home!.contains(el)) return;
-      if (el.dataset.card === "todo" && window.innerWidth >= 1100) return;
+      if ((el.dataset.card === "todo" || el.dataset.card === "note") && window.innerWidth >= 1100) return;
       drag = el; el.classList.add("drag"); e.preventDefault();
     };
     const move = (e: PointerEvent) => {
@@ -347,7 +348,7 @@ export function homeCustomize(root: HTMLElement) {
       const over = document.elementsFromPoint(e.clientX, e.clientY).map((x) => x.closest<HTMLElement>("[data-card]")).find((x) => x && x !== drag && home!.contains(x));
       // After a swap the card just passed lands under the pointer: wait until the pointer leaves it, or they would swap back.
       if (over !== passed) passed = null;
-      if (over && over !== passed && !(over.dataset.card === "todo" && window.innerWidth >= 1100)) {
+      if (over && over !== passed && !((over.dataset.card === "todo" || over.dataset.card === "note") && window.innerWidth >= 1100)) {
         const k = drag.dataset.card!, t = over.dataset.card!, i = order.indexOf(k), j = order.indexOf(t);
         order.splice(i, 1); order.splice(j, 0, k); apply(); passed = over;
       }
