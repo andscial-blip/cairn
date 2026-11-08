@@ -165,6 +165,24 @@ export function mobileFolds(root: ParentNode) {
   });
 }
 
+/** Panoramica on a wide screen: show more to-do items while the list is shorter than the left column. */
+export function fitTodo(root: ParentNode) {
+  const side = root.querySelector<HTMLElement>(".h-side"), left = root.querySelector<HTMLElement>(".h-left");
+  const more = [...root.querySelectorAll<HTMLElement>(".tlist li.t-more")];
+  if (!side || !left || !more.length) return;
+  more.forEach((li) => li.classList.remove("t-fit"));
+  if (window.innerWidth >= 1100) {
+    for (const li of more) {
+      li.classList.add("t-fit");
+      if (side.getBoundingClientRect().height > left.getBoundingClientRect().height + 4) { li.classList.remove("t-fit"); break; }
+    }
+  }
+  const rest = more.filter((li) => !li.classList.contains("t-fit")).length;
+  const n = root.querySelector<HTMLElement>(".h-todo .tm-n"); const box = n?.closest<HTMLElement>(".more");
+  if (n) n.textContent = String(rest);
+  if (box) box.hidden = rest === 0;
+}
+
 export function polish(root: HTMLElement, view: string, year = new Date().getFullYear()) {
   mobileFolds(root);
   legendsUnderCharts(root);
@@ -173,7 +191,7 @@ export function polish(root: HTMLElement, view: string, year = new Date().getFul
   polishTables(root);
   polishCharts(root);
   if (view === "set") settingsIndex(root);
-  if (view === "home") homeCustomize(root);
+  if (view === "home") { homeCustomize(root); fitTodo(root); }
 }
 
 let bound = false;
@@ -181,7 +199,7 @@ let bound = false;
 export function bindPolish(getRoot: () => HTMLElement | null) {
   if (bound || typeof window === "undefined") return; bound = true;
   let raf = 0;
-  window.addEventListener("resize", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const r = getRoot(); if (r) { mobileFolds(r); yearColumns(r, new Date().getFullYear()); alignKpis(r); polishTables(r); polishCharts(r); } }); });
+  window.addEventListener("resize", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const r = getRoot(); if (r) { mobileFolds(r); fitTodo(r); yearColumns(r, new Date().getFullYear()); alignKpis(r); polishTables(r); polishCharts(r); } }); });
   document.addEventListener("click", (e) => { const d = (e.target as Element).closest?.(".rem-d"); if (d) d.classList.toggle("open"); });
   document.addEventListener("toggle", (e) => { const r = getRoot(); if (r && (e.target as Element).closest?.(".fold")) polishCharts(r); }, true);
 }

@@ -477,3 +477,7 @@ table.stack tr.grp td{text-align:left}
 .panel.mf.closed > .panel-h{border-bottom:0}
 .panel.mf.closed > .panel-h .legend,.panel.mf.closed > .panel-h .eyebrow{display:none}
 .split2 > .legend.ltop{grid-column:1/-1}
+.tlist li.t-more:not(.t-fit){display:none}
+.ph-only{display:none}
+@media (max-width:760px){.ph-only{display:block}.ph-hide{display:none!important}}
+.heat-t{width:100%}

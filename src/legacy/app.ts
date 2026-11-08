@@ -263,9 +263,10 @@ function vHome(FX){
   const curM=y===cy?new Date().getMonth():-1;
   const sogliaW=Math.min(100,(f.inc||0)/s.s85*100), sogliaF=Math.min(100-sogliaW,((f.att||0)+(f.contr||0)+(f.stima||0))/s.s85*100);
   const PV=persVals(FX);
-  const TODO_MAX=5, todoShown=S.todoAll?todo:todo.slice(0,TODO_MAX);
-  const li=t=>{const ci=t.date?cdInfo(t.date):null;
-    return `<li class="${t.lvl}"><span class="dot ${t.lvl}">${DOTICON[t.ic]?ico(DOTICON[t.ic],13):t.ic}</span><div class="tm"><div class="tt">${t.title}</div>${t.sub?`<div class="ts">${t.sub}</div>`:""}</div><div class="tr">${t.big?`<b class="num">${t.big}${t.bigL?` <small>${t.bigL}</small>`:""}</b>`:""}${ci?`<span class="cdp ${ci.c}">${ci.t}</span>`:""}</div><div class="ta">${t.act||""}</div></li>`};
+  const TODO_MAX=5;
+  // Items past the 5th are hidden; on a wide screen the page shows as many as fit beside the left column (view-polish).
+  const li=(t,more)=>{const ci=t.date?cdInfo(t.date):null;
+    return `<li class="${t.lvl}${more?" t-more":""}"><span class="dot ${t.lvl}">${DOTICON[t.ic]?ico(DOTICON[t.ic],13):t.ic}</span><div class="tm"><div class="tt">${t.title}</div>${t.sub?`<div class="ts">${t.sub}</div>`:""}</div><div class="tr">${t.big?`<b class="num">${t.big}${t.bigL?` <small>${t.bigL}</small>`:""}</b>`:""}${ci?`<span class="cdp ${ci.c}">${ci.t}</span>`:""}</div><div class="ta">${t.act||""}</div></li>`};
   const accPct=pct((fc.oneriPct||0)*(1+P(cy).margine),0);
   const hasCT=ctS&&ctS.saldo!=null, cov=hasCT?(d6>0?Math.max(0,Math.min(1,(+ctS.saldo)/d6)):1):null;
   const nxi=nx?cdInfo(nx.data):null, soglAlert=(f.soglia||0)>=s.allerta/s.s85;
@@ -311,8 +312,8 @@ function vHome(FX){
   </div></div>
   <div class="h-side">
   <section class="panel h-todo"><div class="panel-h"><h2>Da fare</h2><span class="eyebrow tday" style="margin-left:4px">oggi ${dmy(todayISO())}</span><div class="spacer"></div><button class="btn small ghost" data-calsync="1" type="button" title="Aggiorna Google Calendar">${ico("sync",14)}<span class="not-phone"> Calendario</span></button></div>
-    <ul class="tlist">${todoShown.map(li).join("")}</ul>
-    ${todo.length>TODO_MAX?`<div class="more"><button class="btn small ghost" type="button" data-todo-all="1">${S.todoAll?"Mostra solo le più urgenti":`Mostra tutte (altre ${todo.length-TODO_MAX})`}</button></div>`:""}
+    <ul class="tlist">${todo.map((t,i)=>li(t,!S.todoAll&&i>=TODO_MAX)).join("")}</ul>
+    ${todo.length>TODO_MAX?`<div class="more"><button class="btn small ghost" type="button" data-todo-all="1">${S.todoAll?"Mostra solo le più urgenti":`<span>Mostra tutte (altre <span class="tm-n">${todo.length-TODO_MAX}</span>)</span>`}</button></div>`:""}
   </section>
   </div></div>`;
 }
@@ -638,7 +639,7 @@ function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
   const real=(a.realizzate||[]).reduce((s,x)=>s+(+x.importo||0),0);
   const dPill=t=>{const d=t.drift,ad=Math.abs(d);if(ad<.05)return `<span class="cdp far">0 pt</span>`;return `<span class="cdp ${ad>c.soglia?"late":ad>c.soglia/2?"soon":"far"}">${d>=0?"+":"−"}${ad.toLocaleString("it-IT",{maximumFractionDigits:1})} pt</span>`};
   const legend=c.T.map((t,i)=>`<div class="alrow"><i style="background:${IPAL[i%IPAL.length]}"></i><div class="an"><b>${esc(t.ticker)}</b> <span class="muted">${esc(t.classe||"")}</span></div><div class="ap num">${pct(t.peso)}</div><div class="at num muted">obiettivo ${t.target}%</div></div>`).join("");
-  const rows=c.T.map((t,i)=>`<tr><td><span class="sw" style="background:${IPAL[i%IPAL.length]}"></span><b>${esc(t.ticker)}</b><div class="muted" style="font-size:12px">${esc(t.nome)} · ${esc(t.isin)}${t.valuta&&t.valuta!=="EUR"?" · quotato in "+esc(t.valuta):""}</div></td><td class="r num">${(+t.quote).toLocaleString("it-IT",{maximumFractionDigits:3})}</td><td class="r num">${eur(t.costo)}</td><td class="r num"><b>${eur(t.valore)}</b></td><td class="r num ${t.pl>=0?"pos":"bad"}">${t.pl>=0?"+":"−"}${eur(Math.abs(t.pl))}<div style="font-size:12px">${t.pl>=0?"+":"−"}${pct(Math.abs(t.pl/(+t.costo||1)))}</div></td><td class="r num">${pct(t.peso)}</td><td class="r num">${t.target}%</td><td class="r">${dPill(t)}</td></tr>`).join("");
+  const rows=c.T.map((t,i)=>`<tr><td class="nw"><span class="sw" style="background:${IPAL[i%IPAL.length]}"></span><b>${esc(t.ticker)}</b><div class="muted ph-hide" style="font-size:12px">${esc(t.nome)} · ${esc(t.isin)}${t.valuta&&t.valuta!=="EUR"?" · quotato in "+esc(t.valuta):""}</div></td><td class="r num m-hide">${(+t.quote).toLocaleString("it-IT",{maximumFractionDigits:3})}</td><td class="r num m-hide">${eur(t.costo)}</td><td class="r num"><b>${eur(t.valore)}</b></td><td class="r num ${t.pl>=0?"pos":"bad"}">${t.pl>=0?"+":"−"}${eur(Math.abs(t.pl))}<div style="font-size:12px">${t.pl>=0?"+":"−"}${pct(Math.abs(t.pl/(+t.costo||1)))}</div></td><td class="r num">${pct(t.peso)}<div class="ph-only muted nw" style="font-size:12px" title="obiettivo">ob. ${t.target}%</div></td><td class="r num m-hide">${t.target}%</td><td class="r m-hide">${dPill(t)}</td></tr>`).join("");
   // proiezione
   const rates=[[.03,"Prudente 3%","var(--sky)"],[.05,"Medio 5%","var(--cost)"],[.07,"Dinamico 7%","var(--green-soft)"]];
   const endY=+c.fine.slice(0,4);const ys=[];for(let y=cy;y<=endY;y++)ys.push(y);
@@ -670,14 +671,14 @@ function vInvest(FX){const a=(S.investimenti||[]).find(isMainInv);
         <li>${glide}</li>
         <li>Il controllo gira a ogni sincronizzazione con Trading 212. Ribilanciare conviene solo quando un ETF esce dalla banda e i versamenti dei prossimi 3 mesi non bastano a riportarlo in linea: vendere costa il 26% sulle plusvalenze. Quando succede ti avviso in <b>Da fare ora</b> e con un evento sul calendario collegato.</li>
       </ul></div></section>`})()}
-    <section class="panel c12" data-mfold="1"><div class="panel-h"><h2>ETF in portafoglio</h2><div class="spacer"></div><span class="eyebrow">${c.T.length} ETF ad accumulazione · domicilio Irlanda</span></div><div class="tw"><table><thead><tr><th>ETF</th><th class="r">Quote</th><th class="r">Costo</th><th class="r">Valore</th><th class="r">Plus/minus</th><th class="r">Peso</th><th class="r">Obiettivo</th><th class="r">Scostamento</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td><b>Totale</b></td><td></td><td class="r num">${eur(c.costo)}</td><td class="r num"><b>${eur(c.tot)}</b></td><td class="r num ${c.pl>=0?"pos":"bad"}">${c.pl>=0?"+":"−"}${eur(Math.abs(c.pl))}</td><td class="r num">100%</td><td class="r num">${c.T.reduce((s,t)=>s+(+t.target||0),0)}%</td><td></td></tr></tfoot></table></div></section>
+    <section class="panel c12" data-mfold="1"><div class="panel-h"><h2>ETF in portafoglio</h2><div class="spacer"></div><span class="eyebrow">${c.T.length} ETF ad accumulazione · domicilio Irlanda</span></div><div class="tw"><table><thead><tr><th>ETF</th><th class="r m-hide">Quote</th><th class="r m-hide">Costo</th><th class="r">Valore</th><th class="r">Plus/minus</th><th class="r">Peso</th><th class="r m-hide">Obiettivo</th><th class="r m-hide">Scostamento</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td><b>Totale</b></td><td class="m-hide"></td><td class="r num m-hide">${eur(c.costo)}</td><td class="r num"><b>${eur(c.tot)}</b></td><td class="r num ${c.pl>=0?"pos":"bad"}">${c.pl>=0?"+":"−"}${eur(Math.abs(c.pl))}</td><td class="r num">100%</td><td class="r num m-hide">${c.T.reduce((s,t)=>s+(+t.target||0),0)}%</td><td class="m-hide"></td></tr></tfoot></table></div></section>
     ${perfPanels(a,c,today)}
     <section class="panel c12" data-mfold="1"><div class="panel-h"><h2>Proiezione PAC fino al ${c.fine.slice(0,4)}</h2><div class="spacer"></div>${lg([["Versato","var(--gold-d)",0],...rates.map(([,n,col])=>[n,col,0])])}</div>
       <div class="panel-b chart">${svgLines(ys.map(String).map((y,i)=>i%2&&ys.length>12?"":y),series,{wide:true,label:"Proiezione PAC"})}</div>
       <div class="sstrip"><div><span>Versato a fine piano</span><b class="num">${eur0(vers)}</b><small>${eur0(c.netDep)} già versati + ${c.n} rate</small></div>${pRows}</div>
       <p class="muted" style="font-size:13px;margin:0;padding:10px 16px 14px;border-top:1px solid var(--line-2)">Rendimenti annui netti dei costi, ipotetici e costanti: i mercati non vanno in linea retta. Valori nominali, non scontati per l'inflazione. "Netto 26%" applica l'aliquota piena al guadagno (la quota in titoli di Stato paga meno).</p></section>
-    <section class="panel c7" data-mfold="1"><div class="panel-h"><h2>Versamenti mese per mese</h2><div class="spacer"></div>${lg([["Versato","var(--cost)",0]])}</div><div class="panel-b chart">${svgBars(ml,[{name:"Versato",vals:mm.map(([,v])=>Math.max(0,v)),color:"var(--cost)"}],{w:860,h:300,min:400,refs:[{v:c.pac,color:"var(--gold-d)",label:"PAC "+eur0(c.pac)}],label:"Versamenti mensili"})}</div>${pacStrip(a,c,today)}</section>
-    <details class="panel c5 fold"><summary class="panel-h"><h2>Costi e fisco</h2><span class="spacer"></span><span class="eyebrow">dettagli</span></summary><div class="panel-b"><ul class="chk">
+    <section class="panel c12" data-mfold="1"><div class="panel-h"><h2>Versamenti mese per mese</h2><div class="spacer"></div>${lg([["Versato","var(--cost)",0]])}</div><div class="panel-b chart">${svgBars(ml,[{name:"Versato",vals:mm.map(([,v])=>Math.max(0,v)),color:"var(--cost)"}],{w:1000,h:260,min:400,refs:[{v:c.pac,color:"var(--gold-d)",label:"PAC "+eur0(c.pac)}],label:"Versamenti mensili"})}</div>${pacStrip(a,c,today)}</section>
+    <details class="panel c12 fold"><summary class="panel-h"><h2>Costi e fisco</h2><span class="spacer"></span><span class="eyebrow">dettagli</span></summary><div class="panel-b"><ul class="chk">
       <li><b>Commissioni di deposito: ${eur(a.commDeposito)}</b>. Dal 2026 la ricarica con carta costa lo 0,7% (${eur(c.pac*0.007)} al mese, ${eur0(c.pac*0.007*12)} l'anno). Il bonifico SEPA è gratuito: conviene un bonifico programmato il 1° del mese.</li>
       <li><b>Cambio valuta: ${eur(a.commCambio)}</b>. Lo 0,15% su EIMI e RBOT, comprati sulla quotazione in dollari. Se esiste la stessa classe quotata in euro su Xetra o Borsa Italiana, il costo sparisce.</li>
       <li><b>Plusvalenze realizzate ${(a.realizzate||[])[0]?(a.realizzate[0].data.slice(0,4)):""}: ${eur(real)}</b> (ribilanciamento del ${dmy(((a.realizzate||[])[0]||{}).data)}). Trading 212 non è sostituto d'imposta: vanno nel 730/Redditi ${cy+1}, quadro RM, circa <b>${eur0(taxR)}</b> di imposta (26%, 12,5% sulla quota in titoli di Stato).</li>
@@ -1188,6 +1189,9 @@ function vAnal(FX){
   PRa.forEach(x=>{const k=x.incasso.slice(0,7);hv[k]=(hv[k]||0)+x.imponibile;hp[k]=1});
   const hmax=Math.max(1,...Object.values(hv));
   const heat=`<table class="heat"><thead><tr><th></th>${MESI.map(m=>`<th>${m}</th>`).join("")}<th>Tot.</th></tr></thead><tbody>${hy.map(y=>{let t=0;return `<tr><td class="y">${y}</td>${MESI.map((_,i)=>{const k=y+"-"+pad(i+1),v=hv[k]||0;t+=v;const a=v/hmax;return `<td style="background:${v?`color-mix(in srgb,var(--slate) ${Math.round(12+a*78)}%,var(--surface))`:"var(--surface-2)"};color:${a>.45?"#fff":"var(--fg)"};${hp[k]?"outline:1px dashed var(--slate-2);outline-offset:-2px;":""}" data-tip="${MESI[i]} ${y}\n${eur0(v)}${hp[k]?"\ninclude previsioni da contratto":""}">${v?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":""}</td>`}).join("")}<td class="num" style="font-weight:700">${(t/1000).toLocaleString("it-IT",{maximumFractionDigits:1})}k</td></tr>`}).join("")}</tbody></table>`;
+  // Phone: the same figures with months as rows and years as columns (fits the screen, no sideways scroll).
+  const hcell=(y,i)=>{const k=y+"-"+pad(i+1),v=hv[k]||0;const a=v/hmax;return `<td style="background:${v?`color-mix(in srgb,var(--slate) ${Math.round(12+a*78)}%,var(--surface))`:"var(--surface-2)"};color:${a>.45?"#fff":"var(--fg)"};${hp[k]?"outline:1px dashed var(--slate-2);outline-offset:-2px;":""}" data-tip="${MESI[i]} ${y}\n${eur0(v)}${hp[k]?"\ninclude previsioni da contratto":""}">${v?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":""}</td>`};
+  const heatT=`<table class="heat heat-t"><thead><tr><th></th>${hy.map(y=>`<th>${y}</th>`).join("")}</tr></thead><tbody>${MESI.map((m,i)=>`<tr><td class="y">${m}</td>${hy.map(y=>hcell(y,i)).join("")}</tr>`).join("")}<tr><td class="y">Tot.</td>${hy.map(y=>{const t=MESI.reduce((a,_,i)=>a+(hv[y+"-"+pad(i+1)]||0),0);return `<td class="num" style="font-weight:700">${(t/1000).toLocaleString("it-IT",{maximumFractionDigits:1})}k</td>`}).join("")}</tr></tbody></table>`;
   const AT=[["sintesi","Sintesi"],["cassa","Cassa e F24"],["clienti","Clienti"],["personali","Finanze"]];
   const at=AT.some(x=>x[0]===S.atab)?S.atab:"sintesi", hid=k=>k===at?"":" hidden";
   return `
@@ -1208,7 +1212,7 @@ function vAnal(FX){
       <div><span>Disponibile dopo F24</span><b class="num pos">${eur0(inTot-outTot)}</b></div>
       <div><span>Mese più pesante</span><b class="num">${peakF>0?MESI[+m12[peakI].slice(5)-1]+" · "+eur0(peakF):"—"}</b></div><!--/feat-->
      </div></div></section>
-   <section class="panel c12"><div class="panel-h"><h2>Incassi mese per mese</h2><div class="spacer"></div><span class="eyebrow">per data di incasso · bordo tratteggiato = include previsioni da contratto</span></div><div class="panel-b" style="overflow-x:auto">${heat}</div></section>
+   <section class="panel c12"><div class="panel-h"><h2>Incassi mese per mese</h2><div class="spacer"></div><span class="eyebrow">per data di incasso · bordo tratteggiato = include previsioni da contratto</span></div><div class="panel-b" style="overflow-x:auto"><div class="ph-hide">${heat}</div><div class="ph-only">${heatT}</div></div></section>
    <section class="panel c12"><div class="panel-h"><h2>Calendario F24</h2><div class="spacer"></div>${lg([["Versato","var(--green-soft)"],["Da versare","var(--tax)"],["Stima","var(--vz-plan)",1]])}</div><div class="panel-b chart">${f24Chart}</div></section>
   </div></div>
   <div class="atab"${hid("clienti")}><div class="grid">
