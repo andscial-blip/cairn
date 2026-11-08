@@ -19,6 +19,9 @@ const csp = [
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Sections are static shells (data lives in IndexedDB): keep them in the client router for the whole day,
+  // so moving between sections offline never needs the network or a page reload.
+  experimental: { staleTimes: { static: 86400 } },
   async headers() {
     return [
       {

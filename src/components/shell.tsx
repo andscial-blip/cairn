@@ -33,6 +33,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const lock = useAppLock();
   const cmd = useCommandPalette();
   useEffect(() => { if (auth.kind === "signed-out") router.replace(`/login${auth.reason ? `?m=${encodeURIComponent(auth.reason)}` : ""}`); }, [auth, router]);
+  // Every section ready in memory while online: moving between them later works without the network (no page reload).
+  const ready = auth.kind === "ready";
+  useEffect(() => {
+    if (!ready || typeof navigator === "undefined" || !navigator.onLine) return;
+    const t = setTimeout(() => SECTIONS.flatMap((x) => x.subs).forEach((x) => { try { router.prefetch(x.href); } catch { /* ignore */ } }), 1500);
+    return () => clearTimeout(t);
+  }, [ready, router]);
   if (auth.kind !== "ready" || !lock.ready) return null; // the splash screen stays visible until the session is resolved
   if (lock.locked && lock.cfg) return <LockScreen cfg={lock.cfg} onUnlocked={lock.unlocked} />;
   const years = engine ? engine.years() : [year];

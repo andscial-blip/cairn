@@ -7,6 +7,14 @@ import { Mark } from "./logo";
 import { BRAND } from "@/lib/brand";
 
 let unlockedThisSession = false;
+/**
+ * The unlock survives a page reload in the same app session (offline, moving between sections can reload the page):
+ * the time of the last activity is kept in sessionStorage and counts for RELOCK_MS, the same window as switching apps.
+ */
+const KEY = "cairn-unlocked-at";
+const recentlyUnlocked = () => { try { const t = Number(sessionStorage.getItem(KEY)); return t > 0 && Date.now() - t < RELOCK_MS; } catch { return false; } };
+const touch = () => { try { sessionStorage.setItem(KEY, String(Date.now())); } catch { /* private mode */ } };
+const forget = () => { try { sessionStorage.removeItem(KEY); } catch { /* ignore */ } };
 
 export function useAppLock() {
   const { db, auth } = useApp();
@@ -18,18 +26,21 @@ export function useAppLock() {
     void db.meta.get("applock").then((m) => {
       const c = (m?.value as LockConfig | undefined) ?? null;
       const mine = c && c.userId === auth.userId ? c : null;
+      if (mine && !unlockedThisSession && recentlyUnlocked()) { unlockedThisSession = true; touch(); }
       setCfg(mine); setLocked(!!mine && !unlockedThisSession);
     });
   }, [db, auth]);
   useEffect(() => {
     const onVis = () => {
-      if (document.visibilityState === "hidden") hiddenAt.current = Date.now();
-      else if (cfg && hiddenAt.current && Date.now() - hiddenAt.current > RELOCK_MS) { unlockedThisSession = false; setLocked(true); }
+      if (document.visibilityState === "hidden") { hiddenAt.current = Date.now(); if (unlockedThisSession) touch(); }
+      else if (cfg && hiddenAt.current && Date.now() - hiddenAt.current > RELOCK_MS) { unlockedThisSession = false; forget(); setLocked(true); }
     };
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
+    const onLeave = () => { if (unlockedThisSession) touch(); };
+    const tick = setInterval(() => { if (unlockedThisSession && document.visibilityState === "visible") touch(); }, 30_000);
+    document.addEventListener("visibilitychange", onVis); window.addEventListener("pagehide", onLeave);
+    return () => { document.removeEventListener("visibilitychange", onVis); window.removeEventListener("pagehide", onLeave); clearInterval(tick); };
   }, [cfg]);
-  const unlocked = useCallback(() => { unlockedThisSession = true; setLocked(false); }, []);
+  const unlocked = useCallback(() => { unlockedThisSession = true; touch(); setLocked(false); }, []);
   return { ready: cfg !== undefined, locked: !!cfg && locked, cfg, unlocked };
 }
 
