@@ -518,3 +518,14 @@ table.one-year input{width:100%;max-width:120px}
 /* An open fold (Costi e fisco) is taller than its neighbour: let the neighbour keep its own height instead of stretching
    (a stretched chart panel would float its chart in the middle of empty space). */
 .grid:has(> details.fold[open]) > .panel:not(details){align-self:start}
+/* Phone header: Cairn mark beside the page title (light mark on light header, night mark in dark mode). */
+.pbrand{flex:none;align-items:center;justify-content:center;width:40px;height:40px;margin-left:-4px;border-radius:10px}
+.pbrand svg{width:36px;height:36px}
+.pbrand .pm-d{display:none}
+:root[data-theme="dark"] .pbrand .pm-l{display:none}:root[data-theme="dark"] .pbrand .pm-d{display:block}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pbrand .pm-l{display:none}:root:not([data-theme="light"]) .pbrand .pm-d{display:block}}
+/* Touch: the column or bar whose values are shown stays highlighted. */
+.hov.tip-on{fill:var(--c-ink);fill-opacity:.10}
+svg [data-tip].tip-on:not(.hov){stroke:var(--c-ink);stroke-width:2;paint-order:stroke}
+:not(svg *)[data-tip].tip-on{outline:2px solid var(--c-ink);outline-offset:2px;border-radius:4px}
+#ctip{max-width:min(280px,calc(100vw - 16px))}

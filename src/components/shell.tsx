@@ -9,7 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useApp } from "@/lib/app-context";
 import { Icon } from "./icon";
-import { Logo } from "./logo";
+import { Logo, Mark } from "./logo";
 import { SyncBadge } from "./sync-badge";
 import { SECTIONS, sectionOf } from "@/lib/views-nav";
 import { Tooltip } from "./tooltip";
@@ -63,6 +63,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <div className="col">
         <header className="phead">
           <div className="phead-row">
+            {/* Phone: the side menu (with the logo) is hidden, so the mark sits beside the page title. */}
+            <Link href="/" className="pbrand only-phone" aria-label="Cairn, panoramica"><Mark className="pm-l" /><Logo className="pm-d" /></Link>
             <div className="ptitle"><h1>{title}</h1>{hint && <p>{hint}</p>}</div>
             <div className="pctl">
               <span className="only-phone"><SyncBadge compact /></span>
