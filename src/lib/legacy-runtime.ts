@@ -37,15 +37,16 @@ let feedActive: boolean | null = null, feedChecking = false, publishTimer: Retur
 let historyAt = 0, historyKey = "";
 export const V3_PATH = (ledger: string) => `${ledger}/templates/excel-v3.xlsx`;
 
+let phoneWatch = false;
 const COMPOSE: Record<string, (FX: unknown) => string> = {
   home: (FX) => app!.vHome(FX), entr: (FX) => app!.vEntrate(FX), spese: (FX) => app!.vSpese(FX), risp: (FX) => app!.vRisp(FX),
   invest: (FX) => app!.vInvest(FX), anal: (FX) => app!.vAnal(FX), inv: (FX) => app!.vInv(FX), prev: (FX) => app!.vPrev(FX), f24: (FX) => app!.vF24(FX),
   // Fisco › Tasse e F24: compliance always on top, then one of three focused views (was one 5,000 px page).
   tasse: (FX) => {
-    const T = [["f24", "Versamenti"], ["calc", "Calcolo annuale"], ["redditi", "Altri redditi"]];
+    const T = [["f24", "F24"], ["conto", "Conto tasse"], ["calc", "Calcolo"], ["redditi", "Altri redditi"]];
     const t = T.some((x) => x[0] === S.ttab) ? S.ttab : "f24";
     const bar = `<div class="segs" role="tablist" aria-label="Viste di tasse e F24">${T.map(([k, l]) => `<button type="button" role="tab" aria-selected="${k === t}" data-ttab-go="${k}">${l}</button>`).join("")}</div>`;
-    return app!.compliancePanel() + bar + (t === "f24" ? app!.vTasse(FX) : t === "calc" ? app!.vFisco(FX) : app!.redditiPanel());
+    return app!.compliancePanel() + bar + (t === "f24" ? app!.vTasse(FX, "f24") : t === "conto" ? app!.vTasse(FX, "conto") : t === "calc" ? app!.vFisco(FX) : app!.redditiPanel());
   },
   contr: (FX) => app!.vContr(FX) + `<div class="eyebrow" style="margin:22px 0 4px">Missioni</div>` + app!.vMis(FX),
   set: (FX) => app!.vSet(FX),
@@ -108,6 +109,8 @@ export function renderLegacy() {
     el.querySelectorAll<HTMLElement>(".tw").forEach((t) => { if (t.scrollWidth > t.clientWidth) { t.tabIndex = 0; t.setAttribute("role", "region"); t.setAttribute("aria-label", t.closest(".panel")?.querySelector("h2")?.textContent?.trim() || "Tabella"); } });
     // Presentation polish (chart labels, wide tables, settings index): see view-polish.ts.
     polish(el, String(S.view), Number(S.year) || undefined); bindPolish(() => document.getElementById("app")); bindSheetPolish();
+    // Charts are drawn for phone or desktop width: redraw when the window crosses that line (rotation, resize).
+    if (!phoneWatch && typeof window !== "undefined" && window.matchMedia) { phoneWatch = true; window.matchMedia("(max-width:760px)").addEventListener("change", () => renderLegacy()); }
     // In-page tabs (Analisi, Tasse e F24): remember the choice in S and redraw.
     if (!el.dataset.tabs) {
       el.dataset.tabs = "1";

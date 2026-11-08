@@ -459,7 +459,7 @@ td.nw,.nw{white-space:nowrap}
 svg text.ref{paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
 table.stack tr.grp td{text-align:left}
 @media (max-width:760px){
-  td.m-hide{display:none}
+  td.m-hide,th.m-hide{display:none}
   /* Invoice detail: description on its own row, quantity · price · amount below */
   table.dlines thead{display:none}
   table.dlines tr.dl{display:grid;grid-template-columns:auto 1fr auto;column-gap:12px;padding:10px 0;border-bottom:1px solid var(--line-2)}
@@ -468,4 +468,12 @@ table.stack tr.grp td{text-align:left}
   table.dlines td[data-l]::before{content:attr(data-l) " ";color:var(--muted);font-size:12px;margin-right:4px}
   table.dlines td:empty{display:none}
 }
-.legend.under.top{margin:0 0 12px}
+.legend.under.ltop{margin:0 0 12px}
+/* Phone: secondary panels folded to their title */
+.panel.mf > .panel-h{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.panel.mf > .panel-h::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:-4px 2px 0 10px;flex:none;transition:transform .15s}
+.panel.mf.closed > .panel-h::after{transform:rotate(-45deg);margin-top:0}
+.panel.mf.closed > :not(.panel-h){display:none!important}
+.panel.mf.closed > .panel-h{border-bottom:0}
+.panel.mf.closed > .panel-h .legend,.panel.mf.closed > .panel-h .eyebrow{display:none}
+.split2 > .legend.ltop{grid-column:1/-1}

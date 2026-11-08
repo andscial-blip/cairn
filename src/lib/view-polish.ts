@@ -122,7 +122,7 @@ export function legendsUnderCharts(root: ParentNode) {
     if (!half && p.clientWidth >= 640 && !wraps) return;
     const svg = body.querySelector(":scope > svg, :scope > .chart-scroll, :scope > div > svg");
     lgd.classList.add("under");
-    if (!chartBody) { lgd.classList.add("top"); body.prepend(lgd); }
+    if (!chartBody) { lgd.classList.add("ltop"); body.prepend(lgd); }
     else if (svg && svg.parentElement === body) svg.after(lgd); else body.appendChild(lgd);
   });
 }
@@ -142,7 +142,31 @@ export function alignKpis(root: ParentNode) {
   });
 }
 
+/**
+ * Phone: secondary panels marked data-mfold start closed (title only, tap to open), so long pages stay short.
+ * Open/closed is remembered by title for the session, so a redraw keeps what the person opened.
+ */
+const mfOpen = new Set<string>();
+export function mobileFolds(root: ParentNode) {
+  const phone = window.innerWidth <= 760;
+  root.querySelectorAll<HTMLElement>(".panel[data-mfold]").forEach((p) => {
+    const h = p.querySelector<HTMLElement>(":scope > .panel-h"); const key = h?.querySelector("h2")?.textContent?.trim() ?? "";
+    if (!h || !key) return;
+    p.classList.toggle("mf", phone);
+    if (!phone) { p.classList.remove("closed"); h.removeAttribute("role"); h.removeAttribute("tabindex"); h.removeAttribute("aria-expanded"); return; }
+    const set = (open: boolean) => { p.classList.toggle("closed", !open); h.setAttribute("aria-expanded", String(open)); if (open) mfOpen.add(key); else mfOpen.delete(key); };
+    h.setAttribute("role", "button"); h.tabIndex = 0; set(mfOpen.has(key));
+    if (!h.dataset.mf) {
+      h.dataset.mf = "1";
+      const toggle = (e: Event) => { if ((e.target as Element).closest("button, a, input, select")) return; if (!p.classList.contains("mf")) return; set(p.classList.contains("closed")); if (!p.classList.contains("closed")) polishCharts(p); };
+      h.addEventListener("click", toggle);
+      h.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); } });
+    }
+  });
+}
+
 export function polish(root: HTMLElement, view: string, year = new Date().getFullYear()) {
+  mobileFolds(root);
   legendsUnderCharts(root);
   alignKpis(root);
   yearColumns(root, year);
@@ -157,7 +181,7 @@ let bound = false;
 export function bindPolish(getRoot: () => HTMLElement | null) {
   if (bound || typeof window === "undefined") return; bound = true;
   let raf = 0;
-  window.addEventListener("resize", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const r = getRoot(); if (r) { yearColumns(r, new Date().getFullYear()); alignKpis(r); polishTables(r); polishCharts(r); } }); });
+  window.addEventListener("resize", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const r = getRoot(); if (r) { mobileFolds(r); yearColumns(r, new Date().getFullYear()); alignKpis(r); polishTables(r); polishCharts(r); } }); });
   document.addEventListener("click", (e) => { const d = (e.target as Element).closest?.(".rem-d"); if (d) d.classList.toggle("open"); });
   document.addEventListener("toggle", (e) => { const r = getRoot(); if (r && (e.target as Element).closest?.(".fold")) polishCharts(r); }, true);
 }
