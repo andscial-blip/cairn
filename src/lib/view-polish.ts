@@ -273,8 +273,8 @@ export function yearColumns(root: ParentNode, year: number) {
  * On a computer "Da fare" stays in the right column; its place in the order counts on tablet and phone.
  */
 const HOME_KEY = "cairn-home-cards", ORDER_KEY = "cairn-home-order";
-const CARDS: [string, string][] = [["kpi", "Numeri chiave"], ["todo", "Da fare"], ["entr", "Entrate e uscite"], ["spese", "Spese"], ["tasse", "Tasse"], ["patr", "Patrimonio"]];
-const HIDE_LABEL: Record<string, string> = { kpi: "Numeri chiave", todo: "Da fare", entr: "Entrate e uscite", spese: "Spese", tasse: "Tasse", patr: "Patrimonio" };
+const CARDS: [string, string][] = [["anno", "Il tuo anno"], ["todo", "Da fare"], ["entr", "Entrate e uscite"], ["spese", "Spese"], ["tasse", "Tasse"], ["patr", "Patrimonio"]];
+const HIDE_LABEL: Record<string, string> = { todo: "Da fare", entr: "Entrate e uscite", spese: "Spese", tasse: "Tasse", patr: "Patrimonio" };
 function homePrefs(): Record<string, boolean> { try { return JSON.parse(localStorage.getItem(HOME_KEY) || "{}"); } catch { return {}; } }
 function homeOrder(): string[] {
   let o: string[] = []; try { o = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]"); } catch { /* none */ }
@@ -298,14 +298,14 @@ export function homeCustomize(root: HTMLElement) {
       if (open) open.classList.add(cls);
     };
     const vis = order.map(card).filter((el): el is HTMLElement => !!el && !el.hidden);
-    const full = (el: HTMLElement) => el.dataset.card === "kpi" || el.dataset.card === "entr";
+    const full = (el: HTMLElement) => el.dataset.card === "anno";
     mark(vis.filter((el) => el.dataset.card !== "todo"), full, "wide");
     mark(vis, (el) => full(el) || el.dataset.card === "todo", "wide2");
     fitTodo(root);
   };
   apply();
   if (homeMoving) startMove();
-  const hero = home.querySelector(".hcust-slot") ?? home.querySelector(".h-todo .panel-h"); if (!hero || hero.querySelector(".hcust")) return;
+  const hero = home.querySelector(".hero-h"); if (!hero || hero.querySelector(".hcust")) return;
   const wrap = document.createElement("div"); wrap.className = "hcust"; hero.closest("[data-card]")?.classList.add("hcust-host");
   wrap.addEventListener("click", (e) => e.stopPropagation()); // the button sits in a card that opens its section
   const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn small ghost"; btn.textContent = "Personalizza"; btn.setAttribute("aria-expanded", "false");

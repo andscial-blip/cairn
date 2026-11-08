@@ -343,12 +343,12 @@ tr.u-ok td b,tr.u-ok td .neg{color:var(--muted)}
 .mini2 span{font-size:13px;color:var(--muted)}
 .mini2 b{font-size:20px;font-weight:600}
 .home.v2 .h-left{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s5);align-items:stretch;align-content:start;min-width:0}
-.home.v2 .h-left>[data-card="kpi"],.home.v2 .h-left>[data-card="entr"],.home.v2 .h-left>.wide{grid-column:1/-1}
+.home.v2 .h-hero,.home.v2 .h-left>.wide{grid-column:1/-1}
 .home.v2 .h-card{display:flex;flex-direction:column;min-width:0}
 /* Dashboard: entrate e uscite + dove vanno le spese (tonalità blu della ciambella, chiaro e scuro) */
-:root{--dn1:#2E3D52;--dn2:#4A5D78;--dn3:#6B7F9C;--dn4:#8497B0;--dn5:#ADB9CA;--dn6:#C9D6EA}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--dn1:#C9D6E8;--dn2:#A7B7CC;--dn3:#8497B0;--dn4:#6A7D97;--dn5:#52637A;--dn6:#3F4E63}}
-:root[data-theme="dark"]{--dn1:#C9D6E8;--dn2:#A7B7CC;--dn3:#8497B0;--dn4:#6A7D97;--dn5:#52637A;--dn6:#3F4E63}
+:root{--dn1:#2E3D52;--dn2:#5FB8A3;--dn3:#E8BE5A;--dn4:#A596E6;--dn5:#E2917F;--dn6:#C9D6EA;--vz-sp:#E8BE5A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--dn1:#C9D6E8;--dn2:#5FB8A3;--dn3:#E8BE5A;--dn4:#B3A6F0;--dn5:#EE9A8C;--dn6:#3F4E63;--vz-sp:#E8BE5A}}
+:root[data-theme="dark"]{--dn1:#C9D6E8;--dn2:#5FB8A3;--dn3:#E8BE5A;--dn4:#B3A6F0;--dn5:#EE9A8C;--dn6:#3F4E63;--vz-sp:#E8BE5A}
 .h3n{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .h3n>div{display:flex;flex-direction:column;gap:1px;min-width:0}
 .h3n span{font-size:13px;color:var(--muted)}
@@ -376,7 +376,7 @@ tr.u-ok td b,tr.u-ok td .neg{color:var(--muted)}
   .home.v2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s5);align-items:stretch}
   .home.v2 .h-left,.home.v2 .h-side{display:contents}
   .home.v2 [data-card]{order:var(--o,0)}
-  .home.v2 .h-todo,.home.v2 [data-card="kpi"],.home.v2 [data-card="entr"],.home.v2 [data-card].wide2{grid-column:1/-1}
+  .home.v2 .h-todo,.home.v2 .h-hero,.home.v2 [data-card].wide2{grid-column:1/-1}
 }
 @media (max-width:760px){
   .home.v2{gap:var(--s4)}
@@ -580,18 +580,6 @@ svg[data-kbd]:focus{outline:none}svg[data-kbd]:focus-visible{outline:2px solid v
 .hmove-bar .btn{background:#fff;color:var(--slate);border-color:#fff}
 @media (min-width:1100px){.home.v2 .hmove-bar{grid-column:1/-1}.home.v2.moving .h-todo{cursor:default;outline-style:solid;outline-color:var(--line-2)}}
 .home.v2 .wide .hflow svg,.home.v2 .wide2 .hflow svg{max-height:230px}
+.hstack{display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:12px}.hstack i{display:block;height:100%}
+.hcat.hq{gap:0}.hcat.hq li{grid-template-columns:10px minmax(0,1fr) auto auto;column-gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line-2)}.hcat.hq li>i{width:10px;height:10px;border-radius:3px}.hcat.hq .hc-p{font-size:13px;color:var(--muted)}
 
-/* Dashboard "Flusso di cassa": toolbar, key numbers, big chart */
-.home.v2 .h-tools{grid-column:1/-1;display:flex;justify-content:flex-end;margin:-6px 0 -8px;order:-2}
-.h-tools .hcust{margin-left:0}
-.h-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s4)}
-.h-kpis .hk{padding:14px 16px 12px;display:flex;flex-direction:column;gap:1px;min-width:0;cursor:pointer;transition:border-color .15s}
-.h-kpis .hk:hover{border-color:var(--line)}
-.hk .hk-l{font-size:13px;color:var(--muted)}
-.hk b{font-size:22px;font-weight:600;letter-spacing:-.015em;white-space:nowrap}
-.hk small{font-size:12px;color:var(--faint);line-height:1.3}
-.hk .hk-sp{display:block;width:100%;height:34px;margin-top:8px}
-.hk .hk-m{height:8px;margin-top:auto;position:relative}
-.hk .cdp{margin-top:auto;align-self:flex-start;border:0;font:inherit;font-size:12px;cursor:pointer}
-.h-flow .hflow{margin:4px -4px 0}
-@media (max-width:760px){.h-kpis{grid-template-columns:1fr 1fr;gap:var(--s3,10px)}.hk b{font-size:19px}.home.v2 .h-tools{margin:-4px 0 -6px}}
