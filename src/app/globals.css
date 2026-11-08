@@ -481,3 +481,5 @@ table.stack tr.grp td{text-align:left}
 .ph-only{display:none}
 @media (max-width:760px){.ph-only{display:block}.ph-hide{display:none!important}}
 .heat-t{width:100%}
+/* Page icon beside the title (computer and tablet) */
+.picon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--surface);box-shadow:0 0 0 1px var(--line-2),var(--sh-1);color:var(--fg);flex:none;margin-right:-4px;align-self:center}

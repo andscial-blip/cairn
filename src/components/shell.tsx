@@ -65,6 +65,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <div className="phead-row">
             {/* Phone: the side menu (with the logo) is hidden, so the mark sits beside the page title. */}
             <Link href="/" className="pbrand only-phone" aria-label="Cairn, panoramica"><Mark className="pm-l" /><Logo className="pm-d" /></Link>
+            {/* Computer: the section's icon beside the title, the same one as in the side menu. */}
+            {sec && <span className="picon not-phone" aria-hidden="true"><Icon name={sec.ic} size={22} /></span>}
             <div className="ptitle"><h1>{title}</h1>{hint && <p>{hint}</p>}</div>
             <div className="pctl">
               <span className="only-phone"><SyncBadge compact /></span>
