@@ -272,8 +272,8 @@ function vHome(FX){
   const nxi=nx?cdInfo(nx.data):null, soglAlert=(f.soglia||0)>=s.allerta/s.s85;
   return `
   <div class="home v2"><div class="h-left">
-  <section class="panel hero h-hero">
-    <div class="hero-h"><div><h2>Il tuo ${y}</h2><span class="eyebrow">${y>cy?"anno futuro · valori da contratti":y<cy?"anno chiuso · per data di incasso":"per data di incasso"}</span></div>${late.length?`<button class="cdp late" data-go="inv-late" type="button">${late.length>1?late.length+" fatture scadute":"1 fattura scaduta"}</button>`:""}</div>
+  <section class="panel hero h-hero" data-card="anno">
+    <div class="hero-h"><div><h2>Il tuo ${y}</h2>${y!==cy?`<span class="eyebrow">${y>cy?"anno futuro · valori da contratti":"anno chiuso"}</span>`:""}</div>${late.length?`<button class="cdp late" data-go="inv-late" type="button">${late.length>1?late.length+" fatture scadute":"1 fattura scaduta"}</button>`:""}</div>
     <div class="hero-nums">
       <div class="hn-main"><span>Incassato</span><b class="num">${eur0(incassato)}</b><small>${paid.length} fatture</small></div>
       <div><span>Netto reale</span><b class="num pos">${eur0(netto)}</b><small>${eur0(netto/mesiTrasc)} / mese</small></div>
@@ -289,8 +289,7 @@ function vHome(FX){
     </div>
   </section>
   <!--feat-->${homeFlow(FX,y,cy)}<!--/feat-->
-  <div class="h-duo">
-  <section class="panel h-card go" data-go-v="tasse">
+  <section class="panel h-card go" data-go-v="tasse" data-card="tasse">
     <div class="panel-h"><h2>Tasse</h2><div class="spacer"></div><span class="eyebrow">accantona il ${accPct} di ogni incasso</span></div>
     <div class="panel-b">
       <div class="big-row"><div><span>Prossimo F24</span><b class="num">${nx?eur0(nx.importo):"—"}</b><small>${nx?dmy(nx.data):"nessuno in programma"}</small></div>${nxi?`<span class="cdp ${nxi.c}">${nxi.t}</span>`:""}</div>
@@ -298,7 +297,7 @@ function vHome(FX){
         :`<div class="cov"><div class="cov-l"><span>F24 nei prossimi 6 mesi</span><b class="num">${eur0(d6)}</b></div><p class="muted">Registra il saldo del conto tasse per vedere se li copri.</p></div>`}
     </div>
   </section>
-  ${PV?`<section class="panel h-card go" data-go-v="invest">
+  ${PV?`<section class="panel h-card go" data-go-v="invest" data-card="patr">
     <div class="panel-h"><h2>Patrimonio</h2><div class="spacer"></div><span class="eyebrow">oggi · esclusi conti correnti</span></div>
     <div class="panel-b">
       <div class="big-row"><div><b class="num">${eur0(PV.pat)}</b></div></div>
@@ -310,9 +309,9 @@ function vHome(FX){
       </div>
     </div>
   </section>`:""}
-  </div></div>
+  </div>
   <div class="h-side">
-  <section class="panel h-todo"><div class="panel-h"><h2>Da fare</h2><span class="eyebrow tday" style="margin-left:4px">oggi ${dmy(todayISO())}</span><div class="spacer"></div><button class="btn small ghost" data-calsync="1" type="button" title="Aggiorna Google Calendar">${ico("sync",14)}<span class="not-phone"> Calendario</span></button></div>
+  <section class="panel h-todo" data-card="todo"><div class="panel-h"><h2>Da fare</h2><span class="eyebrow tday" style="margin-left:4px">oggi ${dmy(todayISO())}</span><div class="spacer"></div><button class="btn small ghost" data-calsync="1" type="button" title="Aggiorna Google Calendar">${ico("sync",14)}<span class="not-phone"> Calendario</span></button></div>
     <ul class="tlist">${todo.map((t,i)=>li(t,!S.todoAll&&i>=TODO_MAX)).join("")}</ul>
     ${todo.length>TODO_MAX?`<div class="more"><button class="btn small ghost" type="button" data-todo-all="1">${S.todoAll?"Mostra solo le più urgenti":`<span>Mostra tutte (altre <span class="tm-n">${todo.length-TODO_MAX}</span>)</span>`}</button></div>`:""}
   </section>
@@ -322,7 +321,7 @@ function vHome(FX){
 function homeFlow(FX,y,cy){const F=flowYear(FX,y),st=speseStats();if(!F.tin&&!st)return "";
   const netIn=F.tin-F.tf24,sav=netIn-F.tsp,rate=netIn>0?sav/netIn:0,cm=y===cy?new Date().getMonth():y<cy?12:-1;
   const eyeF=y>cy?"previsione":y<cy?"anno chiuso":"reale fino a "+MESI_L[Math.max(0,cm-1)].toLowerCase()+", poi previsione";
-  const flow=`<section class="panel h-card go" data-go-v="entr">
+  const flow=`<section class="panel h-card go h-flow" data-go-v="entr" data-card="entr">
     <div class="panel-h"><h2>Entrate e uscite ${y}</h2><div class="spacer"></div><span class="eyebrow">${eyeF}</span></div>
     <div class="panel-b">
       <div class="h3n"><div><span>Entrate</span><b class="num">${eur0(F.tin)}</b><small>F24 ${eur0(F.tf24)}</small></div><div><span>Spese</span><b class="num">${eur0(F.tsp)}</b><small>${eur0(F.tsp/12)} al mese</small></div><div><span>Risparmio</span><b class="num ${sav<0?"neg":"pos"}">${sav<0?"−":""}${eur0(Math.abs(sav))}</b><small>${pct(Math.max(0,rate),0)} del netto</small></div></div>
@@ -335,13 +334,13 @@ function homeFlow(FX,y,cy){const F=flowYear(FX,y),st=speseStats();if(!F.tin&&!st
     const R=52,C=2*Math.PI*R;let acc=0;
     const seg=parts.map(([n,v],i)=>{const f=v/tot,o=`<circle cx="70" cy="70" r="${R}" fill="none" stroke="var(--dn${i+1})" stroke-width="20" stroke-dasharray="${Math.max(0,f*C-2).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc*C).toFixed(2)}" transform="rotate(-90 70 70)" data-tip="${n}: ${eur0(v)} al mese (${pct(f,0)})"></circle>`;acc+=f;return o}).join("");
     const ml=m=>MESI[+m.slice(5,7)-1]+" "+m.slice(2,4);
-    spe=`<section class="panel h-card go" data-go-v="spese">
+    spe=`<section class="panel h-card go" data-go-v="spese" data-card="spese">
     <div class="panel-h"><h2>Dove vanno le spese</h2><div class="spacer"></div><span class="eyebrow">media al mese · ${ml(st.L[0].mese)}–${ml(st.L[st.L.length-1].mese)}</span></div>
     <div class="panel-b"><div class="hdon"><svg class="donut" viewBox="0 0 140 140" role="img" aria-label="Spese ricorrenti per categoria, ${eur0(st.avgRec)} al mese">${seg}<text x="70" y="64" text-anchor="middle" font-size="11" fill="var(--muted)">al mese</text><text x="70" y="84" text-anchor="middle" font-size="17" font-weight="600" fill="var(--fg)">${eur0(st.avgRec)}</text></svg>
       <ul class="hcat">${parts.map(([n,v],i)=>`<li><i style="background:var(--dn${i+1})"></i><span class="hc-n">${n}</span><b class="num">${eur0(v)}</b></li>`).join("")}</ul></div>
       <div class="hcat-f"><span>Ricorrenti <b class="num">${eur0(st.avgRec)}</b> al mese</span>${st.straTot?`<span>Lavori casa a parte <b class="num">${eur0(st.straTot)}</b></span>`:""}</div></div></section>`}
-  else spe=`<section class="panel h-card go" data-go-v="spese"><div class="panel-h"><h2>Dove vanno le spese</h2></div><div class="panel-b muted">Importa gli estratti conto in Finanze › Spese: qui vedrai le categorie principali.</div></section>`;
-  return `<div class="h-duo h-flow">${flow}${spe}</div>`}
+  else spe=`<section class="panel h-card go" data-go-v="spese" data-card="spese"><div class="panel-h"><h2>Dove vanno le spese</h2></div><div class="panel-b muted">Importa gli estratti conto in Finanze › Spese: qui vedrai le categorie principali.</div></section>`;
+  return flow+spe}
 /** Dashboard: twelve months as pairs of bars, money in (actual navy, forecast blue) and money out (F24 + expenses, stacked). */
 function flowMini(rows,cm,W=320,H=180){const L=4,R=4,T=8,B=22,n=rows.length,sx=(W-L-R)/n,bw=Math.min(9,sx*.32);
   const max=Math.max(1000,...rows.map(r=>Math.max(r.in,r.f24+r.sp))),y=v=>T+(H-T-B)*(1-v/max),hh=v=>(H-T-B)*v/max;let o=`<line x1="${L}" x2="${W-R}" y1="${H-B+.5}" y2="${H-B+.5}" stroke="var(--line)"/>`;
@@ -947,7 +946,7 @@ function personalAnal(FX){const R=rispCalc(),inv=invCalc((S.investimenti||[]).fi
   const f2=v=>pct(v,0);
   // 1. entrate vs uscite mese per mese
   let p1="";if(st){const ml=st.L.map(m=>MESI[+m.mese.slice(5)-1]+" "+m.mese.slice(2,4));
-    p1=`<!--feat--><section class="panel c7"><div class="panel-h"><h2>Dove vanno i soldi ogni mese</h2><div class="spacer"></div>${lg([["Spese ricorrenti","var(--amber-soft)"],["Lavori casa","var(--c-sun-soft)"],["Investito","var(--cost)"]])}</div><div class="panel-b chart">${svgBars(ml,[{name:"Spese ricorrenti",vals:st.rec,color:"var(--amber-soft)"},{name:"Lavori casa",vals:st.stra,color:"var(--c-sun-soft)"},{name:"Investito",vals:st.L.map(m=>+m.investito||0),color:"var(--cost)"}],{stacked:1,h:250,refs:[{v:netM,color:"var(--green-soft)",label:"entrate nette medie "+new Date().getFullYear()+" "+eur0(netM)}],label:"Uscite mensili"})}</div></section><!--/feat-->`}
+    p1=`<!--feat--><section class="panel c7"><div class="panel-h"><h2>Spese e investimenti per mese</h2><div class="spacer"></div>${lg([["Spese ricorrenti","var(--amber-soft)"],["Lavori casa","var(--c-sun-soft)"],["Investito","var(--cost)"],["Entrate nette medie "+eur0(netM)+" al mese","var(--green-soft)","line"]])}</div><div class="panel-b chart">${svgBars(ml,[{name:"Spese ricorrenti",vals:st.rec,color:"var(--amber-soft)"},{name:"Lavori casa",vals:st.stra,color:"var(--c-sun-soft)"},{name:"Investito",vals:st.L.map(m=>+m.investito||0),color:"var(--cost)"}],{stacked:1,h:250,refs:[{v:netM,color:"var(--green-soft)",label:""}],label:"Spese e investimenti per mese, con la linea delle entrate nette medie "+eur0(netM)})}</div></section><!--/feat-->`}
   // 2. composizione patrimonio
   const comp=[];if(R)R.L.forEach(c=>comp.push({ticker:c.nome,nome:c.prodotto||"",valore:+c.saldo||0}));
   if(inv){const az=inv.T.filter(t=>!/obblig/i.test(t.classe||"")).reduce((a,t)=>a+t.valore,0),ob=inv.T.filter(t=>/obblig/i.test(t.classe||"")).reduce((a,t)=>a+t.valore,0);comp.push({ticker:"ETF azionari",nome:"Trading 212",valore:az},{ticker:"ETF obbligazionari",nome:"Trading 212",valore:ob})}
@@ -1105,7 +1104,7 @@ function svgBars(cats,series,opt={}){
     {const tl=[c];let sum=0;series.forEach(s=>{const v=s.vals[i]||0;if(v>0){tl.push(s.name+": "+eur0(v));sum+=v}});if(opt.stacked&&tl.length>2)tl.push("Totale: "+eur0(sum));if(tl.length===1)tl.push("—");
      out+=`<rect class="hov" x="${L+sx*i}" y="${T}" width="${sx}" height="${H-T-B}" data-tip="${esc(tl.join("\n"))}"></rect>`}
     out+=`<text x="${L+sx*i+sx/2}" y="${H-9}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`});
-  (opt.refs||[]).forEach(r=>{out+=`<line x1="${L}" x2="${W-R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/><text class="ref" x="${W-R}" y="${y(r.v)-5}" text-anchor="end" font-size="11" fill="${r.color}">${esc(r.label)}</text>`});
+  (opt.refs||[]).forEach(r=>{out+=`<line x1="${L}" x2="${W-R}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4" stroke-width="1.5"/>${r.label?`<text class="ref" x="${W-R}" y="${y(r.v)-5}" text-anchor="end" font-size="11" fill="${r.color}">${esc(r.label)}</text>`:""}`});
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label||"grafico")}">${out}</svg>`;
 }
 function svgLines(cats,series,opt={}){
@@ -1124,7 +1123,7 @@ function svgLines(cats,series,opt={}){
   cats.forEach((c,i)=>{const a=i===n-1&&n>1?"end":"middle";out+=`<text x="${i===n-1&&n>1?x(i)+4:x(i)}" y="${H-9}" text-anchor="${a}" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`});
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label||"grafico")}">${out}</svg>`;
 }
-const lg=items=>`<div class="legend">${items.map(([n,c,d])=>`<span><i style="background:${d?"var(--band)":c};${d?`border:1px dashed ${c}`:""}"></i>${esc(n)}</span>`).join("")}</div>`;
+const lg=items=>`<div class="legend">${items.map(([n,c,d])=>`<span><i style="${d==="line"?`background:none;height:0;width:16px;border-radius:0;border-top:2px dashed ${c};vertical-align:3px`:`background:${d?"var(--band)":c};${d?`border:1px dashed ${c}`:""}`}"></i>${esc(n)}</span>`).join("")}</div>`;
 function vAnal(FX){
   const FMIN=fiscoMin();
   const ys=years().filter(y=>FX[y]&&(FX[y].ric>0));
@@ -1413,7 +1412,7 @@ function bindView(FX){
   app.querySelectorAll("[data-mail]").forEach(b=>b.onclick=()=>{const v=S.invoices.find(x=>x.id===b.dataset.mail);if(v)openMail(v)});
   app.querySelectorAll("[data-pm-done]").forEach(b=>b.onclick=()=>{const r=S.promemoria.find(x=>x.id===b.dataset.pmDone);if(r)write(db=>db.doc("promemoria/"+r.id).update({fatto:!r.fatto}),r.fatto?"Riaperto":"Segnato come fatto")});
   app.querySelectorAll("[data-pm]").forEach(b=>b.onclick=()=>openReminder(b.dataset.pm==="new"?null:b.dataset.pm));
-  app.querySelectorAll("[data-go-v]").forEach(b=>b.onclick=()=>setView(b.dataset.goV));
+  app.querySelectorAll("[data-go-v]").forEach(b=>b.onclick=e=>{if(b.matches("section")&&e.target.closest&&e.target.closest("[data-tip]")&&(e.target.closest("[data-tip]")!==b)&&matchMedia("(hover: none)").matches)return;setView(b.dataset.goV)});
   app.querySelectorAll("[data-inbox-open]").forEach(b=>b.onclick=openInboxSheet);
   app.querySelectorAll("[data-ctr]").forEach(b=>b.onclick=()=>openContract(b.dataset.ctr==="new"?null:b.dataset.ctr));
   app.querySelectorAll("[data-mis]").forEach(b=>b.onclick=()=>openMission(b.dataset.mis==="new"?null:b.dataset.mis));

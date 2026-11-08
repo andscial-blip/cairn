@@ -1,3 +1,4 @@
+import { applyGlossary } from "./glossary";
 /**
  * Presentation-only polish applied after a section is drawn. It never reads or changes data.
  * - Chart text: SVG charts are drawn in their own coordinate space and then scaled to the panel, so the same
@@ -183,6 +184,17 @@ export function fitTodo(root: ParentNode) {
   if (box) box.hidden = rest === 0;
 }
 
+/** Charts and other elements with a tip become keyboard stops: one per chart, the arrows walk its values. */
+export function chartKeys(root: HTMLElement) {
+  root.querySelectorAll<SVGSVGElement>("svg").forEach((svg) => {
+    if (svg.dataset.kbd || svg.closest("button, a, [data-kbd]") || !(svg.matches("[data-tip]") || svg.querySelector("[data-tip]"))) return;
+    svg.dataset.kbd = "1"; svg.setAttribute("tabindex", "0"); svg.setAttribute("focusable", "true");
+    const n = svg.matches("[data-tip]") ? 1 : svg.querySelectorAll("[data-tip]").length;
+    if (n > 1) svg.setAttribute("aria-description", "Usa le frecce per leggere i valori, uno alla volta.");
+  });
+  root.querySelectorAll<HTMLElement>("[data-tip]:not(svg):not(svg *):not(.gl)").forEach((el) => { if (!el.closest("button, a, [data-kbd]") && !el.hasAttribute("tabindex")) el.tabIndex = 0; });
+}
+
 export function polish(root: HTMLElement, view: string, year = new Date().getFullYear()) {
   mobileFolds(root);
   legendsUnderCharts(root);
@@ -190,6 +202,8 @@ export function polish(root: HTMLElement, view: string, year = new Date().getFul
   yearColumns(root, year);
   polishTables(root);
   polishCharts(root);
+  chartKeys(root);
+  applyGlossary(root);
   if (view === "set") settingsIndex(root);
   if (view === "home") { homeCustomize(root); fitTodo(root); }
 }
@@ -253,23 +267,97 @@ export function yearColumns(root: ParentNode, year: number) {
   });
 }
 
-/** Dashboard: show or hide the cards (Da fare, Entrate e uscite, Spese, Tasse, Patrimonio). Saved on this device, so phone and computer can differ. */
-const HOME_KEY = "cairn-home-cards";
-const HOME_CARDS: [string, string][] = [[".h-todo", "Da fare"], [".h-card[data-go-v='entr']", "Entrate e uscite"], [".h-card[data-go-v='spese']", "Spese"], [".h-card[data-go-v='tasse']", "Tasse"], [".h-card[data-go-v='invest']", "Patrimonio"]];
+/**
+ * Dashboard: show, hide and reorder the cards. Saved on this device, so phone and computer can differ.
+ * Order: arrows in "Personalizza" (keyboard and touch) or "Sposta i riquadri", which lets you drag the cards.
+ * On a computer "Da fare" stays in the right column; its place in the order counts on tablet and phone.
+ */
+const HOME_KEY = "cairn-home-cards", ORDER_KEY = "cairn-home-order";
+const CARDS: [string, string][] = [["anno", "Il tuo anno"], ["todo", "Da fare"], ["entr", "Entrate e uscite"], ["spese", "Spese"], ["tasse", "Tasse"], ["patr", "Patrimonio"]];
+const HIDE_LABEL: Record<string, string> = { todo: "Da fare", entr: "Entrate e uscite", spese: "Spese", tasse: "Tasse", patr: "Patrimonio" };
 function homePrefs(): Record<string, boolean> { try { return JSON.parse(localStorage.getItem(HOME_KEY) || "{}"); } catch { return {}; } }
+function homeOrder(): string[] {
+  let o: string[] = []; try { o = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]"); } catch { /* none */ }
+  const keys = CARDS.map(([k]) => k); o = o.filter((k) => keys.includes(k)); keys.forEach((k, i) => { if (!o.includes(k)) o.splice(Math.min(i, o.length), 0, k); });
+  return o;
+}
+const save = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } };
+let homeMoving = false;
 export function homeCustomize(root: HTMLElement) {
   const home = root.querySelector<HTMLElement>(".home.v2"); if (!home) return;
-  const prefs = homePrefs();
-  const apply = () => { for (const [sel, label] of HOME_CARDS) { const el = home.querySelector<HTMLElement>(sel); if (el) el.hidden = prefs[label] === false; }
-    home.querySelectorAll<HTMLElement>(".h-duo").forEach((duo) => { duo.hidden = [...duo.children].every((c) => (c as HTMLElement).hidden); }); };
+  const left = home.querySelector<HTMLElement>(".h-left"); if (!left) return;
+  const prefs = homePrefs(); let order = homeOrder();
+  const card = (k: string) => home.querySelector<HTMLElement>(`[data-card="${k}"]`);
+  const apply = () => {
+    for (const [k, l] of Object.entries(HIDE_LABEL)) { const el = card(k); if (el) el.hidden = prefs[l] === false; }
+    order.forEach((k, i) => { const el = card(k); if (!el) return; el.style.setProperty("--o", String(i)); if (k !== "todo") left.appendChild(el); });
+    // A half-width card left alone before a full-width one (or at the end) takes the whole row: no holes in the grid.
+    const mark = (list: HTMLElement[], full: (el: HTMLElement) => boolean, cls: string) => {
+      list.forEach((el) => el.classList.remove(cls)); let open: HTMLElement | null = null;
+      for (const el of list) { if (full(el)) { if (open) open.classList.add(cls); open = null; } else open = open ? null : el; }
+      if (open) open.classList.add(cls);
+    };
+    const vis = order.map(card).filter((el): el is HTMLElement => !!el && !el.hidden);
+    mark(vis.filter((el) => el.dataset.card !== "todo"), (el) => el.dataset.card === "anno", "wide");
+    mark(vis, (el) => el.dataset.card === "anno" || el.dataset.card === "todo", "wide2");
+    fitTodo(root);
+  };
   apply();
+  if (homeMoving) startMove();
   const hero = home.querySelector(".hero-h"); if (!hero || hero.querySelector(".hcust")) return;
-  const wrap = document.createElement("div"); wrap.className = "hcust";
+  const wrap = document.createElement("div"); wrap.className = "hcust"; hero.closest("[data-card]")?.classList.add("hcust-host");
   const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn small ghost"; btn.textContent = "Personalizza"; btn.setAttribute("aria-expanded", "false");
-  const pop = document.createElement("div"); pop.className = "hcust-pop"; pop.hidden = true; pop.setAttribute("role", "group"); pop.setAttribute("aria-label", "Schede della dashboard");
-  pop.innerHTML = `<b>Schede visibili</b>` + HOME_CARDS.map(([, l], i) => `<label><input type="checkbox" id="hc-${i}" ${prefs[l] === false ? "" : "checked"}> ${l}</label>`).join("") + `<small>Salvato su questo dispositivo</small>`;
-  pop.querySelectorAll<HTMLInputElement>("input").forEach((inp, i) => inp.addEventListener("change", () => { prefs[HOME_CARDS[i]![1]] = inp.checked; try { localStorage.setItem(HOME_KEY, JSON.stringify(prefs)); } catch { /* private mode */ } apply(); }));
+  const pop = document.createElement("div"); pop.className = "hcust-pop"; pop.hidden = true; pop.setAttribute("role", "group"); pop.setAttribute("aria-label", "Riquadri della dashboard");
+  const draw = () => {
+    pop.innerHTML = `<b>Riquadri</b>` + order.map((k, i) => { const l = CARDS.find(([c]) => c === k)![1], hid = HIDE_LABEL[k];
+      return `<div class="hc-row">${hid ? `<label><input type="checkbox" data-hide="${k}" ${prefs[hid] === false ? "" : "checked"}> ${l}</label>` : `<span style="padding-left:24px">${l}</span>`}<button type="button" class="hc-mv" data-mv="${k}" data-d="-1" aria-label="Sposta ${l} prima" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" class="hc-mv" data-mv="${k}" data-d="1" aria-label="Sposta ${l} dopo" ${i === order.length - 1 ? "disabled" : ""}>↓</button></div>`; }).join("")
+      + `<div class="hc-sep"></div><button type="button" class="btn small" data-move-start>Trascina i riquadri</button><button type="button" class="btn small ghost" data-reset>Ripristina l'ordine</button><small>Salvato su questo dispositivo. Su computer "Da fare" resta a destra.</small>`;
+    pop.querySelectorAll<HTMLInputElement>("input[data-hide]").forEach((inp) => inp.addEventListener("change", () => { prefs[HIDE_LABEL[inp.dataset.hide!]!] = inp.checked; save(HOME_KEY, prefs); apply(); }));
+    pop.querySelectorAll<HTMLButtonElement>("[data-mv]").forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.mv!, i = order.indexOf(k), j = i + Number(b.dataset.d); if (j < 0 || j >= order.length) return;
+      order.splice(i, 1); order.splice(j, 0, k); save(ORDER_KEY, order); apply(); draw();
+      pop.querySelector<HTMLButtonElement>(`[data-mv="${k}"][data-d="${b.dataset.d}"]:not(:disabled)`)?.focus();
+    }));
+    pop.querySelector("[data-move-start]")!.addEventListener("click", () => { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); homeMoving = true; startMove(); });
+    pop.querySelector("[data-reset]")!.addEventListener("click", () => { try { localStorage.removeItem(ORDER_KEY); } catch { /* */ } order = homeOrder(); apply(); draw(); });
+  };
+  draw();
   btn.addEventListener("click", () => { pop.hidden = !pop.hidden; btn.setAttribute("aria-expanded", String(!pop.hidden)); });
-  document.addEventListener("click", (e) => { if (!wrap.contains(e.target as Node)) { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); } });
+  // (a click on an arrow redraws the list, so its button is no longer in the page: that is not a click outside)
+  document.addEventListener("click", (e) => { const t = e.target as Node; if (t.isConnected && !wrap.contains(t)) { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); } });
   wrap.append(btn, pop); hero.appendChild(wrap);
+
+  function startMove() {
+    if (home!.classList.contains("moving")) return;
+    home!.classList.add("moving");
+    const bar = document.createElement("div"); bar.className = "hmove-bar"; bar.style.order = "-1"; bar.setAttribute("role", "status");
+    bar.innerHTML = `<span>Trascina i riquadri nella posizione che preferisci.</span><button type="button" class="btn small">Fatto</button>`;
+    home!.prepend(bar);
+    let drag: HTMLElement | null = null, passed: HTMLElement | null = null;
+    const block = (e: Event) => { if ((e.target as Element).closest?.("[data-card]") && !(e.target as Element).closest(".hmove-bar")) { e.preventDefault(); e.stopPropagation(); } };
+    const down = (e: PointerEvent) => {
+      const el = (e.target as Element).closest<HTMLElement>("[data-card]"); if (!el || !home!.contains(el)) return;
+      if (el.dataset.card === "todo" && window.innerWidth >= 1100) return;
+      drag = el; el.classList.add("drag"); e.preventDefault();
+    };
+    const move = (e: PointerEvent) => {
+      if (!drag) return; e.preventDefault();
+      const over = document.elementsFromPoint(e.clientX, e.clientY).map((x) => x.closest<HTMLElement>("[data-card]")).find((x) => x && x !== drag && home!.contains(x));
+      // After a swap the card just passed lands under the pointer: wait until the pointer leaves it, or they would swap back.
+      if (over !== passed) passed = null;
+      if (over && over !== passed && !(over.dataset.card === "todo" && window.innerWidth >= 1100)) {
+        const k = drag.dataset.card!, t = over.dataset.card!, i = order.indexOf(k), j = order.indexOf(t);
+        order.splice(i, 1); order.splice(j, 0, k); apply(); passed = over;
+      }
+      if (e.clientY < 60) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - 60) window.scrollBy(0, 12);
+    };
+    const up = () => { if (!drag) return; drag.classList.remove("drag"); drag = null; save(ORDER_KEY, order); draw(); };
+    const stop = () => {
+      home!.classList.remove("moving"); bar.remove(); homeMoving = false;
+      home!.removeEventListener("pointerdown", down); window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); home!.removeEventListener("click", block, true);
+    };
+    home!.addEventListener("pointerdown", down); window.addEventListener("pointermove", move, { passive: false }); window.addEventListener("pointerup", up);
+    home!.addEventListener("click", block, true);
+    bar.querySelector("button")!.addEventListener("click", stop);
+  }
 }
