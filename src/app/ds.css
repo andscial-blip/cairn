@@ -626,3 +626,6 @@ svg[data-kbd]:focus{outline:none}svg[data-kbd]:focus-visible{outline:2px solid v
 @media (prefers-color-scheme: dark) and (max-width:760px){
   :root:not([data-theme="light"]) .bnav a[aria-current="page"],:root:not([data-theme="light"]) .bnav>button[aria-current="page"]{color:var(--navy)}
 }
+/* Splash in the dark theme: dark background like the rest of the app (no white flash, dark status bar on iPhone) */
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #splash{background:#10151C}:root:not([data-theme="light"]) #splash p{color:#AAB6C6}}
+:root[data-theme="dark"] #splash{background:#10151C}:root[data-theme="dark"] #splash p{color:#AAB6C6}
