@@ -213,13 +213,13 @@ function vHome(FX){
   const todo=[]; const T=(o)=>todo.push(o);
   const cn=id=>(clientById(id)||{nome:id}).nome;
   reminders().filter(remDue).forEach(r=>{const dd=daysBetween(todayISO(),r.data);
-    T({lvl:dd<=14?"warn":"do",ic:"⏰",title:esc(r.titolo),sub:esc(r.dettaglio||""),date:r.data,big:dmy(r.data).slice(0,5),act:r.auto?`<button class="btn small" data-go-v="contr" type="button">Contratti</button>`:`<button class="btn small" data-pm-done="${r.id}" type="button">Fatto</button>`})});
+    T({lvl:dd<=7?"warn":"do",ic:"⏰",title:esc(r.titolo),sub:esc(r.dettaglio||""),date:r.data,big:dmy(r.data).slice(0,5),act:r.auto?`<button class="btn small" data-go-v="contr" type="button">Contratti</button>`:`<button class="btn small" data-pm-done="${r.id}" type="button">Fatto</button>`})});
   const openAll=S.invoices.filter(v=>!v.incasso);
   const lateAll=openAll.filter(v=>stato(v)==="Scaduta");
   if(lateAll.length)T({lvl:"warn",ic:"!",title:`${lateAll.length>1?lateAll.length+" fatture scadute":"Fattura scaduta"}: sollecita`,sub:lateAll.map(v=>v.num+" "+cn(v.cliente)).join(" · "),big:eur0(lateAll.reduce((a,v)=>a+tot(v).documento,0)),act:`<button class="btn small" data-go="inv-late">Vedi</button>`});
   const nxT=nextF24(FX);
   {const up=f24Rows(FX).filter(r=>!r.versato&&r.data>=todayISO()&&(r.data<=addDays(todayISO(),30)||r===nxT||(nxT&&r.data===nxT.data)));
-   up.forEach(r=>{const dd=daysBetween(todayISO(),r.data);T({lvl:dd<=30?"warn":"do",ic:"€",title:`${r.bollo?"Bollo fatture":"F24"} del ${dmy(r.data)}${r.stima?" (stima)":""}`,sub:esc(r.descrizione)+(r.tributi?" · codici "+esc(r.tributi):""),date:r.data,big:eur0(r.importo),act:`<button class="btn small" data-go="tasse">F24</button>`})})}
+   up.forEach(r=>{const dd=daysBetween(todayISO(),r.data);T({lvl:dd<=7?"warn":"do",ic:"€",title:`${r.bollo?"Bollo fatture":"F24"} del ${dmy(r.data)}${r.stima?" (stima)":""}`,sub:esc(r.descrizione)+(r.tributi?" · codici "+esc(r.tributi):""),date:r.data,big:eur0(r.importo),act:`<button class="btn small" data-go="tasse">F24</button>`})})}
   const openSoon=openAll.filter(v=>stato(v)==="Da incassare");
   if(openSoon.length)T({lvl:"do",ic:"↧",title:`${openSoon.length>1?openSoon.length+" fatture":"1 fattura"} da incassare`,sub:openSoon.map(v=>v.num+" "+cn(v.cliente)).join(" · ")+". All'arrivo del bonifico segna la data.",big:eur0(openSoon.reduce((a,v)=>a+tot(v).documento,0)),act:`<button class="btn small" data-go="inv-open">Segna incassi</button>`});
   const PR=projections();
@@ -903,7 +903,7 @@ function vRisp(FX){const head=intro("La liquidità messa da parte: salvadanai e 
   const K={tot:VZ.stack(R.L.map((c,i)=>({v:+c.saldo||0,c:IPAL[i%IPAL.length]})),Math.max(1,R.tot),[],R.L.map(c=>c.nome+": "+eur(c.saldo)).join("\n"))+`<div class="vzl">${R.L.slice(0,2).map(c=>`<span>${esc(c.nome)}</span>`).join("")}</div>`,
     gain:(()=>{const yE=new Date().getFullYear(),mr=12-new Date().getMonth()-1,nY=fv(mr+12)-fv(mr)-R.mens*12,nR=fv(mr)-R.tot-R.mens*mr;return VZ.bars2([{v:R.gain,c:"var(--green-soft)"},{v:nY,c:"var(--c-green-soft)"}],`Interessi maturati finora: ${eur(R.gain)}\nAttesi da qui al 31/12/${yE}: ${eur(nR)}\nAttesi nel ${yE+1}: ${eur(nY)}`)+`<div class="vzl"><span>finora ${eur0(R.gain)}</span><span><!--feat-->nel ${yE+1} ${eur0(nY)}<!--/feat--></span></div>`})(),
     rend:VZ.bars2([{v:R.lordo,c:"var(--c-mid)"},{v:Math.max(0,R.reale),c:"var(--green-soft)"}],`Rendimento lordo: ${R.lordo.toFixed(2).replace(".",",")}%\nNetto costi: ${R.netto.toFixed(2).replace(".",",")}%\nNetto bollo e tasse: ${R.reale.toFixed(2).replace(".",",")}%`)+`<div class="vzl"><span>lordo ${R.lordo.toFixed(2).replace(".",",")}%</span><span>in tasca ${R.reale.toFixed(2).replace(".",",")}%</span></div>`,
-    em:VZ.stack([{v:Math.min(R.mesi,cfgE),c:R.mesi>=3?"var(--green-soft)":"var(--amber-soft)"}],cfgE,[{v:3,c:"var(--gold-d)",dash:1}],`Coperti: ${R.mesi.toLocaleString("it-IT",{maximumFractionDigits:1})} mesi\nObiettivo: ${cfgE} mesi (${eur0(target)})\nSpesa ricorrente: ${eur0(R.avg)}/mese`)+`<div class="vzl"><span>0</span><span>3 mesi</span><span>${cfgE}</span></div>`};
+    em:VZ.stack([{v:Math.min(R.mesi,cfgE),c:R.mesi>=3?"var(--green-soft)":"var(--amber-soft)"}],cfgE,[{v:3,c:"var(--gold-d)",dash:1}],`Coperti: ${R.mesi.toLocaleString("it-IT",{maximumFractionDigits:1})} mesi\nObiettivo: ${cfgE} mesi (${eur0(target)})\nSpesa ricorrente: ${eur0(R.avg)}/mese`)+`<div class="vzl"><span>0</span><span>3</span><span>${cfgE} mesi</span></div>`};
   const f2=v=>(+v||0).toFixed(2).replace(".",",")+"%";
   const conti=R.L.map((c,i)=>`<div class="acrow">${logoImg(c.logo,c.nome)}<div class="acn"><b>${esc(c.nome)} · ${esc(c.prodotto||"")}</b><span>${f2(c.tassoLordo)} lordo${c.fondo?" · "+esc(c.fondo):""}</span><span>${(c.versamento||{}).importo?`${eur0(c.versamento.importo)} al mese${c.versamento.giorno?" il "+c.versamento.giorno:""}${c.versamento.nota?" + "+esc(c.versamento.nota):""}`:""} · dati al ${dmy(c.aggiornato)}</span></div><div class="acv"><b class="num">${eur(c.saldo)}</b><span class="pos">+${eur(c.guadagno||0)}</span><span>${f2(c.reale)} in tasca</span>${(()=>{const y=savingsYield(c.storico);return y?`<!--feat--><span data-tip="${esc(`Guadagno ${eur(y.gained)} in ${y.days} giorni sul saldo medio, al lordo del 26%`)}">${f2(y.annual*100)} effettivo</span><!--/feat-->`:""})()}</div><button class="btn small ghost" data-risp="${esc(c.id)}" type="button">${ico("pen",14)} Aggiorna</button></div>`).join("")
     ;
@@ -996,7 +996,7 @@ function vEntrate(FX){const cy=new Date().getFullYear();const Y=S.entY===cy+1?cy
   return head+tabs+`<!--feat--><div class="kpis">
     <div class="kpi"><div class="l">${nowY?`Entrate ${Y}`:`Entrate previste ${Y}`}</div><div class="v">${eur0(F.tin)}</div>${K.tot}<div class="s">${eur0(F.tin/12)} al mese in media</div></div>
     ${k2}
-    <div class="kpi green"><div class="l">Netto dopo F24</div><div class="v">${eur0(netM)}<small style="font-size:14px;font-weight:600"> / mese</small></div>${K.net}<div class="s">uscite fisse ${eur0(fixedM)} al mese</div></div>
+    <div class="kpi green"><div class="l">Netto dopo F24</div><div class="v">${eur0(netM)}<small style="font-size:14px;font-weight:600"> / mese</small></div>${K.net}<div class="s">uscite fisse ${eur0(fixedM)} al mese: spese, PAC e risparmi</div></div>
     <div class="kpi ${firmQ<.5?"alert":""}"><div class="l">Entrate già firmate</div><div class="v">${pct(firmQ,0)}</div>${K.firm}<div class="s">${firmQ>=.995?"nessun rinnovo da firmare":"il resto dipende dai rinnovi"}</div></div>
   </div>
   <div class="grid">
@@ -1314,7 +1314,7 @@ function vTasse(FX,part){
    KT.vers=VZ.cols(mm,[],"Versato nel "+cy+"\n"+mm.map((v,i)=>v?MESI[i]+": "+eur0(v):null).filter(Boolean).join("\n"),()=>"var(--green-soft)")}
   return `${intro("Tutti i versamenti con F24: imposta sostitutiva, contributi INPS e bollo delle fatture elettroniche. Le scadenze compaiono anche in Scadenze, in Dashboard e nel tuo Google Calendar.")}
   <div class="kpis k3">
-    <div class="kpi"><div class="l">Prossimo versamento</div><div class="v">${nx?eur0(nx.importo):"—"}</div>${KT.nx||""}<div class="s">${nx?dmy(nx.data)+` · <span class="cdp ${ci.c}">${ci.t}</span>`:"nessuno"}</div></div>
+    <div class="kpi"><div class="l">Prossimo versamento</div><div class="v">${nx?eur0(nx.importo):"—"}</div>${KT.nx||""}<div class="s">${nx?dmy(nx.data)+` <span class="cdp ${ci.c}">${ci.t}</span>`:"nessuno"}</div></div>
     <div class="kpi"><div class="l">Da versare entro il 31/12</div><div class="v">${eur0(resid)}</div>${KT.yr||""}<div class="s">${open.filter(r=>r.data.slice(0,4)===String(cy)).length} versamenti</div></div>
     <div class="kpi green"><div class="l">Versato nel ${cy}</div><div class="v">${eur0(vers)}</div>${KT.vers||""}<div class="s">registrato nell'app</div></div>
   </div>

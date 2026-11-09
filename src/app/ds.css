@@ -616,3 +616,4 @@ svg[data-kbd]:focus{outline:none}svg[data-kbd]:focus-visible{outline:2px solid v
 
 /* Category colour dot in tables, same colour as the charts */
 .cat-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:8px;vertical-align:0;flex:none}
+@media (max-width:520px){.ctrow>.panel-h>span.muted{margin-left:0!important}}
