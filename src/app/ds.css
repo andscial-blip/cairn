@@ -267,8 +267,8 @@ body:has(.app [data-ready="1"]) #splash,body:has(.auth) #splash,body:has(.locksc
 
 /* Chart palette (series colours used by the views; adapts to dark mode) */
 :root{--c-mid:#8497B0;--c-soft:#ADB9CA;--c-pale:#C9D6EA;--c-faint:#E3E8EF;--c-sun-soft:#F2D58F;--c-green-soft:#9FD3B2;--c-sky-soft:#9DC3E6;--c-blue:#6F8FBF;--c-green-pale:#CFE9D8}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--c-mid:#7F93AE;--c-soft:#5E6F86;--c-pale:#3F4E63;--c-faint:#2C3746;--c-sun-soft:#B89A4E;--c-green-soft:#4F8F75;--c-sky-soft:#4F7FA8;--c-blue:#7FA2D6;--c-green-pale:#2C4A3D}}
-:root[data-theme="dark"]{--c-mid:#7F93AE;--c-soft:#5E6F86;--c-pale:#3F4E63;--c-faint:#2C3746;--c-sun-soft:#B89A4E;--c-green-soft:#4F8F75;--c-sky-soft:#4F7FA8;--c-blue:#7FA2D6;--c-green-pale:#2C4A3D}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--c-mid:#7F93AE;--c-soft:#5E6F86;--c-pale:#3F4E63;--c-faint:#2C3746;--c-sun-soft:#E6D49C;--c-green-soft:#4F8F75;--c-sky-soft:#4F7FA8;--c-blue:#7FA2D6;--c-green-pale:#2C4A3D}}
+:root[data-theme="dark"]{--c-mid:#7F93AE;--c-soft:#5E6F86;--c-pale:#3F4E63;--c-faint:#2C3746;--c-sun-soft:#E6D49C;--c-green-soft:#4F8F75;--c-sky-soft:#4F7FA8;--c-blue:#7FA2D6;--c-green-pale:#2C4A3D}
 /* Chart text: readable sizes */
 .chart svg text{font-size:12px}
 .kpi .vz rect{rx:1.2px}
@@ -617,3 +617,12 @@ svg[data-kbd]:focus{outline:none}svg[data-kbd]:focus-visible{outline:2px solid v
 /* Category colour dot in tables, same colour as the charts */
 .cat-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:8px;vertical-align:0;flex:none}
 @media (max-width:520px){.ctrow>.panel-h>span.muted{margin-left:0!important}}
+
+/* Dark theme from the phone/computer setting: same rules as the explicit dark theme */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .btn.primary,:root:not([data-theme="light"]) .btn.dark{background:var(--mist);border-color:var(--mist);color:#16202C}
+  :root:not([data-theme="light"]) .gl:hover{text-decoration-color:var(--fg)}
+}
+@media (prefers-color-scheme: dark) and (max-width:760px){
+  :root:not([data-theme="light"]) .bnav a[aria-current="page"],:root:not([data-theme="light"]) .bnav>button[aria-current="page"]{color:var(--navy)}
+}

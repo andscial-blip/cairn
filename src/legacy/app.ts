@@ -634,7 +634,7 @@ function vSpese(FX){const st=speseStats();const {inTot,outTot,spTot}=cashYear(FX
   if(!st)return head+`<section class="panel empty">Nessuna spesa registrata.</section>`;
   const net=inTot-outTot-spTot;const last=st.L[st.L.length-1];
   const ml=st.L.map(m=>MESI[+m.mese.slice(5)-1]+" "+m.mese.slice(2,4));const sp=spTot;
-  const KS={rec:VZ.cols(st.rec,[],"Spesa ricorrente per mese\n"+st.rec.map((v,i)=>ml[i]+": "+eur0(v)).join("\n")+"\nMedia: "+eur0(st.avgRec),i=>st.rec[i]>st.avgRec?"var(--vz-sp)":"color-mix(in srgb,var(--vz-sp) 50%,transparent)"),
+  const KS={rec:VZ.cols(st.rec,[],"Spesa ricorrente per mese\n"+st.rec.map((v,i)=>ml[i]+": "+eur0(v)).join("\n")+"\nMedia: "+eur0(st.avgRec),i=>st.rec[i]>st.avgRec?"var(--vz-sp)":"var(--c-soft)"),
     stra:VZ.cols(st.stra,[],"Lavori casa per mese\n"+st.stra.map((v,i)=>ml[i]+": "+eur0(v)).join("\n"),()=>"var(--c-sun-soft)"),
     inv:VZ.cols(st.L.map(m=>+m.investito||0),[],"Investito per mese\n"+st.L.map((m,i)=>ml[i]+": "+eur0(+m.investito||0)).join("\n"),()=>"var(--cost)"),
     net:VZ.stack([{v:Math.max(0,net),c:"var(--green-soft)"},{v:sp,c:"var(--vz-sp)"},{v:outTot,c:"var(--tax)"}],Math.max(1,inTot),[],`Entrate ${new Date().getFullYear()}: ${eur0(inTot)}\nLibero: ${eur0(net)}\nSpese: ${eur0(sp)}\nF24: ${eur0(outTot)}`)+`<div class="vzl"><span>libero</span><span>spese</span><span>F24</span></div>`};
@@ -996,7 +996,7 @@ function vEntrate(FX){const cy=new Date().getFullYear();const Y=S.entY===cy+1?cy
   return head+tabs+`<!--feat--><div class="kpis">
     <div class="kpi"><div class="l">${nowY?`Entrate ${Y}`:`Entrate previste ${Y}`}</div><div class="v">${eur0(F.tin)}</div>${K.tot}<div class="s">${eur0(F.tin/12)} al mese in media</div></div>
     ${k2}
-    <div class="kpi green"><div class="l">Netto dopo F24</div><div class="v">${eur0(netM)}<small style="font-size:14px;font-weight:600"> / mese</small></div>${K.net}<div class="s">uscite fisse ${eur0(fixedM)} al mese: spese, PAC e risparmi</div></div>
+    <div class="kpi green"><div class="l">Netto dopo F24</div><div class="v">${eur0(netM)}<small style="font-size:14px;font-weight:600"> / mese</small></div>${K.net}<div class="s">spese, PAC e risparmi: ${eur0(fixedM)} al mese</div></div>
     <div class="kpi ${firmQ<.5?"alert":""}"><div class="l">Entrate già firmate</div><div class="v">${pct(firmQ,0)}</div>${K.firm}<div class="s">${firmQ>=.995?"nessun rinnovo da firmare":"il resto dipende dai rinnovi"}</div></div>
   </div>
   <div class="grid">
