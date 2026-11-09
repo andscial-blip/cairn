@@ -1103,8 +1103,8 @@ function svgBars(cats,series,opt={}){
   cats.forEach((c,i)=>{const gw=Math.min(sx*.7,opt.stacked?46:22*series.length),x0=L+sx*i+(sx-gw)/2;let acc=0;
     series.forEach((s,j)=>{const v=s.vals[i]||0;if(v<=0)return;const st=s.dashed&&s.dashed[i];
       const tip=`${esc(c)} · ${esc(s.name)}: ${eur(v)}`;
-      if(opt.stacked){out+=`<rect x="${x0}" y="${y(acc+v)}" width="${gw}" height="${hh(v)}" fill="${st?"var(--band)":s.color}" ${st?`stroke="${s.color}" stroke-dasharray="3 2"`:""}></rect>`;acc+=v}
-      else{const bw=gw/k;out+=`<rect x="${x0+bw*j+1}" y="${y(v)}" width="${bw-2}" height="${hh(v)}" fill="${st?"var(--band)":s.color}" ${st?`stroke="${s.color}" stroke-dasharray="3 2"`:""} rx="2"></rect>`;
+      if(opt.stacked){out+=`<rect x="${x0}" y="${y(acc+v)}" width="${gw}" height="${hh(v)}" fill="${s.color}" ${st?`fill-opacity=".3" stroke="${s.color}" stroke-dasharray="3 2"`:""}></rect>`;acc+=v}
+      else{const bw=gw/k;out+=`<rect x="${x0+bw*j+1}" y="${y(v)}" width="${bw-2}" height="${hh(v)}" fill="${s.color}" ${st?`fill-opacity=".3" stroke="${s.color}" stroke-dasharray="3 2"`:""} rx="2"></rect>`;
         if(opt.labels)out+=`<text class="vl" x="${x0+bw*j+bw/2}" y="${y(v)-4}" text-anchor="middle" font-size="10" fill="var(--muted)">${v>=1000?(v/1000).toLocaleString("it-IT",{maximumFractionDigits:1})+"k":Math.round(v)}</text>`}});
     {const tl=[c];let sum=0;series.forEach(s=>{const v=s.vals[i]||0;if(v>0){tl.push(s.name+": "+eur0(v));sum+=v}});if(opt.stacked&&tl.length>2)tl.push("Totale: "+eur0(sum));if(tl.length===1)tl.push("—");
      out+=`<rect class="hov" x="${L+sx*i}" y="${T}" width="${sx}" height="${H-T-B}" data-tip="${esc(tl.join("\n"))}"></rect>`}
@@ -1128,7 +1128,7 @@ function svgLines(cats,series,opt={}){
   cats.forEach((c,i)=>{const a=i===n-1&&n>1?"end":"middle";out+=`<text x="${i===n-1&&n>1?x(i)+4:x(i)}" y="${H-9}" text-anchor="${a}" font-size="11.5" fill="var(--muted)">${esc(c)}</text>`});
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label||"grafico")}">${out}</svg>`;
 }
-const lg=items=>`<div class="legend">${items.map(([n,c,d])=>`<span><i style="${d==="line"?`background:none;height:0;width:16px;border-radius:0;border-top:2px dashed ${c};vertical-align:3px`:`background:${d?"var(--band)":c};${d?`border:1px dashed ${c}`:""}`}"></i>${esc(n)}</span>`).join("")}</div>`;
+const lg=items=>`<div class="legend">${items.map(([n,c,d])=>`<span><i style="${d==="line"?`background:none;height:0;width:16px;border-radius:0;border-top:2px dashed ${c};vertical-align:3px`:`background:${d?`color-mix(in srgb, ${c} 30%, transparent)`:c};${d?`border:1px dashed ${c}`:""}`}"></i>${esc(n)}</span>`).join("")}</div>`;
 function vAnal(FX){
   const FMIN=fiscoMin();
   const ys=years().filter(y=>FX[y]&&(FX[y].ric>0));
@@ -1318,7 +1318,7 @@ function vTasse(FX,part){
   </div>
   <section class="panel"><div class="panel-h"><h2>${ico("euro",18)} Versamenti F24</h2><div class="spacer"></div><button class="btn small" id="addF24" type="button">+ Aggiungi versamento</button></div>
   <details class="help panel-b"><summary>${ico("info",14)} Come funziona</summary><p>Le righe "stima" sono calcolate dal Calcolo fiscale. Con «Modifica» metti l'importo vero (quello dell'F24 della commercialista): la riga diventa un versamento da fare e la stima sparisce. Lo stesso succede quando aggiungi il versamento reale dello stesso mese. Il bollo delle fatture elettroniche (€2 a fattura) lo precompila l'Agenzia nel portale Fatture e Corrispettivi: verifica con ${esc((cfg().commercialista||{}).nome||"la commercialista")} se lo versa già lei o con addebito diretto.</p></details>
-  ${pastN?`<div class="panel-b" style="padding:8px 16px"><button class="btn small ghost" type="button" data-f24-past="1">${S.f24past?"Nascondi i versamenti degli anni precedenti":`Mostra i versamenti degli anni precedenti (${pastN})`}</button></div>`:""}
+  ${pastN?`<div class="panel-b" style="padding:8px 16px"><button class="btn small ghost wrap" type="button" data-f24-past="1">${S.f24past?"Nascondi i versamenti degli anni precedenti":`Mostra i versamenti degli anni precedenti (${pastN})`}</button></div>`:""}
   <div class="tw"><table class="stack"><thead><tr><th>Data</th><th>Mancano</th><th>Descrizione</th><th>Tributi</th><th class="r">Importo</th><th class="c">Stato</th><th></th></tr></thead><tbody>
   ${rowsT.map(r=>{const late=!r.versato&&r.data<today, soon=!r.versato&&!late&&daysBetween(today,r.data)<=30;
     return `<tr class="u-${cdInfo(r.data,r.versato).c}"><td class="num">${dmy(r.data)}</td><td>${cdPill(r.data,r.versato)}</td><td>${esc(r.descrizione)}</td><td class="muted">${esc(r.tributi||"")}</td><td class="r num"><b class="neg">${eur(r.importo)}</b></td>
