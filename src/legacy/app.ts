@@ -319,7 +319,7 @@ function vHome(FX){
     ${todo.length>TODO_MAX?`<div class="more"><button class="btn small ghost" type="button" data-todo-all="1">${S.todoAll?"Mostra solo le più urgenti":`<span>Mostra tutte (altre <span class="tm-n">${todo.length-TODO_MAX}</span>)</span>`}</button></div>`:""}
   </section>
   <section class="panel h-note" data-card="note"><div class="panel-h"><h2>Note</h2><div class="spacer"></div><span class="eyebrow" id="noteSt">${cfg().noteAt?"salvate il "+dmy(cfg().noteAt.slice(0,10))+" alle "+cfg().noteAt.slice(11,16):"si salvano da sole"}</span></div>
-    <div class="panel-b"><textarea id="homeNote" aria-label="Note" placeholder="Appunti, idee, cose da ricordare… Si salvano da sole e le ritrovi su tutti i dispositivi." spellcheck="true">${esc(_noteDraft??cfg().note??"")}</textarea></div>
+    <div class="panel-b"><div class="note-bar" role="toolbar" aria-label="Inserisci nelle note">${[["☐","Casella da spuntare"],["📌","Puntina"],["✅","Fatto"],["⚠️","Attenzione"],["💶","Soldi"],["📅","Data"],["📞","Telefonata"],["💡","Idea"]].map(([c,t])=>`<button type="button" data-sym="${c}" title="${t}" aria-label="${t}">${c}</button>`).join("")}</div><textarea id="homeNote" aria-label="Note" placeholder="Appunti, idee, cose da ricordare… Scrivi [ ] a inizio riga per una casella da spuntare. Si salvano da sole e le ritrovi su tutti i dispositivi." spellcheck="true">${esc(_noteDraft??cfg().note??"")}</textarea></div>
   </section>
   </div></div>`;
 }
@@ -1430,6 +1430,20 @@ function bindView(FX){
     // A re-render replaces the textarea and blurs the old one: that is not the user leaving the notes.
     nt.addEventListener("blur",()=>setTimeout(()=>{if(!nt.isConnected)return;if(document.activeElement===nt)return;_noteSel=null;save()},0));
     nt.addEventListener("click",e=>e.stopPropagation());
+    // Checkboxes: "[ ] " or "[x] " at the start of a line becomes ☐ / ☑; a tap on the box ticks it; Enter continues the list.
+    const BOX=/^([ \t]*)\[( |x|X)?\] /gm,changed=()=>nt.dispatchEvent(new Event("input"));
+    nt.addEventListener("input",()=>{if(!BOX.test(nt.value))return;BOX.lastIndex=0;const p=nt.selectionStart,before=nt.value.slice(0,p),after=nt.value.slice(p);
+      const conv=t=>t.replace(BOX,(m,ws,x)=>ws+(x&&x.trim()?"☑ ":"☐ "));const nb=conv(before),na=conv(after);nt.value=nb+na;nt.setSelectionRange(nb.length,nb.length);_noteDraft=nt.value;BOX.lastIndex=0});
+    nt.addEventListener("click",()=>{if(nt.selectionStart!==nt.selectionEnd)return;const v=nt.value,p=nt.selectionStart,ls=v.lastIndexOf("\n",p-1)+1,ws=(/^[ \t]*/.exec(v.slice(ls))||[""])[0].length,b=ls+ws,ch=v[b];
+      if((ch==="☐"||ch==="☑")&&(p===b||p===b+1)){nt.setRangeText(ch==="☐"?"☑":"☐",b,b+1,"end");nt.setSelectionRange(b+2,b+2);changed()}});
+    nt.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.shiftKey||e.isComposing)return;const v=nt.value,p=nt.selectionStart,ls=v.lastIndexOf("\n",p-1)+1,line=v.slice(ls,p),m=/^([ \t]*)[☐☑] ?/.exec(line);if(!m)return;
+      e.preventDefault();if(line.trim()==="☐"||line.trim()==="☑"){nt.setRangeText("",ls,p,"end");changed();return}nt.setRangeText("\n"+m[1]+"☐ ",p,nt.selectionEnd,"end");changed()});
+    // Quick symbols: a tap inserts at the caret (a box goes at the start of the line) without leaving the notes.
+    app.querySelectorAll(".note-bar [data-sym]").forEach(b=>{b.addEventListener("pointerdown",e=>e.preventDefault());b.addEventListener("click",e=>{e.stopPropagation();
+      const c=b.dataset.sym,sel=document.activeElement===nt?[nt.selectionStart,nt.selectionEnd]:(_noteSel||[nt.value.length,nt.value.length]);nt.focus();
+      if(c==="☐"){const ls=nt.value.lastIndexOf("\n",sel[0]-1)+1;if(!/^[ \t]*[☐☑]/.test(nt.value.slice(ls)))nt.setRangeText("☐ ",ls,ls,"end");else nt.setSelectionRange(sel[0],sel[1])}
+      else{const prev=nt.value[sel[0]-1];nt.setRangeText((prev&&!/\s/.test(prev)?" ":"")+c+" ",sel[0],sel[1],"end")}
+      changed()})});
   }}
   app.querySelectorAll("[data-go-v]").forEach(b=>b.onclick=e=>{if(b.matches(".go")&&e.target.closest&&e.target.closest("[data-tip]")&&(e.target.closest("[data-tip]")!==b)&&matchMedia("(hover: none)").matches)return;setView(b.dataset.goV)});
   app.querySelectorAll("[data-inbox-open]").forEach(b=>b.onclick=openInboxSheet);
