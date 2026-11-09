@@ -319,7 +319,7 @@ function vHome(FX){
     ${todo.length>TODO_MAX?`<div class="more"><button class="btn small ghost" type="button" data-todo-all="1">${S.todoAll?"Mostra solo le più urgenti":`<span>Mostra tutte (altre <span class="tm-n">${todo.length-TODO_MAX}</span>)</span>`}</button></div>`:""}
   </section>
   <section class="panel h-note" data-card="note"><div class="panel-h"><h2>Note</h2><div class="spacer"></div><span class="eyebrow" id="noteSt">${cfg().noteAt?"salvate il "+dmy(cfg().noteAt.slice(0,10))+" alle "+cfg().noteAt.slice(11,16):"si salvano da sole"}</span></div>
-    <div class="panel-b"><div class="note-bar" role="toolbar" aria-label="Inserisci nelle note">${[["☐","Casella da spuntare"],["📌","Puntina"],["✅","Fatto"],["⚠️","Attenzione"],["💶","Soldi"],["📅","Data"],["📞","Telefonata"],["💡","Idea"]].map(([c,t])=>`<button type="button" data-sym="${c}" title="${t}" aria-label="${t}">${c}</button>`).join("")}</div><textarea id="homeNote" aria-label="Note" placeholder="Appunti, idee, cose da ricordare… Scrivi [ ] a inizio riga per una casella da spuntare. Si salvano da sole e le ritrovi su tutti i dispositivi." spellcheck="true">${esc(_noteDraft??cfg().note??"")}</textarea></div>
+    <div class="panel-b"><div class="note-bar" role="toolbar" aria-label="Inserisci nelle note"></div><textarea id="homeNote" aria-label="Note" placeholder="Appunti, idee, cose da ricordare… Scrivi [ ] a inizio riga per una casella da spuntare. Si salvano da sole e le ritrovi su tutti i dispositivi." spellcheck="true">${esc(_noteDraft??cfg().note??"")}</textarea></div>
   </section>
   </div></div>`;
 }
@@ -986,7 +986,7 @@ function vEntrate(FX){const cy=new Date().getFullYear();const Y=S.entY===cy+1?cy
   const k2=nowY?`<div class="kpi"><div class="l">Incassato da gennaio</div><div class="v">${eur0(F.tdone)}</div>${K.done}<div class="s">mancano ${eur0(rest)} entro dicembre</div></div>`
     :`<div class="kpi"><div class="l">F24 ${Y}</div><div class="v">${eur0(F.tf24)}</div>${K.f24}<div class="s">stima dal Calcolo fiscale</div></div>`;
   const cats=F.rows.map(r=>MESI[+r.m.slice(5)-1]);
-  const chart=svgBars(cats,[{name:"Incassato",color:"var(--vz-real)",vals:F.rows.map(r=>r.done)},{name:"Previsto (firmato)",color:"var(--vz-plan)",vals:F.rows.map(r=>r.firm-r.done)},{name:"Previsto (ipotesi)",color:"var(--vz-hyp)",vals:F.rows.map(r=>r.ipo),dashed:cats.map(()=>true)}],{stacked:1,w:1000,h:300,refs:[{v:fixedM,color:"var(--c-mid)",label:"spese + PAC + risparmi "+eur0(fixedM)}],label:`Entrate ${Y}`});
+  const chart=svgBars(cats,[{name:"Incassato",color:"var(--vz-real)",vals:F.rows.map(r=>r.done)},{name:"Previsto (firmato)",color:"var(--vz-plan)",vals:F.rows.map(r=>r.firm-r.done)},{name:"Previsto (ipotesi)",color:"var(--vz-hyp)",vals:F.rows.map(r=>r.ipo),dashed:cats.map(()=>true)}],{stacked:1,w:1000,h:300,refs:[{v:fixedM,color:"var(--c-mid)",label:""}],label:`Entrate ${Y}`});
   const byC={};F.rows.forEach(r=>Object.entries(r.src).forEach(([k,v])=>byC[k]=(byC[k]||0)+v));const cr=Object.entries(byC).sort((a,b)=>b[1]-a[1]);
   const cRows=cr.map(([k,v],i)=>`<div class="alrow">${clg(k)}<div class="an"><b>${esc(cl(k))}</b></div><div class="ap num">${eur0(v)}</div><div class="at num muted">${pct(v/Math.max(1,F.tin),0)} delle entrate · ${eur0(v/12)} al mese</div></div>`).join("")||`<div class="muted">Nessuna entrata nel ${Y}.</div>`;
   const neg=v=>v<0?"bad":"pos";
@@ -999,7 +999,7 @@ function vEntrate(FX){const cy=new Date().getFullYear();const Y=S.entY===cy+1?cy
     <div class="kpi ${firmQ<.5?"alert":""}"><div class="l">Entrate già firmate</div><div class="v">${pct(firmQ,0)}</div>${K.firm}<div class="s">${firmQ>=.995?"nessun rinnovo da firmare":"il resto dipende dai rinnovi"}</div></div>
   </div>
   <div class="grid">
-    <section class="panel c12"><div class="panel-h"><h2>Entrate mese per mese, ${Y}</h2><div class="spacer"></div>${lg([["Incassato","var(--vz-real)"],["Previsto firmato","var(--vz-plan)"],["Previsto ipotesi","var(--vz-hyp)",1]])}</div><div class="panel-b chart">${chart}<div class="chart-note">Per data di incasso. La linea arancione è quanto esce ogni mese per spese ricorrenti, PAC e risparmi: i mesi sotto la linea si reggono sulla cassa accumulata.</div></div></section>
+    <section class="panel c12"><div class="panel-h"><h2>Entrate mese per mese, ${Y}</h2><div class="spacer"></div>${lg([["Incassato","var(--vz-real)"],["Previsto firmato","var(--vz-plan)"],["Previsto ipotesi","var(--vz-hyp)",1],["Uscite fisse "+eur0(fixedM)+" al mese","var(--c-mid)","line"]])}</div><div class="panel-b chart">${chart}<div class="chart-note">Per data di incasso. La linea tratteggiata è quanto esce ogni mese per spese ricorrenti, PAC e risparmi: i mesi sotto la linea si reggono sulla cassa accumulata.</div></div></section>
     <section class="panel c8"><div class="panel-h"><h2>Flusso di cassa ${Y}</h2><div class="spacer"></div><span class="eyebrow">entrate − F24 − spese − PAC e risparmi</span></div><div class="tw"><table><thead><tr><th>Mese</th><th class="r">Entrate</th><th class="r">F24</th><th class="r m-hide">Spese</th><th class="r m-hide">PAC e risp.</th><th class="r">Saldo mese</th><th class="r">Da gennaio</th></tr></thead><tbody>${tRows}</tbody><tfoot><tr><td><b>Totale</b></td><td class="r num"><b>${eur0(F.tin)}</b></td><td class="r num">−${eur0(F.tf24)}</td><td class="r num m-hide">−${eur0(F.tsp)}</td><td class="r num m-hide">−${eur0((F.pac+F.rm)*12)}</td><td class="r num ${neg(F.tsal)}"><b>${F.tsal<0?"−":"+"}${eur0(Math.abs(F.tsal))}</b></td><td></td></tr></tfoot></table></div></section>
     <section class="panel c4"><div class="panel-h"><h2>Da chi arrivano</h2><div class="spacer"></div><span class="eyebrow">${Y}</span></div><div class="panel-b"><div class="alist">${cRows}</div>
       <ul class="chk" style="margin-top:14px"><li>${minC<0?`<b class="bad">Cassa sotto zero</b> a ${MESI_L[+minR.m.slice(5)-1].toLowerCase()} (${eur0(minC)}, contato da gennaio): serve la liquidità accumulata sul conto corrente.`:`<b class="pos">Cassa sempre positiva</b> ${nowY?"da qui a dicembre":"nel "+Y}: il saldo più basso, contato da gennaio, è ${eur0(minC)} a ${MESI_L[+minR.m.slice(5)-1].toLowerCase()}.`}</li>
@@ -1438,12 +1438,25 @@ function bindView(FX){
       if((ch==="☐"||ch==="☑")&&(p===b||p===b+1)){nt.setRangeText(ch==="☐"?"☑":"☐",b,b+1,"end");nt.setSelectionRange(b+2,b+2);changed()}});
     nt.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.shiftKey||e.isComposing)return;const v=nt.value,p=nt.selectionStart,ls=v.lastIndexOf("\n",p-1)+1,line=v.slice(ls,p),m=/^([ \t]*)[☐☑] ?/.exec(line);if(!m)return;
       e.preventDefault();if(line.trim()==="☐"||line.trim()==="☑"){nt.setRangeText("",ls,p,"end");changed();return}nt.setRangeText("\n"+m[1]+"☐ ",p,nt.selectionEnd,"end");changed()});
-    // Quick symbols: a tap inserts at the caret (a box goes at the start of the line) without leaving the notes.
-    app.querySelectorAll(".note-bar [data-sym]").forEach(b=>{b.addEventListener("pointerdown",e=>e.preventDefault());b.addEventListener("click",e=>{e.stopPropagation();
-      const c=b.dataset.sym,sel=document.activeElement===nt?[nt.selectionStart,nt.selectionEnd]:(_noteSel||[nt.value.length,nt.value.length]);nt.focus();
+    // Symbols in the text colour (no colour emoji): ☐, the seven used most recently, and "+" for the full panel by theme.
+    const SYM_G=[["Stato",["✓","✔︎","✗","★","☆","⚑","⚐","⚠︎","‼︎","⁇︎","●","○","◆","◇","■","□","▲","▼"]],["Frecce",["→","←","↑","↓","↔","⇒","↩︎","↻","➜","⤴︎"]],["Lavoro e tempo",["✎","✍︎","✉︎","☎︎","✂︎","⌚︎","⌛︎","⏱︎","⚙︎","⚖︎","☰","⌘"]],["Soldi e numeri",["€","$","£","%","+","−","×","÷","≈","≠","∑","№"]],["Luoghi e viaggi",["✈︎","⚓︎","⌂","☀︎","☁︎","☂︎","❄︎","⛰︎","⛺︎","⌖"]],["Vita",["♥︎","☺︎","☹︎","♫","☕︎","✿","☘︎","♻︎","⚽︎","⚕︎"]]],REC_K="cairn-note-syms",DEF=["✓","★","⚑","⚠︎","€","☎︎","✉︎"];
+    let rec=DEF;try{const r=JSON.parse(localStorage.getItem(REC_K)||"null");if(Array.isArray(r)&&r.length)rec=r.slice(0,7)}catch(e){}
+    const bar=app.querySelector(".note-bar");
+    const ins=c=>{const sel=document.activeElement===nt?[nt.selectionStart,nt.selectionEnd]:(_noteSel||[nt.value.length,nt.value.length]);nt.focus();
       if(c==="☐"){const ls=nt.value.lastIndexOf("\n",sel[0]-1)+1;if(!/^[ \t]*[☐☑]/.test(nt.value.slice(ls)))nt.setRangeText("☐ ",ls,ls,"end");else nt.setSelectionRange(sel[0],sel[1])}
-      else{const prev=nt.value[sel[0]-1];nt.setRangeText((prev&&!/\s/.test(prev)?" ":"")+c+" ",sel[0],sel[1],"end")}
-      changed()})});
+      else{const prev=nt.value[sel[0]-1];nt.setRangeText((prev&&!/\s/.test(prev)?" ":"")+c+" ",sel[0],sel[1],"end");
+        rec=[c,...rec.filter(x=>x!==c)].slice(0,7);try{localStorage.setItem(REC_K,JSON.stringify(rec))}catch(e){}}
+      changed()};
+    const btn=(c,t)=>`<button type="button" data-sym="${c}" title="${t||"Inserisci "+c}" aria-label="${t||"Inserisci "+c}">${c}</button>`;
+    const drawBar=()=>{if(!bar)return;bar.innerHTML=btn("☐","Casella da spuntare")+rec.map(c=>btn(c)).join("")+`<button type="button" class="nb-more" aria-expanded="false" aria-label="Altri simboli" title="Altri simboli">+</button><div class="nb-pop" hidden role="dialog" aria-label="Simboli">${SYM_G.map(([t,g])=>`<div class="nb-g">${t}</div><div class="nb-row">${g.map(c=>btn(c)).join("")}</div>`).join("")}</div>`;
+      const pop=bar.querySelector(".nb-pop"),more=bar.querySelector(".nb-more");
+      bar.querySelectorAll("button").forEach(b=>b.addEventListener("pointerdown",e=>e.preventDefault()));
+      bar.querySelectorAll("[data-sym]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();const inPop=!!b.closest(".nb-pop");ins(b.dataset.sym);if(inPop){drawBar()}}));
+      more.addEventListener("click",e=>{e.stopPropagation();pop.hidden=!pop.hidden;more.setAttribute("aria-expanded",String(!pop.hidden))});
+      pop.addEventListener("click",e=>e.stopPropagation())};
+    drawBar();
+    document.addEventListener("click",()=>{const pop=bar&&bar.querySelector(".nb-pop");if(pop&&!pop.hidden){pop.hidden=true;bar.querySelector(".nb-more").setAttribute("aria-expanded","false")}});
+    document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;const pop=bar&&bar.querySelector(".nb-pop");if(pop&&!pop.hidden){pop.hidden=true;nt.focus()}});
   }}
   app.querySelectorAll("[data-go-v]").forEach(b=>b.onclick=e=>{if(b.matches(".go")&&e.target.closest&&e.target.closest("[data-tip]")&&(e.target.closest("[data-tip]")!==b)&&matchMedia("(hover: none)").matches)return;setView(b.dataset.goV)});
   app.querySelectorAll("[data-inbox-open]").forEach(b=>b.onclick=openInboxSheet);
