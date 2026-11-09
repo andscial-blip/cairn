@@ -613,3 +613,6 @@ svg[data-kbd]:focus{outline:none}svg[data-kbd]:focus-visible{outline:2px solid v
   .tw td input.in{width:58px!important;min-width:0;padding-left:5px;padding-right:5px}
   .simp .tw .clg{display:none}
 }
+
+/* Category colour dot in tables, same colour as the charts */
+.cat-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:8px;vertical-align:0;flex:none}
